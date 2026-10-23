@@ -6,6 +6,7 @@ from collections import OrderedDict
 import math
 import random
 import shutil
+import mtsm_paths as mtsm
 
 mile_meter=1609.34
 
@@ -889,8 +890,7 @@ def construct_initial_network(headway):
 def update_initial_net_with_bayesian_headway(headway, study_area):
 
     if study_area=="lemon_grove":
-        initial_net_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/lemon_grove/initial_network_folder/" \
-                             "initial_network"
+        initial_net_folder = mtsm.LG_INITIAL_NETWORK_DIR
         base_initial_net_file_micro = os.path.join(initial_net_folder, "base_super_network_lemon_grove_micro_hw_10_virstop_75.csv")
         updated_initial_net_file_micro = os.path.join(initial_net_folder, f"initial_super_network_micro_hw_{headway}_virstop_75.csv")
 
@@ -899,7 +899,7 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
         updated_initial_net_file_non_micro = os.path.join(initial_net_folder,
                                                 f"initial_super_network_non_micro_hw_{headway}.csv")
 
-        copy_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
+        copy_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
     else:
         initial_net_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/initial_network_folder/initial_full_transit_network"
         base_initial_net_file_micro = os.path.join(initial_net_folder,

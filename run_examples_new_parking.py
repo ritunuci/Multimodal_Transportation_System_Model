@@ -33,6 +33,8 @@ import testing_scenario_creation as tst_scen_create
 import pre_process.dictionary_initialization as dict_init
 from pre_process import process_network as p_n
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
+import mtsm_paths as mtsm
+from tools.check_inputs import check_inputs
 # main functions
 # --------------
 def run_single_simulation(scenario_parameters):
@@ -47,7 +49,7 @@ def run_single_simulation(scenario_parameters):
 
 
 def run_scenarios(constant_config_file, scenario_file, n_parallel_sim=1, n_cpu_per_sim=1, evaluate=1, log_level="info",
-                  keep_old=False, continue_next_after_error=False):
+                  keep_old=False, continue_next_after_error=False, random_seed=None):
     """
     This function combines constant study parameters and scenario parameters.
     Then it sets up a pool of workers and starts a simulation for each scenario.
@@ -73,6 +75,8 @@ def run_scenarios(constant_config_file, scenario_file, n_parallel_sim=1, n_cpu_p
     :type keep_old: bool
     :param continue_next_after_error: continue with next simulation if one the simulations threw an error (only SP)
     :type continue_next_after_error: bool
+    :param random_seed: overrides random_seed of the constant config if given
+    :type random_seed: int
     """
     assert type(n_parallel_sim) == int, "n_parallel_sim must be of type int"
     # read constant and scenario config files
@@ -98,6 +102,8 @@ def run_scenarios(constant_config_file, scenario_file, n_parallel_sim=1, n_cpu_p
     constant_cfg["evaluate"] = evaluate
     constant_cfg["log_level"] = log_level
     constant_cfg["keep_old"] = keep_old
+    if random_seed is not None:
+        constant_cfg[G_RANDOM_SEED] = random_seed
 
     # combine constant and scenario parameters into verbose scenario parameters
     for i, scenario_cfg in enumerate(scenario_cfgs):
@@ -151,7 +157,7 @@ def run_scenarios(constant_config_file, scenario_file, n_parallel_sim=1, n_cpu_p
 MAIN_DIR = os.path.dirname(__file__)
 MOD_STR = "MoD_0"
 MM_STR = "Assertion"
-LOG_F = "standard_bugfix.log"
+LOG_F = os.path.join(mtsm.CODE_ROOT, "standard_bugfix.log")
 
 
 # testing results of examples
@@ -178,6 +184,19 @@ def read_outputs_for_comparison(constant_csv, scenario_csv):
         tmp_df.loc[G_SCENARIO_NAME, MOD_STR] = scenario_name
         return_list.append((tmp_df))
     return return_list
+
+
+def warn_non_optimal_repositioning(constant_csv, scenario_csv):
+    """AlonsoMoraRepositioning writes 70_repo_am_opt_model_infeasible_*.lp whenever Gurobi ends without an optimal
+    solution (e.g. TimeLimit hit) and then skips repositioning -> results may depend on machine speed."""
+    constant_cfg = config.ConstantConfig(constant_csv)
+    study_name = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(constant_csv))))
+    for scenario_cfg in config.ScenarioConfig(scenario_csv):
+        output_dir = os.path.join(MAIN_DIR, "studies", study_name, "results", (constant_cfg + scenario_cfg)[G_SCENARIO_NAME])
+        lp_files = [f for f in os.listdir(output_dir) if f.startswith("70_repo_am_opt_model_infeasible_")]
+        if lp_files:
+            print(f"{Fore.RED}WARNING: {len(lp_files)} repositioning solves were not optimal (Gurobi status != OPTIMAL),"
+                  f" results may not be reproducible: {output_dir}{Style.RESET_ALL}")
 
 
 def check_assertions(list_eval_df, all_scenario_assertion_dict):
@@ -276,11 +295,20 @@ def create_config_files(sc,study_area,repositioning,debug_mode,fleet_size):
 if __name__ == "__main__":
     mp.freeze_support()
 
+    # Reproducibility (docs/progress.md, Phase 1): str hashing (set/dict order) is randomized per process unless
+    # PYTHONHASHSEED is fixed before the interpreter starts -> re-launch once with a fixed hash seed and no
+    # inherited PYTHONPATH (stale entries could shadow modules).
+    if os.environ.get("PYTHONHASHSEED") != "0":
+        import subprocess
+        child_env = dict(os.environ, PYTHONHASHSEED="0")
+        child_env.pop("PYTHONPATH", None)
+        sys.exit(subprocess.call([sys.executable] + sys.argv, env=child_env))
+
     start_time = datetime.datetime.now()
     pre_timeatfinished=start_time
     print("program starts here......start time is:", start_time)
     # zonal_partition=True
-    input_para_folder="D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/Input_parameter"
+    input_para_folder = mtsm.INPUT_PARAMETER_DIR
     input_para_dir=os.path.join(input_para_folder,"input_parameter.csv")
     TRPartA_test_scenario_list=[]
     debug_mode_list=[]
@@ -314,10 +342,37 @@ if __name__ == "__main__":
             #PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor
             initial_rejection_rate = float(data["initial_rejection_rate"])
             micro_rejection_penalty = float(data["micro_rejection_penalty ($)"])
+            # one seed drives both the mode-choice draws here and FleetPy's random_seed; 0 if the column is absent
+            random_seed = int(data.get("random_seed") or 0)
 
             read_fleet_size.append(fleet_size)
 
     f.close()
+
+    # Only this configuration reads and writes inside the codebase (mtsm/). Other branches still point to
+    # folders outside the codebase -> refuse them until their inputs are brought into mtsm/ (docs/progress.md).
+    unsupported = []
+    if any(area != "lemon_grove" for area in test_area):
+        unsupported.append(f"test_area={test_area} (only lemon_grove)")
+    if not TRPartA:
+        unsupported.append("TRPartA=False")
+    if not BayesianOptimization:
+        unsupported.append("BayesianOptimization=False")
+    if any(debug_mode_list):
+        unsupported.append("debug_mode_list=True")
+    if unsupported:
+        sys.exit("ERROR: configuration in %s is not self-contained (mtsm/) yet: %s"
+                 % (input_para_dir, ", ".join(unsupported)))
+    input_problems = check_inputs()
+    if input_problems:
+        print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm/MANIFEST.csv -> results are not comparable to "
+              f"docs/reference_results: {input_problems}{Style.RESET_ALL}")
+    for folder in (mtsm.LG_FINAL_NETWORK_DIR, mtsm.LG_INDIV_OUTPUT_DIR, mtsm.LG_OUTPUT_DIR):
+        os.makedirs(folder, exist_ok=True)
+
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+    print("random_seed:", random_seed, "PYTHONHASHSEED:", os.environ.get("PYTHONHASHSEED"))
 
     zonal_partition_list=[False]
     indiv_converg_test=True
@@ -2048,7 +2103,8 @@ if __name__ == "__main__":
                                                                 # print(f"{Fore.RED}Local agents added to FleetPy: {extra_demand}{Style.RESET_ALL}")
                                                                 # print(f"{Fore.RED}Total demand in FleetPy: {num_M_travelers+extra_demand}{Style.RESET_ALL}")
                                                                 #######################################################################################################
-                                                                run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1)
+                                                                run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=random_seed)
+                                                                warn_non_optimal_repositioning(cc, sc)
                                                                 list_results = read_outputs_for_comparison(cc, sc)
                                                                 all_scenario_assert_dict = {0: {"number users": 88}}
                                                                 check_assertions(list_results, all_scenario_assert_dict)
@@ -2058,9 +2114,9 @@ if __name__ == "__main__":
 
                                                                 # Ritun added: Feb 14
                                                                 if repositioning == True:
-                                                                    Fleetpy_output_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/studies/example_study/results/example_pool_repo_AM_sc_1"
+                                                                    Fleetpy_output_folder = os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_repo_AM_sc_1")
                                                                 else:
-                                                                    Fleetpy_output_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/studies/example_study/results/example_pool_irsonly_sc_1"
+                                                                    Fleetpy_output_folder = os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_irsonly_sc_1")
                                                                 Fleetpy_eval_file = os.path.join(Fleetpy_output_folder,
                                                                                                  "standard_eval.csv")
                                                                 df_fleetpy = pd.read_csv(Fleetpy_eval_file, index_col=0,

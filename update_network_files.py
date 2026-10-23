@@ -6,9 +6,10 @@ import get_microtransit_skims as mt
 from csv import reader, writer
 import io
 import pandas as pd
+import mtsm_paths as mtsm
 
 def copy_csv(filename,iteration):
-    indiv_output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/indiv_output_folder"
+    indiv_output_folder = mtsm.LG_INDIV_OUTPUT_DIR
     df = pd.read_csv(filename)
     output_file_dic=new_path=os.path.join(indiv_output_folder,'iter_%s_1_user-stats.csv' % str(iteration))
     df.to_csv(output_file_dic,index=False)
@@ -91,9 +92,9 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     # D:\Siwei_Micro_Transit\FleetPy_SanDiego\studies\example_study\results\example_pool_irsonly_sc_1
     # D:\Siwei_Micro_Transit\Data\0719_input\FleetPy_output
     if repositioning==True:
-        Fleetpy_output_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/studies/example_study/results/example_pool_repo_AM_sc_1"
+        Fleetpy_output_folder = os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_repo_AM_sc_1")
     else:
-        Fleetpy_output_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/studies/example_study/results/example_pool_irsonly_sc_1"
+        Fleetpy_output_folder = os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_irsonly_sc_1")
     # Fleetpy_output_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/FleetPy_output/"
     Fleetpy_user_stats = os.path.join(Fleetpy_output_folder, "1_user-stats.csv")
 
@@ -333,10 +334,12 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_network_4_zones" % str(
                         study_area)
                 else:
-                    initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_network" % str(
-                        study_area)
+                    initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
                     # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
-            final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
+            if study_area == "lemon_grove":
+                final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
+            else:
+                final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
             output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
             # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\output_folder
         else:

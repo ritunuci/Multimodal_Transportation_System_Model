@@ -33,6 +33,7 @@ from matplotlib import pyplot as plt
 from matplotlib.cm import ScalarMappable
 from botorch.utils.multi_objective.pareto import is_non_dominated
 from ax.core.parameter_constraint import ParameterConstraint
+import mtsm_paths as mtsm
 
 # ----------------------------------------------------------------------------------------------------------------------
 # from colorama import Fore, Style
@@ -68,10 +69,8 @@ from ax.core.parameter_constraint import ParameterConstraint
 # from matplotlib.cm import ScalarMappable
 # ----------------------------------------------------------------------------------------------------------------------
 folder_name = str("LG_submission_results_R2")
-optimization_folder_path = os.path.join("D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/optimization_output",
-                                        folder_name)
-indv_res_folder_path = os.path.join("D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/optimization_output",
-                                    folder_name, "indv_res")
+optimization_folder_path = os.path.join(mtsm.LG_OPTIMIZATION_OUTPUT_DIR, folder_name)
+indv_res_folder_path = os.path.join(mtsm.LG_OPTIMIZATION_OUTPUT_DIR, folder_name, "indv_res")
 agg_sim_output_folder_path = os.path.join(optimization_folder_path, "per_itr_agg_sim_output")
 os.makedirs(optimization_folder_path, exist_ok=True)
 os.makedirs(indv_res_folder_path, exist_ok=True)
@@ -208,7 +207,8 @@ init_per_call_results_csv()
 
 
 def run_script():
-    subprocess.run(["C:/Users/Autonomicity/.conda/envs/fleetpy/python", "run_examples_new_parking.py"])
+    subprocess.run(["C:/Users/Autonomicity/.conda/envs/fleetpy/python",
+                    os.path.join(mtsm.CODE_ROOT, "run_examples_new_parking.py")], cwd=mtsm.CODE_ROOT)
     time.sleep(1)
 
 
@@ -221,7 +221,7 @@ def update_csv_with_train_x(values):
     e1 = float(e)  # Peak fare factor
     h1 = float(h)  # Micro to fixed factor
     f1 = int(f)  # FRT headway
-    input_csv_path = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/Input_parameter/input_parameter.csv"
+    input_csv_path = os.path.join(mtsm.INPUT_PARAMETER_DIR, "input_parameter.csv")
     with open(input_csv_path, mode='r', newline='') as csvfile:
         reader = csv.reader(csvfile)
         rows = list(reader)
@@ -244,8 +244,7 @@ def update_csv_with_train_x(values):
 
 
 def collect_output(iteration_type: str, values):
-    output_csv_path = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/lemon_grove/output_folder" \
-                      "/lemon_grove_evaluation_zonal_partition_False.csv"
+    output_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR, "lemon_grove_evaluation_zonal_partition_False.csv")
 
     # output_csv_path = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/output_folder" \
     #                   "/downtown_sd_debug_evaluation_zonal_partition_False.csv"
@@ -255,8 +254,8 @@ def collect_output(iteration_type: str, values):
     # indv_res_csv_path = f"D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/output_folder/" \
     #                     f"debug_individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv"
 
-    indv_res_csv_path = f"D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/lemon_grove/output_folder/" \
-                        f"individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv"
+    indv_res_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR,
+                                     f"individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv")
 
     output_csv_df = pd.read_csv(output_csv_path)
     output_csv_df.to_csv(os.path.join(agg_sim_output_folder_path, f"agg_sim_output_{iteration_type}.csv"), index=False)
@@ -401,8 +400,7 @@ def evaluate_objectives(x_sorted, iteration_type):
     _last_output, _last_other_metrics = send_instruction(input_data, iteration_type)
     end_time = time.time()
     duration = end_time - start_time
-    log_path = f"D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/optimization_output/{folder_name}" \
-               f"/indiv_call_timings_eval.csv"
+    log_path = os.path.join(optimization_folder_path, "indiv_call_timings_eval.csv")
     file_exists = os.path.isfile(log_path)
     with open(log_path, "a", newline="") as f:
         writer = csv.writer(f)

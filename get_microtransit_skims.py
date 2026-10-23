@@ -25,6 +25,7 @@ from itertools import islice
 
 import inte_sys_mode_choice
 import network_algorithms as n_a
+import mtsm_paths as mtsm
 
 def get_node_ct(study_area):
     # pre_node_dir
@@ -36,7 +37,7 @@ def get_node_ct(study_area):
         network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
 
     if study_area == "lemon_grove":
-        network_folder = 'D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/Network_folder'
+        network_folder = mtsm.LG_TRANSIT_NETWORK_DIR
     pre_node_dir = os.path.join(network_folder, 'pre_nodes.csv')
 
     with open(pre_node_dir) as f:
