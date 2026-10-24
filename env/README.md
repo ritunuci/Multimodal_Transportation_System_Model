@@ -36,11 +36,16 @@ From the repository root (any env name works; the model run does not depend on i
 
     conda create -n fleetpy --file env/fleetpy.conda-explicit.txt
     conda activate fleetpy
-    pip install --no-deps -r env/fleetpy.pip.txt
+    python -m ensurepip
+    python -m pip install --no-deps -r env/fleetpy.pip.txt
     python tools/export_env.py
 
 The last command must print `environment ... matches ...`. `--no-deps` installs exactly the locked set; the lock is
 complete (`pip check` reported no broken requirements when it was written).
+
+`python -m ensurepip` is needed because pip itself is one of the pip packages (pip upgraded itself to the locked
+version), so the conda file brings no pip. `ensurepip` installs Python's bundled pip, which the next command replaces
+with the locked one; it leaves conda's setuptools as it is.
 
 ## Check an existing environment
 

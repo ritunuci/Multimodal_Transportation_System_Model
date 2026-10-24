@@ -19,7 +19,7 @@ Newest entries go at the bottom of each phase. In the "Baseline findings" sectio
 | 1 | Make a single run deterministic: seed, hash seed, PYTHONPATH, Gurobi check | Done, verified 2026-10-23 |
 | 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
 | 1c | Optimizer (`test_file_backup_latest.py`) reads and writes `mtsm/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
-| 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Git part done 2026-10-23 (Phase 2a); stale-path cleanup done, verified 2026-10-23 (Phase 2b step 1); environment lock to do |
+| 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23: git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). Tag + push to do |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -304,7 +304,7 @@ file was renamed, so the code still builds the same file names. The folder const
 3. Record what is outside the env: Gurobi 12.0.3 license, Windows 10. **Done** (below).
 4. Optional: startup check that prints key package versions and warns if they differ from the lock. **Skipped**
    (user's decision, 2026-10-23); `python tools/export_env.py` does the full check on demand.
-5. Rebuild test: new env from `env/` only, full run in a fresh clone, `REPRODUCED`.
+5. Rebuild test: new env from `env/` only, full run in a fresh clone, `REPRODUCED`. **Done, passed** (below).
 6. Docs, commit, tag `v2-env-locked`, push.
 
 ### Step 1: stale hardcoded paths (2026-10-23)
@@ -445,6 +445,28 @@ file was renamed, so the code still builds the same file names. The folder const
   pyflakes clean. The optimizer itself was not run (Gurobi license), and the model code is unchanged, so no reference
   run was needed.
 - After an optimizer session the model output folder holds the last candidate's files (as before).
+
+### Step 5: rebuild test (2026-10-23): passed
+- Fresh clone of commit `09e0684` into `D:\Ritun\mtsm_lock_test` (723 tracked files; lock files byte-exact, CRLF).
+- New env built **only from the clone's `env/`**, on another drive and under another name than the original:
+  `conda create -p D:\Ritun\envs\fleetpy_lock_test --file env/fleetpy.conda-explicit.txt`, then
+  `python -m pip install --no-deps -r env/fleetpy.pip.txt` (`PYTHONPATH` unset, `PYTHONNOUSERSITE=1`).
+- **Finding: the conda file brings no pip.** pip had upgraded itself to 25.2 in the original env, so pip counts as
+  a pip package (it is in `fleetpy.pip.txt`, not in the conda file), and the new env had no pip to install the pip
+  list with. Fix: `python -m ensurepip` first (installs Python's bundled pip 23.0.1; it did not touch conda's
+  setuptools 80.9.0 / wheel 0.45.1), then the pip list, which replaced it with pip 25.2. `env/README.md` now has
+  this step.
+- Checks on the new env: `pip check`: no broken requirements; `python tools/export_env.py`:
+  `environment D:\Ritun\envs\fleetpy_lock_test matches D:\Ritun\mtsm_lock_test\env` (all 34 conda and 102 pip
+  packages identical). No user site-packages folder exists (`AppData\Roaming\Python\Python310`), so none leaked in.
+- `tools/check_inputs.py` in the clone: all frozen inputs match.
+- Full seed-0 run in the clone with the new env's Python, under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes afterwards; the clone's `git status` is clean.
+- Trace: no access to the original `fleetpy` env, to the original repo or to `Siwei_Micro_Transit`; outside the clone
+  only matplotlib's font cache, the null device and the tracer's folder.
+- What this proves: `env/` fully describes a working environment, and the run depends only on the repo plus that
+  environment. Not proven: another machine (same CPU, Windows and MKL here); that is Phase 5.
+- The test env and the test clone were deleted afterwards; the original `fleetpy` env was not touched.
 
 ---
 
