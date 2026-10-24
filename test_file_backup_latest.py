@@ -3,6 +3,7 @@ import time
 import csv
 import os
 import subprocess
+import sys
 import logging
 
 import numpy
@@ -207,7 +208,9 @@ init_per_call_results_csv()
 
 
 def run_script():
-    subprocess.run(["C:/Users/Autonomicity/.conda/envs/fleetpy/python",
+    # the model runs with the optimizer's own interpreter (the fleetpy env, the only one with ax/torch/gurobipy);
+    # was "C:/Users/Autonomicity/.conda/envs/fleetpy/python"
+    subprocess.run([sys.executable,
                     os.path.join(mtsm.CODE_ROOT, "run_examples_new_parking.py")], cwd=mtsm.CODE_ROOT)
     time.sleep(1)
 

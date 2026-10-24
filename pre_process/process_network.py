@@ -567,7 +567,9 @@ def get_the_virtual_stops(percentage,new_network_folder):
     return virtual_stop_list
 
 def get_transit_link_route():
-    lemon_grove_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/"
+    # preprocessing step: Transit_edges_new.csv and new_nodes_transit_network.csv were never copied into mtsm/
+    mtsm.not_self_contained("get_transit_link_route (preprocessing)")
+    # STALE: lemon_grove_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/"
     old_super_transit_network = os.path.join(lemon_grove_network_folder,
                                              "super_network_transit_edges.csv")  # without route id
     new_super_transit_network = os.path.join(lemon_grove_network_folder,
@@ -576,7 +578,7 @@ def get_transit_link_route():
     raw_super_transit_network = os.path.join(lemon_grove_network_folder, "Transit_edges_new.csv")  # original node id
     # from_node	to_node	distance	travel_time	link_type	route_id	route_type
 
-    lemon_grove_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/"
+    # STALE: lemon_grove_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/"
     old_super_transit_network = os.path.join(lemon_grove_network_folder,
                                              "super_network_transit_edges.csv")  # without route id
     new_super_transit_network = os.path.join(lemon_grove_network_folder,
@@ -643,7 +645,7 @@ def get_transit_link_route():
     for study_area in ["downtown_sd", "lemon_grove"]:
         transit_link_route[study_area] = OrderedDict()
         if study_area == "downtown_sd":
-            network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
+            # STALE: network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
             new_transit_network = os.path.join(network_folder, "new_nodes_transit_network.csv")
             old_super_transit_network = os.path.join(lemon_grove_network_folder,
                                                      "super_network_transit_edges.csv")  # without route id
@@ -651,7 +653,7 @@ def get_transit_link_route():
                                                      "new_super_network_transit_edges.csv")  # adding route id
 
         else:
-            network_folder = 'D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove'
+            # STALE: network_folder = 'D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove'
             new_transit_network = os.path.join(network_folder, "Transit_edges_new.csv")
             old_super_transit_network = os.path.join(lemon_grove_network_folder,
                                                      "super_network_transit_edges.csv")  # without route id
@@ -707,14 +709,15 @@ def construct_initial_network(headway):
     headway_scenarios = [headway]
     microtransit_scenarios = ["micro", "non_micro"]
     time_periods = ["AM", "MD", "PM", "EV"]
+    mtsm.not_self_contained("construct_initial_network (preprocessing)")
     transit_link_route=get_transit_link_route()
     for study_area in ["downtown_sd", "lemon_grove"]:
 
-        if study_area == "lemon_grove":
-            initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
-        else:
-            initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/initial_network"
-            network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
+        # STALE: if study_area == "lemon_grove":
+        # STALE:     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
+        # STALE: else:
+        # STALE:     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/initial_network"
+        # STALE:     network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
 
         for virstop in [50, 75, 100]:
             for headway in headway_scenarios:
@@ -901,18 +904,19 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
 
         copy_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
     else:
-        initial_net_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/initial_network_folder/initial_full_transit_network"
-        base_initial_net_file_micro = os.path.join(initial_net_folder,
-                                                   "base_super_network_downtown_sd_micro_hw_10_virstop_75.csv")
-        updated_initial_net_file_micro = os.path.join(initial_net_folder,
-                                                      f"initial_super_network_micro_hw_{headway}_virstop_75.csv")
-
-        base_initial_net_file_non_micro = os.path.join(initial_net_folder,
-                                                       "base_super_network_downtown_sd_non_micro_hw_10.csv")
-        updated_initial_net_file_non_micro = os.path.join(initial_net_folder,
-                                                          f"initial_super_network_non_micro_hw_{headway}.csv")
-
-        copy_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/initial_full_transit_network"
+        mtsm.not_self_contained("study_area=%s" % study_area)
+        # STALE: initial_net_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/initial_network_folder/initial_full_transit_network"
+        # STALE: base_initial_net_file_micro = os.path.join(initial_net_folder,
+        # STALE:                                            "base_super_network_downtown_sd_micro_hw_10_virstop_75.csv")
+        # STALE: updated_initial_net_file_micro = os.path.join(initial_net_folder,
+        # STALE:                                               f"initial_super_network_micro_hw_{headway}_virstop_75.csv")
+        # STALE:
+        # STALE: base_initial_net_file_non_micro = os.path.join(initial_net_folder,
+        # STALE:                                                "base_super_network_downtown_sd_non_micro_hw_10.csv")
+        # STALE: updated_initial_net_file_non_micro = os.path.join(initial_net_folder,
+        # STALE:                                                   f"initial_super_network_non_micro_hw_{headway}.csv")
+        # STALE:
+        # STALE: copy_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/initial_full_transit_network"
 
     with open(updated_initial_net_file_micro, 'w+', newline='') as updated_file_1:
         fieldnames_1 = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]
@@ -1017,21 +1021,22 @@ def creat_walk_transit_node_match(transit_node_lat_lon,walk_node_lat_lon,transit
     return transit_walk_node_dict
 
 if __name__ == '__main__':
+    mtsm.not_self_contained("process_network.py network construction (preprocessing)")
 
     new_downtown_sd=True
     #Convert the coordinates to lat and lon
     if new_downtown_sd==True:
-        new_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/Downtown_SD_New_Transit_network/Road_network"
+        # STALE: new_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/Downtown_SD_New_Transit_network/Road_network"
         old_node_file = os.path.join(new_network_folder, "nodes.csv")
         new_node_file = os.path.join(new_network_folder, "new_nodes_for_fleetpy_input.csv")
     else:
-        new_network_folder="D:/Ritun/Siwei_Micro_Transit/Ritun/Latest network 2"
+        # STALE: new_network_folder="D:/Ritun/Siwei_Micro_Transit/Ritun/Latest network 2"
         old_node_file=os.path.join(new_network_folder,"nodes_for_fleetpy_input.csv")
         new_node_file = os.path.join(new_network_folder, "new_nodes_for_fleetpy_input.csv")
     # result=convert_old_to_new_node_files(old_node_file, new_node_file)
 
     if new_downtown_sd==True:
-        original_transit_folder="D:/Ritun/Siwei_Micro_Transit/Ritun/Jake B network code"
+        # STALE: original_transit_folder="D:/Ritun/Siwei_Micro_Transit/Ritun/Jake B network code"
         origin_transit_nodes=os.path.join(original_transit_folder, "node_file.csv")
         selected_transit_nodes=os.path.join(new_network_folder,"Transit_nodes.csv")
         select_area_transit_nodes_list=read_transit_nodes(selected_transit_nodes)
@@ -1072,7 +1077,7 @@ if __name__ == '__main__':
 
         pass
     else:
-        original_transit_folder="D:/Ritun/Siwei_Micro_Transit/Ritun/Jake B network code"
+        # STALE: original_transit_folder="D:/Ritun/Siwei_Micro_Transit/Ritun/Jake B network code"
         origin_transit_nodes=os.path.join(original_transit_folder, "node_file.csv")
         selected_transit_nodes=os.path.join(new_network_folder,"Transit_nodes.csv")
         select_area_transit_nodes_list=read_transit_nodes(selected_transit_nodes)

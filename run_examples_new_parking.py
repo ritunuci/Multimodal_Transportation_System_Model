@@ -445,7 +445,7 @@ if __name__ == "__main__":
     # microtransit_only = True
     # microtransit="micro"
     if test_repositioning==False:
-        network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
+        # STALE (unused): network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
         zonal_partition=False
         # for zonal_partition in zonal_partition_list:
         for debug_mode in debug_mode_list:

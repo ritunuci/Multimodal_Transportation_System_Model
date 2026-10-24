@@ -30,3 +30,12 @@ LG_OPTIMIZATION_OUTPUT_DIR = os.path.join(LG_DIR, "optimization_output")    # Ba
 LG_FLEETPY_DEMAND_DIR = os.path.join(CODE_ROOT, "data", "demand", "lemon_grove_example_demand", "matched",
                                      "lemon_grove_example_network")
 FLEETPY_RESULTS_DIR = os.path.join(CODE_ROOT, "studies", "example_study", "results")
+
+
+def not_self_contained(what):
+    """Stop on a code branch whose folders are still outside the codebase.
+
+    The old absolute paths of such a branch are kept next to the call as '# STALE:' comments.
+    """
+    raise NotImplementedError("%s is not self-contained (mtsm/) yet; its folders are outside the codebase. "
+                              "See docs/progress.md." % what)

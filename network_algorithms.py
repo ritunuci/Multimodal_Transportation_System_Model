@@ -23,6 +23,7 @@ from itertools import islice
 from math import radians, cos, sin, asin, sqrt
 import heapq
 import datetime
+import mtsm_paths as mtsm
 
 from setuptools import setup
 from Cython.Build import cythonize
@@ -976,8 +977,9 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
 if __name__ == '__main__':
     start_time = datetime.datetime.now()
     print("start time:",start_time)
-    new_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Latest network 2"
-    demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/demand_folder"
+    mtsm.not_self_contained("network_algorithms.py standalone test")
+    # STALE: new_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Latest network 2"
+    # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/demand_folder"
     for headway in [20]:  # [20,30,60]
         for percentage in [50]:  # [50,75,100]
             final_super_network_edges = os.path.join(new_network_folder, "super_network_%s_virstop_%s_hw_edges.csv" % (str(percentage), str(headway)))

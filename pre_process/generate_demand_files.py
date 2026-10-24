@@ -7,15 +7,18 @@ from collections import OrderedDict
 import pandas as pd
 from colorama import Fore, Style
 from typing import Optional, Callable
+import mtsm_paths as mtsm
 
-network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
-request_file=os.path.join(network_folder,"trips_nodes_study_area_with_beta.csv")
-new_input_demand=os.path.join(network_folder,"trips_nodes_study_area_with_beta.csv")
-
-lemon_grove_demand_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/demand_folder"
-lemon_grove_MGRA= os.path.join(lemon_grove_demand_folder,"Lemon_grove_MGRA.csv")
-
-lemon_grove_trip_file = os.path.join(lemon_grove_demand_folder,"larger_SANDAG_trips_in_MGRA.csv")
+# The demand-preparation functions below built the frozen demand file in mtsm/; the run uses only
+# synthesize_requests_with_trend_time. Their source folders are outside the codebase.
+# STALE: network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
+# STALE: request_file=os.path.join(network_folder,"trips_nodes_study_area_with_beta.csv")
+# STALE: new_input_demand=os.path.join(network_folder,"trips_nodes_study_area_with_beta.csv")
+# STALE:
+# STALE: lemon_grove_demand_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/demand_folder"
+# STALE: lemon_grove_MGRA= os.path.join(lemon_grove_demand_folder,"Lemon_grove_MGRA.csv")
+# STALE:
+# STALE: lemon_grove_trip_file = os.path.join(lemon_grove_demand_folder,"larger_SANDAG_trips_in_MGRA.csv")
 def select_trips(area_MGRA,trip_file,output_trip_file):
     study_area_MGRA_list=[]
     with open(area_MGRA) as f_MGRA:
@@ -267,6 +270,7 @@ def create_tt_demand_file(trip_file,NODE_MGRA_write_dir,total_demand_file,demand
 
 
 def generate_1_per_demand():
+    mtsm.not_self_contained("generate_1_per_demand (preprocessing)")
     # Generate 10% demand
     debug_input_demand = os.path.join(network_folder, "debug_trips_nodes_study_area_with_beta.csv")
     with open(debug_input_demand, 'w+', newline='') as csvfile:
@@ -375,6 +379,7 @@ def create_user_profile(input_trip_file,demand_profile_beta_file,debug_demand_pr
 
 
 def select_demand_nodes():
+    mtsm.not_self_contained("select_demand_nodes (preprocessing)")
     demand_nodes_check = []
     with open(new_input_demand) as f:
         csvreader = csv.DictReader(f)
@@ -400,9 +405,10 @@ def modify_ind_parameter(study_area,debug_mode,bt_c_0_m=0,bt_c_ivt_m = 0.103,
                          bt_c_gas_m = 0.554,bt_t_0_m = 0.432,bt_t_wk_m = 0.164,bt_m_wt_m=0.104,bt_f_wt_m=0.104,bt_m_ivt_m = 0.134,
                          bt_f_ivt_m = 0.116,bt_f_trfer_m = 0.504,bt_t_fr_m = 0.554):
 
+    mtsm.not_self_contained("modify_ind_parameter (preprocessing)")
     #D:\Siwei_Micro_Transit\Data\0719_input\lemon_grove\demand_folder
     if study_area=="lemon_grove":
-        new_lemon_grove_demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/demand_folder"
+        # STALE: new_lemon_grove_demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/demand_folder"
         if debug_mode==True:
             debug="debug_"
             demand_profile_beta_file = os.path.join(lemon_grove_demand_folder,"%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
@@ -414,8 +420,8 @@ def modify_ind_parameter(study_area,debug_mode,bt_c_0_m=0,bt_c_ivt_m = 0.103,
             demand_profile_beta_file = os.path.join(lemon_grove_demand_folder, "%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
 
     if study_area=="downtown_sd":
-        network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
-        new_demand_input_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/demand_folder"
+        # STALE: network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
+        # STALE: new_demand_input_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/demand_folder"
         if debug_mode==True:
             debug = "debug_"
             demand_profile_beta_file = os.path.join(network_folder,"%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
@@ -473,8 +479,9 @@ def modify_ind_parameter(study_area,debug_mode,bt_c_0_m=0,bt_c_ivt_m = 0.103,
 
 
 def TRPartA_demand_files(study_area,debug_mode):
+    mtsm.not_self_contained("TRPartA_demand_files (preprocessing)")
 
-    trip_file_folder="D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/demand_data/%s" % (study_area)
+    # STALE: trip_file_folder="D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/demand_data/%s" % (study_area)
     trip_file_dir=os.path.join(trip_file_folder,"%s_trips.csv" % (study_area))
     new_trip_file_dir = os.path.join(trip_file_folder, "%s_trips_new.csv" % (study_area))
 
@@ -492,12 +499,12 @@ def TRPartA_demand_files(study_area,debug_mode):
 
 
     if study_area=="downtown_sd":
-        MGRA_Node_folder="D:\Siwei_Micro_Transit/Data/0719_input/MGRA_nodes_mapping"
-        study_area_network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/downtown_sd_Network_folder"
+        # STALE: MGRA_Node_folder="D:\Siwei_Micro_Transit/Data/0719_input/MGRA_nodes_mapping"
+        # STALE: study_area_network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/downtown_sd_Network_folder"
         mean_income = 88894.5
     if study_area=="lemon_grove":
-        MGRA_Node_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/MGRA_Node_Mapping"
-        study_area_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/Network_folder"
+        # STALE: MGRA_Node_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/MGRA_Node_Mapping"
+        # STALE: study_area_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/Network_folder"
         mean_income = 70679.3
 
     pre_node_dir = os.path.join(study_area_network_folder, "pre_nodes.csv")
@@ -683,7 +690,8 @@ def TRPartA_demand_files(study_area,debug_mode):
 
 
 def sample_20_percent(folder_dir,study_area):
-    folder_dir="D:\Siwei_Micro_Transit\Bayesian_Optimization\demand_data\%s" % str(study_area)
+    mtsm.not_self_contained("sample_20_percent (preprocessing)")
+    # STALE: folder_dir="D:\Siwei_Micro_Transit\Bayesian_Optimization\demand_data\%s" % str(study_area)
     full_demand_file_dir=os.path.join(folder_dir,"%s_trips_nodes_study_area_with_beta_old.csv" % str(study_area))
     sample_demand_file_dir=os.path.join(folder_dir,"%s_trips_nodes_study_area_with_beta.csv" % str(study_area))
     df=pd.read_csv(full_demand_file_dir)
@@ -887,7 +895,8 @@ if __name__ == '__main__':
 
     debug_mode_list=[True,False]
 
-    folder_dir = "D:\Siwei_Micro_Transit\Bayesian_Optimization\demand_data\lemon_grove"
+    # STALE: folder_dir = "D:\Siwei_Micro_Transit\Bayesian_Optimization\demand_data\lemon_grove"
+    folder_dir = None  # sample_20_percent() stops: its folder is outside the codebase
     study_area = "lemon_grove"
     sample_20_percent(folder_dir,study_area)
 

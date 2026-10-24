@@ -19,7 +19,7 @@ Newest entries go at the bottom of each phase. In the "Baseline findings" sectio
 | 1 | Make a single run deterministic: seed, hash seed, PYTHONPATH, Gurobi check | Done, verified 2026-10-23 |
 | 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
 | 1c | Optimizer (`test_file_backup_latest.py`) reads and writes `mtsm/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
-| 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Git part done 2026-10-23 (see Phase 2a); environment lock to do |
+| 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Git part done 2026-10-23 (Phase 2a); stale-path cleanup done, verified 2026-10-23 (Phase 2b step 1); environment lock to do |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -290,6 +290,81 @@ file was renamed, so the code still builds the same file names. The folder const
   folder. The only items were matplotlib's font cache, the Windows null device and the tracer's own folder. So no
   leftover absolute path into the old codebase is used.
 - This result was recorded by amending commit 2 before the first push. The code tested is unchanged by the amendment.
+
+---
+
+## Phase 2b: environment freeze
+
+### Plan
+1. Stale-path cleanup and optimizer interpreter (below). **Done.**
+2. Capture the `fleetpy` env in `env/`: `conda list --explicit --md5` (conda packages, win-64), `pip freeze` (102 of the
+   135 packages come from pip, including pandas, gurobipy, networkx), `conda env export --no-builds` (readable fallback).
+   `requirements.txt` is FleetPy's original and wrong for this model (numpy 1.19.5 / pandas 1.2.0 vs 2.2.6 / 2.2.3);
+   replace it with a pointer to `env/`.
+3. Record what is outside the env: Gurobi 12.0.3 license, Windows 10.
+4. Optional: startup check that prints key package versions and warns if they differ from the lock.
+5. Rebuild test: new env from `env/` only, full run in a fresh clone, `REPRODUCED`.
+6. Docs, commit, tag `v2-env-locked`, push.
+
+### Step 1: stale hardcoded paths (2026-10-23)
+- Scope: the modules the run imports, plus the optimizer. Standalone scripts the run never imports (`plotting_code.py`,
+  `equity_analysis*.py`, `temp.py`, `result_process.py`, `pre_process/zonal_partition.py`,
+  `pre_process/process_network_trial_edit.py`, `New folder/*`, `plotting_codes_old/*`, ...) still contain absolute
+  paths and were **not** changed (decided by the user).
+- Paths the run uses were already under the repo root since Phase 1b. What remained were about 170 live (uncommented) absolute
+  paths on branches the run does not take.
+- Rule applied:
+  - An unused assignment on the active branch is commented out with a `# STALE:` prefix.
+  - A branch or function whose folders are outside the codebase now calls `mtsm.not_self_contained(what)` (new in
+    `mtsm_paths.py`), which raises `NotImplementedError` with a message pointing here. Its old lines stay as
+    `# STALE:` comments. `grep -rn "STALE:"` lists them all.
+- Files: `folder_directory.py`, `update_network_files.py`, `output_performance_metrics.py`, `get_microtransit_skims.py`,
+  `inte_sys_mode_choice.py`, `network_algorithms.py`, `run_examples_new_parking.py` (one unused variable),
+  `pre_process/process_network.py`, `pre_process/generate_demand_files.py`.
+- Now stopped (with a clear error, instead of reading or writing old folders): downtown_sd, `TRPartA=False`,
+  `BayesianOptimization=False` and zonal branches; the preprocessing functions that built today's frozen inputs
+  (`create_mgra_pop_income_table`, `create_adjacent_MGRA_file`, `get_transit_link_route`, `construct_initial_network`,
+  the demand-preparation functions in `generate_demand_files.py`); old downtown_sd functions (`MNL_choice`,
+  `get_demand_nodes`, `get_microtransit_skims()`); and the files' own `__main__` test blocks.
+  Note: `create_mgra_pop_income_table` would have overwritten the frozen `lemon_grove_MGRA_pop_inc.csv`; it now stops first.
+- `accessibility_calculation()`: on the active branch, the fixed-route network folder (read only for
+  `microtransit="non_micro"`, which the run never passes) was a stale path. It is now `None`, and that case stops.
+- `create_nodes_emp_dict()`: removed a dead `super_network_emp` path built from a stale `output_folder` (never opened).
+- `test_file_backup_latest.py`: the model is launched with `sys.executable` instead of
+  `C:/Users/Autonomicity/.conda/envs/fleetpy/python`. Checked: only the `fleetpy` env has ax/torch/botorch/gurobipy
+  (`fleetpy_ax` is empty), so the optimizer runs in `fleetpy` and the model gets the same interpreter as before.
+- Not changed: `tools/compare_reference.py`'s `REFERENCE_CODE_ROOT` (data: where the reference run was made) and FleetPy's
+  upstream `src/` example paths.
+
+### Verification (2026-10-23): passed
+- No live absolute path left in the edited files. All compile, CRLF kept, the run's modules import.
+- pyflakes: every new "undefined name" comes after a `not_self_contained()` call in the same function (checked one by one).
+- `determine_dolders` stops for downtown_sd, `BayesianOptimization=False` and `TRPartA=False`, and returns the `mtsm/`
+  folders for the reference configuration.
+- Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes
+  afterwards. Outside the codebase only matplotlib's font cache, the null device and the tracer's folder.
+
+### Standalone scripts moved to `standalone_scripts/` (2026-10-23)
+- Moved with `git mv`, unchanged (history kept): every `.py` file at the root and in `pre_process/` that the run, the
+  optimizer and `tools/` do not import, plus the folders `New folder/` and `plotting_codes_old/`. 30 files in all.
+  **Afterwards, the user moved the four FleetPy tools back to the root:** `run_examples.py`, `replay_pyplot.py`,
+  `ScenarioCreatorGUI.py` and `scenario_creator.py` (which the GUI imports), so 26 files remain moved. The reproducibility
+  check was not rerun for this (user's decision); the run imports none of them, and they are byte-identical to before.
+  Subfolders keep their names (`standalone_scripts/New folder/`, `standalone_scripts/pre_process/`, ...), so earlier
+  entries in this log that name `New folder/...` or `pre_process/zonal_partition.py` now mean the same files under
+  `standalone_scripts/`.
+  - Root (still moved): `agent_mode_path_choice_decision.py`, `equity_analysis.py`, `equity_analysis_part_2.py`,
+    `headway_chek_TBD.py`, `plotting_code.py`, `result_process.py`, `temp.py`,
+    `test_integrated_sys.py`, `testing_scenario_creation_backup.py`.
+  - `pre_process/`: `generate_configs.py`, `process_network_trial_edit.py`, `zonal_partition.py`.
+- Kept at the root: the 14 modules the run and the optimizer use (plus 3 in `pre_process/`) (static import closure, imports inside functions
+  included), the empty `__init__.py`, and non-script files (`README.md`, `Input_Parameters.md`, the `.docx`/`.txt` notes).
+- Checked before moving: no non-import references from staying code (file names in strings, `.gitignore`, `importlib`).
+  `src/scenario_gui/` imports `ScenarioCreatorGUI` only under `TYPE_CHECKING`.
+- Moved scripts import repo modules by name; run them from the root with `PYTHONPATH=.` (see `standalone_scripts/README.md`).
+- Verification: full seed-0 run under the I/O tracer, `compare_reference.py` **32 identical, `REPRODUCED`**,
+  `check_inputs.py` passes, no access to `standalone_scripts/` and nothing outside the codebase but the usual three items.
+  A moved file that the run needed would have failed with `ImportError`, since it no longer exists at its old path.
 
 ---
 

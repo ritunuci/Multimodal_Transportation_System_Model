@@ -27,10 +27,13 @@ import get_auto_skims as auto
 import get_microtransit_skims as mt
 import get_walk_transit_skims as wt
 import network_algorithms as n_a
+import mtsm_paths as mtsm
 
 def get_demand_nodes():
+    # old downtown_sd version, not used by run_examples_new_parking.py
+    mtsm.not_self_contained("inte_sys_mode_choice.get_demand_nodes (old version)")
     # pre_node_dir
-    network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
+    # STALE: network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
     pre_node_dir = os.path.join(network_folder, 'pre_nodes.csv')
     # census_tract	node_in_fleetpy	is_demand_node
     census_tract_node = OrderedDict()
@@ -284,8 +287,10 @@ def MNL_choice(F_path_mat,F_fare_mat,D_ivt_mat,D_gas_mat,walking_visited_temp_al
         F_number[time_period] = 0
         tot_number[time_period] = 0
 
-    network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
-    fleetpy_input_demand_folder="D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
+    # old downtown_sd version, not used by run_examples_new_parking.py
+    mtsm.not_self_contained("inte_sys_mode_choice.MNL_choice (old version)")
+    # STALE: network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
+    # STALE: fleetpy_input_demand_folder="D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
     if debug_mode==True:
         input_demand_file = os.path.join(network_folder, "debug_trips_nodes_study_area.csv")
         output_demand_file = os.path.join(fleetpy_input_demand_folder,"debug_fleetpy_demand.csv")  # this directory goes directly to fleetpy's input
