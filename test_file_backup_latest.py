@@ -207,12 +207,40 @@ def append_per_call_row(param_values, objective_values, metric_values, iteration
 init_per_call_results_csv()
 
 
-def run_script():
+def model_output_files(values):
+    """the two model output files collect_output() reads for this candidate: (evaluation csv, individual results csv)"""
+    a, b, c, d, e, h, f = values
+    output_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR, "lemon_grove_evaluation_zonal_partition_False.csv")
+    indv_res_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR,
+                                     f"individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv")
+    return output_csv_path, indv_res_csv_path
+
+
+def run_script(values):
+    # Old output files are deleted first, so that a failed run can never hand the previous candidate's results to this
+    # candidate (the model rewrites both files on every successful run). A failed run stops the optimizer;
+    # the candidates evaluated so far are in per_call_results.csv.
+    output_files = model_output_files(values)
+    for path in output_files:
+        if os.path.exists(path):
+            os.remove(path)
     # the model runs with the optimizer's own interpreter (the fleetpy env, the only one with ax/torch/gurobipy);
     # was "C:/Users/Autonomicity/.conda/envs/fleetpy/python"
-    subprocess.run([sys.executable,
-                    os.path.join(mtsm.CODE_ROOT, "run_examples_new_parking.py")], cwd=mtsm.CODE_ROOT)
+    result = subprocess.run([sys.executable,
+                             os.path.join(mtsm.CODE_ROOT, "run_examples_new_parking.py")], cwd=mtsm.CODE_ROOT)
     time.sleep(1)
+    problem = None
+    if result.returncode != 0:
+        problem = f"the model run failed (exit code {result.returncode})"
+    elif not all(os.path.isfile(path) for path in output_files):
+        problem = "the model run did not write " + ", ".join(p for p in output_files if not os.path.isfile(p))
+    else:
+        with open(output_files[0], newline='') as csvfile:
+            if len(list(csv.reader(csvfile))) < 4:  # collect_output() reads rows 2 and 3
+                problem = f"the evaluation file is incomplete: {output_files[0]}"
+    if problem:
+        raise RuntimeError(f"{problem}, for candidate {list(values)}. See the model's output above. "
+                           f"Results of the earlier candidates: {RESULTS_CSV_PATH}")
 
 
 def update_csv_with_train_x(values):
@@ -247,18 +275,13 @@ def update_csv_with_train_x(values):
 
 
 def collect_output(iteration_type: str, values):
-    output_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR, "lemon_grove_evaluation_zonal_partition_False.csv")
-
     # output_csv_path = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/output_folder" \
     #                   "/downtown_sd_debug_evaluation_zonal_partition_False.csv"
-
-    a, b, c, d, e, h, f = values
 
     # indv_res_csv_path = f"D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/output_folder/" \
     #                     f"debug_individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv"
 
-    indv_res_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR,
-                                     f"individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv")
+    output_csv_path, indv_res_csv_path = model_output_files(values)
 
     output_csv_df = pd.read_csv(output_csv_path)
     output_csv_df.to_csv(os.path.join(agg_sim_output_folder_path, f"agg_sim_output_{iteration_type}.csv"), index=False)
@@ -307,7 +330,7 @@ def send_instruction(train_x, iteration_type):
     other_metrics = []
     for values in train_x_array:
         update_csv_with_train_x(values)
-        run_script()
+        run_script(values)
         output, other_metric = collect_output(iteration_type, values)
         all_outputs.append(output)
         other_metrics.append(other_metric)

@@ -300,9 +300,10 @@ file was renamed, so the code still builds the same file names. The folder const
 2. Capture the `fleetpy` env in `env/`: `conda list --explicit --md5` (conda packages, win-64), `pip freeze` (102 of the
    135 packages come from pip, including pandas, gurobipy, networkx), `conda env export --no-builds` (readable fallback).
    `requirements.txt` is FleetPy's original and wrong for this model (numpy 1.19.5 / pandas 1.2.0 vs 2.2.6 / 2.2.3);
-   replace it with a pointer to `env/`.
-3. Record what is outside the env: Gurobi 12.0.3 license, Windows 10.
-4. Optional: startup check that prints key package versions and warns if they differ from the lock.
+   replace it with a pointer to `env/`. **Done** (below).
+3. Record what is outside the env: Gurobi 12.0.3 license, Windows 10. **Done** (below).
+4. Optional: startup check that prints key package versions and warns if they differ from the lock. **Skipped**
+   (user's decision, 2026-10-23); `python tools/export_env.py` does the full check on demand.
 5. Rebuild test: new env from `env/` only, full run in a fresh clone, `REPRODUCED`.
 6. Docs, commit, tag `v2-env-locked`, push.
 
@@ -365,6 +366,85 @@ file was renamed, so the code still builds the same file names. The folder const
 - Verification: full seed-0 run under the I/O tracer, `compare_reference.py` **32 identical, `REPRODUCED`**,
   `check_inputs.py` passes, no access to `standalone_scripts/` and nothing outside the codebase but the usual three items.
   A moved file that the run needed would have failed with `ImportError`, since it no longer exists at its old path.
+
+### Step 2: environment lock files (2026-10-23)
+- New `tools/export_env.py` (same pattern as `check_inputs.py`): `--write` creates `env/` from the running environment;
+  without arguments it compares the running environment with `env/` (exit code 1 if anything differs).
+  Run it with the env's own interpreter.
+- `env/` (written from the `fleetpy` env, Python 3.10.19, win-64; conda 22.9.0 from `C:\ProgramData\Anaconda3`):
+  - `fleetpy.conda-explicit.txt`: the 34 conda packages, URL + MD5 of each build (`conda list --explicit --md5`).
+  - `fleetpy.pip.txt`: the 102 packages pip installed, `name==version`. Selected by each package's `INSTALLER`
+    record (`pip`), which matches the 102 `pypi` rows of `conda list`. Not plain `pip freeze`: that writes conda's
+    packages as `name @ file:///D:/bld/...` build paths, which cannot be installed elsewhere. Install with
+    `pip install --no-deps` after the conda file.
+  - `fleetpy.environment.yml`: `conda env export --no-builds` without the machine-specific `prefix:` line; readable,
+    not exact, not used by the check.
+  - `README.md`: how to recreate and check the env.
+- Checked: `pip check` reports no broken requirements (so `--no-deps` gives a complete env); no pip package came from a
+  local path or git URL (no `direct_url.json`); torch is PyPI's `2.9.0` (CPU build on Windows). `tzdata` is in both
+  files on purpose: conda's `tzdata 2025b` (time-zone database) and pip's `tzdata 2025.2` are different packages
+  (`conda list` shows one row per name, hence 135 rows for 136 packages).
+- `python tools/export_env.py` right after `--write`: `environment ... matches ...` (exit code 0).
+- `requirements.txt`: replaced by a comment pointing to `env/`. FleetPy's original list (numpy 1.19.5, pandas 1.2.0,
+  networkx 2.3, geopandas 0.7.0, matplotlib 3.1.1, ...) is in the git history (commit `6d311ee`). FleetPy's `README.md`
+  still says `conda install --file requirements.txt`; that now installs nothing.
+- `.gitignore`: FleetPy's rules `env/` and `ENV/` (virtualenvs; git on Windows matches case-insensitively) ignored the new
+  folder. Added `!/env/` so the repo-root `env/` is tracked.
+- No model code changed, so no model run was needed. The real test of the lock files is step 5 (new env from `env/`
+  only, full run in a fresh clone, `REPRODUCED`).
+
+### Step 3: what is outside the environment (2026-10-23)
+- `tools/export_env.py --write` now also writes `env/fleetpy.system.txt`: OS, CPU, Python, conda, BLAS, gurobipy, and
+  the Gurobi license file's location, `TYPE`, `VERSION` and `EXPIRATION` (never the key, user name or host name).
+  Regenerating left the three lock files byte-identical; the check still passes.
+- `env/README.md`, new section "Outside the environment". Facts on the reference machine:
+  - Windows 10 10.0.19045 (64-bit), Intel CPU (Family 6 Model 79), 12 logical CPUs; conda 22.9.0.
+  - BLAS: numpy/scipy are built against Intel MKL 2024.2.2 (conda-forge `libblas ... _mkl`). MKL can choose
+    CPU-dependent code paths; if a second machine does not reproduce, compare with `MKL_CBWR=COMPATIBLE`.
+  - Gurobi: `ACADEMIC` license for version 12, `gurobi.lic` in the user's home folder.
+    **Expired on 2026-10-21** (`GurobiError: License expired 2026-10-21` when an environment is started).
+  - FleetPy's `n_cpu_per_sim` is 1, so a Gurobi solve uses one thread.
+- **Why the runs of 2026-10-23 still reproduced with an expired license:** AlonsoMora repositioning
+  (`AlonsoMoraRepositioning.determine_and_create_repositioning_plans`) returns before `_solve_gurobi` when no request
+  was rejected since the last step. In the reference run, all 68 requests in every iteration (`indiv_output/iter_0..4`)
+  have an operator and a pickup time: no rejections, so Gurobi is never started. The reference results do not depend on
+  Gurobi at all.
+- Consequence: any parameter set that causes rejections stops with the license error until the license is renewed.
+  Renewing it is the user's action (academic license from gurobi.com, `grbgetkey`); see "Phase 2b: open issues found".
+
+---
+
+## Phase 2b: open issues found
+- **Gurobi license expired (2026-10-21).** Renew it before any optimizer session or any scenario with rejections.
+  The user will renew it.
+- ~~**Optimizer uses stale results when a model run fails.**~~ **Fixed 2026-10-23** (below). `run_script()` ignored the
+  model's exit code, and `collect_output()` then read `lemon_grove_evaluation_zonal_partition_False.csv`. If a run
+  stopped before writing it (e.g. the Gurobi license error), that file still held the **previous candidate's**
+  results, which were recorded for the new candidate without any warning.
+
+### Fix: optimizer stops on a failed model run (2026-10-23), `test_file_backup_latest.py`
+- New `model_output_files(values)`: the two files `collect_output()` reads for a candidate (the evaluation file and
+  `individual_results_micro_M_fsize_{d}_op_hr_15_hw_{f}_virstop_75_scen_10.csv`). `collect_output()` now uses it too.
+- `run_script(values)` (was `run_script()`):
+  - deletes both files **before** the model starts. The model rewrites both on every successful run (`open(..., 'w+')`),
+    so this changes nothing for a good run. The individual-results file is named after fleet size and headway, so
+    without this an earlier candidate with the same two values could also leave a matching stale file;
+  - **after** the run raises `RuntimeError` (naming the candidate and pointing to `per_call_results.csv`) if the exit
+    code is not 0, if either file is missing, or if the evaluation file has fewer than 4 rows (`collect_output()`
+    reads rows 2 and 3; the model opens this file early in the run, so a crash can leave a partial one).
+- Stopping (rather than skipping the candidate) keeps the optimizer honest: every candidate evaluated so far is already
+  in `per_call_results.csv`, and skipping would need changes to the Bayesian-optimization loop.
+- Checked that a model failure reaches the optimizer as a non-zero exit code: no `bugfix` parameter in the scenario
+  configs and `run_scenarios` is called without `continue_next_after_error` (both would swallow FleetPy exceptions);
+  the `except` around the convergence step re-raises; the relaunch guard passes the child's exit code on
+  (`sys.exit(subprocess.call(...))`; exit code 1 shown in the Phase 1b guard test).
+- Test (scratchpad, without importing the optimizer, because its import overwrites `per_call_results.csv`): the two
+  functions taken from the source and run against a fake model process. Stale files were deleted before the fake model
+  started; crash, crash with a partial evaluation file, exit 0 without individual results, and exit 0 with an
+  incomplete evaluation file all stop with the expected message; a complete run returns normally. Compiles, CRLF kept,
+  pyflakes clean. The optimizer itself was not run (Gurobi license), and the model code is unchanged, so no reference
+  run was needed.
+- After an optimizer session the model output folder holds the last candidate's files (as before).
 
 ---
 

@@ -1,0 +1,9 @@
+# what the model run depends on outside the Python packages (written by tools/export_env.py --write)
+os: Windows-10-10.0.19045-SP0 (AMD64)
+cpu: Intel64 Family 6 Model 79 Stepping 1, GenuineIntel, 12 logical CPUs
+python: 3.10.19 (C:\Users\Autonomicity\.conda\envs\fleetpy)
+conda: conda 22.9.0
+blas: mkl-2024.2.2-h57928b3_16.conda
+gurobipy: 12.0.3
+gurobi license file: gurobi.lic in C:\Users\Autonomicity
+gurobi license: TYPE=ACADEMIC, VERSION=12, EXPIRATION=2026-10-21
