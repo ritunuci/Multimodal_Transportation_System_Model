@@ -5,10 +5,6 @@ import sys
 import traceback
 import pandas as pd
 import multiprocessing as mp
-from collections import OrderedDict
-import time
-import datetime
-import get_microtransit_skims as mt
 import csv
 
 # src imports
@@ -17,14 +13,11 @@ import src.misc.config as config
 from src.misc.init_modules import load_simulation_environment
 from src.misc.globals import *
 
-import inte_sys_mode_choice
-import convergence_test as conv_test
-import network_algorithms as n_a
-import get_auto_skims as auto
-import get_walk_transit_skims as wt
 # main functions
 # --------------
 def run_single_simulation(scenario_parameters):
+    # print(scenario_parameters[G_SCENARIO_NAME])  # Ritun
+    # print(type(scenario_parameters[G_SCENARIO_NAME]))  # Ritun
     SF = load_simulation_environment(scenario_parameters)
     if scenario_parameters.get("bugfix", False):
         try:
@@ -33,7 +26,6 @@ def run_single_simulation(scenario_parameters):
             traceback.print_exc()
     else:
         SF.run()
-
 
 def run_scenarios(constant_config_file, scenario_file, n_parallel_sim=1, n_cpu_per_sim=1, evaluate=1, log_level="info",
                   keep_old=False, continue_next_after_error=False):
@@ -164,6 +156,7 @@ def read_outputs_for_comparison(constant_csv, scenario_csv):
         output_dir = os.path.join(MAIN_DIR, "studies", study_name, "results", scenario_name)
         standard_eval_f = os.path.join(output_dir, "standard_eval.csv")
         tmp_df = pd.read_csv(standard_eval_f, index_col=0)
+        tmp_df[MOD_STR] = tmp_df[MOD_STR].astype(object)    # Ritun added to avoid dtype warning when adding assertion values in check_assertions function
         tmp_df.loc[G_SCENARIO_NAME, MOD_STR] = scenario_name
         return_list.append((tmp_df))
     return return_list
@@ -196,328 +189,42 @@ def check_assertions(list_eval_df, all_scenario_assertion_dict):
         list_result_tuples.append((scenario_name, mismatch, tmp_df))
     return list_result_tuples
 
-
 # -------------------------------------------------------------------------------------------------------------------- #
 if __name__ == "__main__":
     mp.freeze_support()
 
-    start_time = datetime.datetime.now()
-    indiv_converg_test=True
-    debug_mode=True
-    ###############
-    #
-    #################
-    ##########
-    # Different operating hours testing scenarios
-    operating_period_1 = ["AM", "PM"] #10 hr
-    operating_period_2 = ["AM", "MD", "PM"] #15hr
-    operating_period_3 = ["AM", "MD", "PM", "EV"] #19hr
-    # operating_periods_scenarios=[operating_period_1,operating_period_2,operating_period_3]
-    operating_periods_scenarios = [operating_period_3] #just for testing
-    #####################
-    # Different virtual stops testing scenarios
-    # virtual_stop_scenarios=[50,75,100]
-    # virtual_stop_scenarios = [75,100] #just for testing
-    virtual_stop_scenarios = [75]  # just for testing
-    ###############################
-    # Different headway testing scenarios
-    # headway_scenarios=[20,30,60]
-    headway_scenarios = [30]  #just for testing
-    #######################################
-    # Different Fleet size scenarios
-    if debug_mode==True:
-        # fleet_size_scenarios = [3,4,5,6]
-        fleet_size_scenarios = [4]
+    if len(sys.argv) > 1:
+        run_scenarios(*sys.argv)
     else:
-        fleet_size_scenarios=[20,30,40]
-        # fleet_size_scenarios = [40]
-    #######################################
-    #Create performance metrics dictonaries
-    ###***Cost****###############################
-    # operating_cost_bf_M_dict=OrderedDict()
-    # operating_cost_af_M_dict = OrderedDict()
-    # revenue_bf_M_dict=OrderedDict()
-    # revenue_af_M_dict = OrderedDict()
-    # net_profit_bf_M_dict=OrderedDict()
-    # net_profit_af_M_dict = OrderedDict()
-    # net_profit_diff_dict = OrderedDict()
-    # ###***Mobility******##################################
-    # mobility_sum_before_M_dict=OrderedDict()
-    # mobility_sum_after_M_dict = OrderedDict()
-    # mobility_sum_diff_dict = OrderedDict()
-    # ###***selected mode experience******##################################
-    # selected_mode_user_exper_dict=OrderedDict()
-    # selected_mode_user_exper_bf_dict = OrderedDict()
-    # selected_mode_user_exper_diff_dict = OrderedDict()
+        import time
+        # touch log file
+        with open(LOG_F, "w") as _:
+            pass
 
-    ##########################################
-    # #Initialization of dictionaries
-    # for headway in headway_scenarios:
-    #     operating_cost_bf_M_dict[headway] = OrderedDict()
-    #     operating_cost_af_M_dict[headway] = OrderedDict()
-    #     revenue_bf_M_dict[headway] = OrderedDict()
-    #     revenue_af_M_dict[headway] = OrderedDict()
-    #     net_profit_bf_M_dict[headway] = OrderedDict()
-    #     net_profit_af_M_dict[headway] = OrderedDict()
-    #     net_profit_diff_dict[headway] = OrderedDict()
-    #
-    #     mobility_sum_before_M_dict[headway] = OrderedDict()
-    #     mobility_sum_after_M_dict[headway] = OrderedDict()
-    #     mobility_sum_diff_dict[headway] = OrderedDict()
-    #
-    #     selected_mode_user_exper_dict[headway] = OrderedDict()
-    #     selected_mode_user_exper_bf_dict[headway] = OrderedDict()
-    #     selected_mode_user_exper_diff_dict[headway] = OrderedDict()
-    #     for virtual_stop in virtual_stop_scenarios:
-    #         operating_cost_bf_M_dict[headway][virtual_stop] = OrderedDict()
-    #         operating_cost_af_M_dict[headway][virtual_stop] = OrderedDict()
-    #         revenue_bf_M_dict[headway][virtual_stop] = OrderedDict()
-    #         revenue_af_M_dict[headway][virtual_stop] = OrderedDict()
-    #         net_profit_bf_M_dict[headway][virtual_stop] = OrderedDict()
-    #         net_profit_af_M_dict[headway][virtual_stop] = OrderedDict()
-    #         net_profit_diff_dict[headway][virtual_stop] = OrderedDict()
-    #
-    #         mobility_sum_before_M_dict[headway][virtual_stop] = OrderedDict()
-    #         mobility_sum_after_M_dict[headway][virtual_stop] = OrderedDict()
-    #         mobility_sum_diff_dict[headway][virtual_stop] = OrderedDict()
-    #
-    #         selected_mode_user_exper_dict[headway][virtual_stop] = OrderedDict()
-    #         selected_mode_user_exper_bf_dict[headway][virtual_stop] = OrderedDict()
-    #         selected_mode_user_exper_diff_dict[headway][virtual_stop] = OrderedDict()
-    #         for fleet_size in fleet_size_scenarios:
-    #             operating_cost_bf_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             operating_cost_af_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             revenue_bf_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             revenue_af_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             net_profit_bf_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             net_profit_af_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             net_profit_diff_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #
-    #             mobility_sum_before_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             mobility_sum_after_M_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             mobility_sum_diff_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #
-    #             selected_mode_user_exper_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             selected_mode_user_exper_bf_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             selected_mode_user_exper_diff_dict[headway][virtual_stop][fleet_size] = OrderedDict()
-    #             for operating_periods in operating_periods_scenarios:
-    #                 if operating_periods==["AM", "MD", "PM", "EV"]:
-    #                     M_operating_hrs=19
-    #                 elif operating_periods==["AM", "MD", "PM"]:
-    #                     M_operating_hrs = 15
-    #                 else:
-    #                     M_operating_hrs = 10
-    #                 F_operating_hrs=19
-    #                 route_duration=60 #60minutes
-    #                 F_mode_operating_cost=(F_operating_hrs*60/headway*route_duration)/60*100 #$fixed route transit operating cost 100/veh-hour
-    #                 M_mode_operating_cost=(M_operating_hrs*fleet_size)*60 #microtransit operating cost $60/veh-hour
-    #
-    #                 operating_cost_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = F_mode_operating_cost
-    #                 operating_cost_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = F_mode_operating_cost+M_mode_operating_cost
-    #                 revenue_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 revenue_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 net_profit_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 net_profit_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 net_profit_diff_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #
-    #                 mobility_sum_before_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 mobility_sum_after_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 mobility_sum_diff_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #
-    #                 selected_mode_user_exper_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 selected_mode_user_exper_bf_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
-    #                 selected_mode_user_exper_diff_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = 0
+        scs_path = os.path.join(os.path.dirname(__file__), "studies", "example_study", "scenarios")
+        # Base Examples IRS only
+        # ----------------------
+        # a) Pooling in ImmediateOfferEnvironment
+        log_level = "info"
+        cc = os.path.join(scs_path, "constant_config_ir.csv")
+        sc = os.path.join(scs_path, "example_ir_only.csv")
 
-    scenario_count=0
+        run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1)
+        list_results = read_outputs_for_comparison(cc, sc)
+        all_scenario_assert_dict = {0: {"number users": 88}}
+        check_assertions(list_results, all_scenario_assert_dict)
 
-    network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
-    if debug_mode==True:
-        evaluation_file=os.path.join(network_folder,"debug_evaluation.csv")
-    else:
-        evaluation_file = os.path.join(network_folder, "evaluation.csv")
-    with open(evaluation_file, 'w+', newline='') as csvfile:
-        fieldnames = ['headway', 'virtual_stop','fleet_size','operating_periods',"total_trips","mode_split","F_oper_cost","M_oper_cost","revenue_bf_M","revenue_af_M","net_prft_bf_M","net_prft_af_M","net_prfit_diff","mob_bf_M","mob_af_M","mob_diff","select_mode_exper_bf_M","select_mode_exper_af_M","select_mode_exper_diff"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        print("program starts here......start time is:",start_time)
-        print("Debug mode:",debug_mode)
-
-        # read the request profile
-        # request_file = os.path.join(network_folder, "trips_nodes_study_area_with_beta.csv")
-        # agent_list = n_a.read_request(request_file)
-        # print("Read the request. Number of agents:", len(agent_list))
-        for headway in headway_scenarios: #put bus design parameter in the most outer loop
-            walk_transit_network = os.path.join(network_folder, 'hw_%s_walk_transit_edges.csv' % str(int(headway/2)))
-            for virtual_stop in virtual_stop_scenarios: #virtual stops - not necessarily influence the cost, but will influence the mobility
-                virtual_stop_dir = os.path.join(network_folder, 'virtual_stops_%s.csv' % str(virtual_stop))
-                virtual_stop_list = mt.read_virtual_stop(virtual_stop_dir)
-                for fleet_size in fleet_size_scenarios: #fleetsize - influence the cost & mobility
-                    scs_path = os.path.join(os.path.dirname(__file__), "studies", "example_study", "scenarios")
-
-                    if debug_mode == True:
-                        sc = os.path.join(scs_path, "debug_example_ir_only_%s_veh.csv" % str(fleet_size))
-                    else:
-                        sc = os.path.join(scs_path, "example_ir_only_%s_veh.csv" % str(fleet_size))
-
-                    for operating_periods in operating_periods_scenarios: #fleetsize - influence the cost & mobility
-                        if operating_periods==["AM", "MD", "PM", "EV"]:
-                            M_operating_hrs=19
-                        elif operating_periods==["AM", "MD", "PM"]:
-                            M_operating_hrs = 15
-                        else:
-                            M_operating_hrs = 10
-                        F_operating_hrs = 19 # fixed route transit 19 hrs
-                        route_duration = 60  # 60minutes
-                        print("Current Scenario:",scenario_count,"th senario","...virtual_stop:",virtual_stop,"(%)","headway",headway,"(mins)","fleet_size",fleet_size,"(veh)","operating_periods",operating_periods)
-
-                        if len(sys.argv) > 1:
-                            run_scenarios(*sys.argv)
-                        else:
-                            import time
-                            # touch log file
-                            with open(LOG_F, "w") as _:
-                                pass
-
-
-                            # eval_output_dir='D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/eval_output_dir'
-                            # eval_output_file=os.path.join(eval_output_dir, "0510_evaluation.csv")
-
-                            # Base Examples IRS only
-                            # ----------------------
-                            # a) Pooling in ImmediateOfferEnvironment
-                            iteration=0
-                            iter_agent_choice_prob=OrderedDict()
-                            iter_agent_selected_mode=OrderedDict()
-                            # req=1000
-                            # veh=5
-                            # vir_stop=0.1
-                            converged=False
-                            # iter_mode_share=OrderedDict()
-                            print("Preparing fixed route transit and auto matrices...")
-                            print("walk_tansit_network:",walk_transit_network)
-                            # network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
-                            edges_dir = os.path.join(network_folder, 'edges.csv')
-                            # walking_network_graph = n_a.read_walking_network(edges_dir)
-                            walking_visited_temp_all = wt.get_walk_transit_skims(edges_dir)
-                            auto_visited_temp_all = auto.get_auto_time_skims(edges_dir)
-                            auto_dist_visited_temp_all = auto.get_auto_dist_skims(edges_dir)
-
-                            F_path_mat, F_fare_mat = inte_sys_mode_choice.prepare_F_matrices(walk_transit_network)
-
-                            D_ivt_mat, D_gas_mat = inte_sys_mode_choice.prepare_D_matrices(auto_visited_temp_all,auto_dist_visited_temp_all)
-
-                            num_converged=0
-                            while converged==False:
-                                print("iteration:",iteration)
-                                iter_agent_choice_prob[iteration]=OrderedDict()
-                                iter_agent_selected_mode[iteration] = OrderedDict()
-                                log_level = "info"
-                                cc = os.path.join(scs_path, "constant_config_ir.csv")
-
-                                print("running FleetPy....")
-                                run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1)
-                                list_results = read_outputs_for_comparison(cc, sc)
-                                all_scenario_assert_dict = {0: {"number users": 88}}
-                                check_assertions(list_results, all_scenario_assert_dict)
-                                print("running the choice model.....")
-                                ##comment it for now
-                                if iteration>=1:
-                                    iter_agent_choice_prob[iteration],iter_agent_selected_mode[iteration],total_trips,mode_split,revenue_total_af,revenue_total_bf,mobility_sum_after_M,mobility_sum_before_M,mobility_diff_sum,selected_mode_user_exper,selected_mode_user_exper_bf,selected_mode_user_exper_diff = inte_sys_mode_choice.MNL_choice(F_path_mat,F_fare_mat,D_ivt_mat,D_gas_mat,walking_visited_temp_all,auto_visited_temp_all,auto_dist_visited_temp_all,
-                                                                                                                                                                                                                                                                                                                              debug_mode,operating_periods,virtual_stop_list,iteration,iter_agent_choice_prob[iteration-1],iter_agent_selected_mode[iteration-1])
-                                else:
-                                    iter_agent_choice_prob[iteration], iter_agent_selected_mode[iteration],total_trips,mode_split, revenue_total_af, revenue_total_bf, mobility_sum_after_M, mobility_sum_before_M, mobility_diff_sum, selected_mode_user_exper, selected_mode_user_exper_bf, selected_mode_user_exper_diff = inte_sys_mode_choice.MNL_choice(
-                                    F_path_mat, F_fare_mat, D_ivt_mat, D_gas_mat,walking_visited_temp_all,auto_visited_temp_all,auto_dist_visited_temp_all, debug_mode, operating_periods,
-                                    virtual_stop_list, iteration)
-
-                                #aggregated level convergence test
-                                if indiv_converg_test==False:
-                                    if iteration>=1:
-                                        print("convergence check.....")
-                                        # converged,per_diff=conv_test.convergence_test(M_share,M_share_pre)
-                                        # print("Aggregated Level Convergence Test","M_share",M_share,"M_share_pre",M_share_pre,"per_diff",per_diff,"converged",converged)
-                                    # M_share_pre=M_share
-                                    #individual level convergence test
-                                else:
-                                    if iteration>=1:
-                                        print("convergence check.....")
-                                        converged_,sum_sq_per_diff=conv_test.indiv_convergence_test(iter_agent_choice_prob[iteration],iter_agent_choice_prob[iteration-1])
-
-                                        if converged_==True:
-                                            num_converged+=1
-                                            if num_converged==2:
-                                                converged=True
-
-                                        if iteration==10:
-                                            converged = True
-                                        print("Individual Level Convergence Test:", "sum of square percentage difference ",sum_sq_per_diff, "converged", converged)
-                                        if converged==True:
-                                            F_oper_cost= (F_operating_hrs * 60 / headway) * route_duration / 60 * 100  # $fixed route transit operating cost 100/veh-hour
-                                            M_mode_operating_cost = M_operating_hrs * fleet_size * 60  # microtransit operating cost $60/veh-hour
-                                            #revenue_total_af, revenue_total_bf, mobility_sum_after_M, mobility_sum_before_M, mobility_diff_sum, selected_mode_user_exper, selected_mode_user_exper_bf, selected_mode_user_exper_diff
-                                            revenue_bf_M=revenue_total_bf
-                                            revenue_af_M=revenue_total_af
-                                            net_prft_bf_M=revenue_total_bf-F_oper_cost
-                                            net_prft_af_M=revenue_total_af-F_oper_cost-M_mode_operating_cost
-                                            net_prfit_diff=net_prft_af_M-net_prft_bf_M
-                                            mob_bf_M=mobility_sum_before_M
-                                            mob_af_M=mobility_sum_after_M
-                                            mob_diff=mobility_diff_sum
-                                            select_mode_exper_bf_M=selected_mode_user_exper_bf
-                                            select_mode_exper_af_M=selected_mode_user_exper
-                                            select_mode_exper_diff=selected_mode_user_exper_diff
-
-                                            writer.writerow(
-                                                {'headway': headway, 'virtual_stop': virtual_stop, 'fleet_size': fleet_size,
-                                                 'operating_periods': operating_periods,"total_trips":total_trips,"mode_split":mode_split,"F_oper_cost":F_oper_cost,"M_oper_cost":M_mode_operating_cost,
-                                                 "revenue_bf_M":revenue_bf_M, "revenue_af_M":revenue_af_M, "net_prft_bf_M":net_prft_bf_M, "net_prft_af_M":net_prft_af_M,
-                                                "net_prfit_diff":net_prfit_diff, "mob_bf_M":mob_bf_M, "mob_af_M":mob_af_M, "mob_diff":mob_diff,
-                                                "select_mode_exper_bf_M":select_mode_exper_bf_M, "select_mode_exper_af_M":select_mode_exper_af_M,
-                                                "select_mode_exper_diff": select_mode_exper_diff })
-                                            scenario_count+=1
-                                            #['headway', 'virtual_stop','fleet_size','operating_periods',"F_oper_cost","M_oper_cost","revenue_bf_M","revenue_af_M","net_prft_bf_M","net_prft_af_M","net_prfit_diff","mob_bf_M","mob_af_M","mob_diff","select_mode_exper_bf_M","select_mode_exper_af_M","select_mode_exper_diff"]
-
-                                            # revenue_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = revenue_total_bf
-                                            # revenue_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = revenue_total_af
-                                            # net_profit_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = revenue_total_bf-operating_cost_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs]
-                                            # net_profit_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = revenue_total_af-operating_cost_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs]
-                                            # net_profit_diff_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = net_profit_af_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs]-net_profit_bf_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs]
-                                            #
-                                            # mobility_sum_before_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = mobility_sum_before_M
-                                            # mobility_sum_after_M_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = mobility_sum_after_M
-                                            # mobility_sum_diff_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = mobility_diff_sum
-                                            #
-                                            # selected_mode_user_exper_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = selected_mode_user_exper
-                                            # selected_mode_user_exper_bf_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = selected_mode_user_exper_bf
-                                            # selected_mode_user_exper_diff_dict[headway][virtual_stop][fleet_size][M_operating_hrs] = selected_mode_user_exper_diff
-
-                                    # M_share_pre=M_share
-                                # converged=True #####just for testing purpose
-                                iteration+=1
-
-                            timeatfinished = datetime.datetime.now()
-                            processingtime = timeatfinished - start_time
-                            print("integrated system model run finished....... end time is:",timeatfinished,"run time is: ",processingtime)
-    csvfile.close()
-
-
-
-
-        # df_final.to_csv(eval_output_file)
         # # Base Examples with Optimization (requires gurobi license!)
         # # ----------------------------------------------------------
-        # b) Pooling in BatchOffer environment
+        # # b) Pooling in BatchOffer environment
         # log_level = "info"
         # cc = os.path.join(scs_path, "constant_config_pool.csv")
-        # # sc = os.path.join(scs_path, "example_pool.csv")
-        # # sc = os.path.join(scs_path, "example_pool_1000_rq_5_veh.csv")
-        # # sc = os.path.join(scs_path, "example_pool_1000_rq_10_veh.csv")
-        # sc = os.path.join(scs_path, "example_pool_1000_rq_20_veh.csv")
-        # # sc = os.path.join(scs_path, "example_pool_1000_rq_30_veh.csv")
+        # sc = os.path.join(scs_path, "example_pool.csv")
         # run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1)
         # list_results = read_outputs_for_comparison(cc, sc)
         # all_scenario_assert_dict = {0: {"number users": 91}}
         # check_assertions(list_results, all_scenario_assert_dict)
-
+        #
         # # c) Pooling in ImmediateOfferEnvironment
         # log_level = "info"
         # cc = os.path.join(scs_path, "constant_config_ir.csv")
@@ -606,3 +313,8 @@ if __name__ == "__main__":
         # sc = os.path.join(scs_path, "example_broker.csv")
         # run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1)
         #
+        # # h) Ride-Parcel-Pooling example
+        # log_level = "info"
+        # cc = os.path.join(scs_path, "constant_config_rpp.csv")
+        # sc = os.path.join(scs_path, "example_rpp.csv")
+        # run_scenarios(cc, sc, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1)
