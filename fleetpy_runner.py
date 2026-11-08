@@ -2,7 +2,7 @@
 
 FleetPy (fleetpy/) is upstream TUM-VT/FleetPy with the local changes listed in fleetpy/LOCAL_CHANGES.md. It imports
 itself as the top-level package `src` and finds its data/ and studies/ folders next to src/, so fleetpy/ is put on
-sys.path here. The Lemon Grove inputs for FleetPy are kept in mtsm/lemon_grove/fleetpy_inputs/ (same folder layout
+sys.path here. The Lemon Grove inputs for FleetPy are kept in mtsm_data/lemon_grove/fleetpy_inputs/ (same folder layout
 as fleetpy/) and copied into fleetpy/ before each run (stage_inputs).
 
 FleetPy runs in the calling process. It re-seeds random/np.random during a simulation, and the mode choice of the
@@ -31,7 +31,7 @@ MOD_STR = "MoD_0"
 MM_STR = "Assertion"
 
 # FleetPy inputs of the Lemon Grove run besides the two config files; paths relative to both
-# mtsm/lemon_grove/fleetpy_inputs/ and fleetpy/
+# mtsm_data/lemon_grove/fleetpy_inputs/ and fleetpy/
 LG_STAGED_INPUTS = [
     "data/networks/lemon_grove_example_network/base/nodes.csv",
     "data/networks/lemon_grove_example_network/base/edges.csv",
@@ -41,7 +41,7 @@ LG_STAGED_INPUTS = [
 
 
 def stage_inputs(constant_config_file, scenario_file):
-    """Copy the two config files (which must be in mtsm/lemon_grove/fleetpy_inputs/) and LG_STAGED_INPUTS into
+    """Copy the two config files (which must be in mtsm_data/lemon_grove/fleetpy_inputs/) and LG_STAGED_INPUTS into
     fleetpy/, at the same relative paths. Returns the paths of the copied config files, to run FleetPy with."""
     rel_cfgs = []
     for f in (constant_config_file, scenario_file):

@@ -9,7 +9,7 @@ from colorama import Fore, Style
 from typing import Optional, Callable
 import mtsm_paths as mtsm
 
-# The demand-preparation functions below built the frozen demand file in mtsm/; the run uses only
+# The demand-preparation functions below built the frozen demand file in mtsm_data/; the run uses only
 # synthesize_requests_with_trend_time. Their source folders are outside the codebase.
 # STALE: network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
 # STALE: request_file=os.path.join(network_folder,"trips_nodes_study_area_with_beta.csv")

@@ -130,8 +130,8 @@ if __name__ == "__main__":
 
     f.close()
 
-    # Only this configuration reads and writes inside the codebase (mtsm/). Other branches still point to
-    # folders outside the codebase -> refuse them until their inputs are brought into mtsm/ (docs/progress.md).
+    # Only this configuration reads and writes inside the codebase (mtsm_data/). Other branches still point to
+    # folders outside the codebase -> refuse them until their inputs are brought into mtsm_data/ (docs/progress.md).
     unsupported = []
     if any(area != "lemon_grove" for area in test_area):
         unsupported.append(f"test_area={test_area} (only lemon_grove)")
@@ -142,11 +142,11 @@ if __name__ == "__main__":
     if any(debug_mode_list):
         unsupported.append("debug_mode_list=True")
     if unsupported:
-        sys.exit("ERROR: configuration in %s is not self-contained (mtsm/) yet: %s"
+        sys.exit("ERROR: configuration in %s is not self-contained (mtsm_data/) yet: %s"
                  % (input_para_dir, ", ".join(unsupported)))
     input_problems = check_inputs()
     if input_problems:
-        print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm/MANIFEST.csv -> results are not comparable to "
+        print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm_data/MANIFEST.csv -> results are not comparable to "
               f"docs/reference_results: {input_problems}{Style.RESET_ALL}")
     for folder in (mtsm.LG_FINAL_NETWORK_DIR, mtsm.LG_INDIV_OUTPUT_DIR, mtsm.LG_OUTPUT_DIR):
         os.makedirs(folder, exist_ok=True)
@@ -1884,7 +1884,7 @@ if __name__ == "__main__":
                                                                 # print(f"{Fore.RED}Local agents added to FleetPy: {extra_demand}{Style.RESET_ALL}")
                                                                 # print(f"{Fore.RED}Total demand in FleetPy: {num_M_travelers+extra_demand}{Style.RESET_ALL}")
                                                                 #######################################################################################################
-                                                                # FleetPy runs on copies of the inputs in mtsm/lemon_grove/fleetpy_inputs/ placed inside fleetpy/
+                                                                # FleetPy runs on copies of the inputs in mtsm_data/lemon_grove/fleetpy_inputs/ placed inside fleetpy/
                                                                 cc_fleetpy, sc_fleetpy = fleetpy.stage_inputs(cc, sc)
                                                                 fleetpy.run_scenarios(cc_fleetpy, sc_fleetpy, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=random_seed)
                                                                 fleetpy.warn_non_optimal_repositioning(cc_fleetpy, sc_fleetpy)

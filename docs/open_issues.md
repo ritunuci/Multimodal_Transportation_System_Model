@@ -51,20 +51,20 @@ Paths are relative to the codebase root.
 
 ### I-02: The optimizer overwrites the frozen parameter file
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1c).
-- **What:** `test_file_backup_latest.py` writes each candidate's values into
-  `mtsm/input_parameter/input_parameter.csv`, which is a frozen, checksummed input. After a session the file holds the
+- **What:** `Bayesian_optimization_script.py` writes each candidate's values into
+  `mtsm_data/input_parameter/input_parameter.csv`, which is a frozen, checksummed input. After a session the file holds the
   last candidate's values.
 - **Impact:** after an optimizer session, `tools/check_inputs.py` and the model's startup check report the file as
   changed, and `tools/compare_reference.py` does not print `REPRODUCED` until the reference values are restored (they
   are listed in `docs/reference_results/README.md`). Nothing records which parameters produced the files in
-  `mtsm/lemon_grove/output/`.
+  `mtsm_data/lemon_grove/output/`.
 - **Fix:** Phase 3. Give each run its own parameter file and output folder, and record the parameters in a
-  `run_manifest.json`. Until then, restore the file with `git checkout mtsm/input_parameter/input_parameter.csv` after
+  `run_manifest.json`. Until then, restore the file with `git checkout mtsm_data/input_parameter/input_parameter.csv` after
   each optimizer session.
 
 ### I-03: The optimizer has not been run since the changes
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phases 1c and 2b).
-- **What:** `test_file_backup_latest.py` was changed three times: the `mtsm/` paths (`d5aee47`), launching the model
+- **What:** `Bayesian_optimization_script.py` was changed three times: the `mtsm_data/` paths (`d5aee47`), launching the model
   with `sys.executable` (`da839b0`), and stopping on a failed model run (`09e0684`). Each change compiles, and the
   failure handling was tested against a fake model process. The optimizer itself was never run, because a session
   takes many model evaluations, overwrites the parameter file (I-02) and needs Gurobi (I-01).
@@ -75,7 +75,7 @@ Paths are relative to the codebase root.
 
 ### I-04: Rows 1 and 2 of the evaluation CSV are identical
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1).
-- **What:** `mtsm/lemon_grove/output/lemon_grove_evaluation_zonal_partition_False.csv` has 3 data rows. Rows 1 and 2
+- **What:** `mtsm_data/lemon_grove/output/lemon_grove_evaluation_zonal_partition_False.csv` has 3 data rows. Rows 1 and 2
   are identical `FRT_only_scen` / `non_micro` rows (the fixed-route-only baseline). Row 3 is the microtransit scenario.
 - **Impact:** none on the optimizer objectives, which come from row 3. The optimizer also reads values from row 2
   (`rows[2][...]`), so if the duplicate is a mistake, it matters which of the two rows is meant to be there.
@@ -87,7 +87,7 @@ Paths are relative to the codebase root.
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
   reproducibility work.
 - **What:** `update_initial_net_with_bayesian_headway()` (`pre_process/process_network.py`) writes
-  `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm/lemon_grove/initial_network/`. For headway 20 this is
+  `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm_data/lemon_grove/initial_network/`. For headway 20 this is
   the frozen `initial_super_network_non_micro_hw_20.csv` (the fixed-route network at the base headway).
 - **Impact:** a run or optimizer candidate with headway 20 changes a frozen input. The startup check and
   `tools/check_inputs.py` would then report it as changed, and later runs would read the rebuilt file instead of the
@@ -98,7 +98,7 @@ Paths are relative to the codebase root.
 ### I-06: Accessibility uses a hard-coded network for its node list
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phase 4 check).
 - **What:** `create_nodes_emp_dict()` (`output_performance_metrics.py`) hard-codes `headway = 20` and `virstop = 100`
-  and reads `mtsm/lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv`, only to collect
+  and reads `mtsm_data/lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv`, only to collect
   the set of node IDs. Nodes with no assigned employment get 0. The result feeds the `wghted_acc_emp_{5,10,15}_min`
   columns.
 - **Impact:** none today. The file has the same 2269 nodes as the network the scenario uses
@@ -123,7 +123,7 @@ Paths are relative to the codebase root.
   FleetPy's data, unrecorded and unchecked. `low_range_vehtype.csv` has the same change (not used by the run).
 - **Impact:** a FleetPy update or a clean FleetPy copy would silently change the vehicle capacity from 8 to 4.
 - **Fix (decided, D5):** a vehicle type of the model's own (for example `lemon_grove_vehtype`, capacity 8) in
-  `mtsm/lemon_grove/fleetpy_inputs/`, copied in before each run and checksummed; the scenario configs use it; FleetPy's
+  `mtsm_data/lemon_grove/fleetpy_inputs/`, copied in before each run and checksummed; the scenario configs use it; FleetPy's
   two files go back to upstream. Only the vehicle-type name changes in FleetPy's intermediate files, so the reference
   is updated for those; the 9 reported output files must stay byte-identical.
 
@@ -136,7 +136,7 @@ Paths are relative to the codebase root.
 - **Impact:** FleetPy's own examples (`fleetpy/run_examples.py`) cannot be run as upstream intends, so FleetPy cannot
   be tested on its own. The Lemon Grove run reads none of these files.
 - **Fix (decided, D6):** restore the upstream files and move the downtown San Diego versions to an archive under
-  `mtsm/` (downtown San Diego is blocked by the startup guard anyway); then run FleetPy's own example a), which checks
+  `mtsm_data/` (downtown San Diego is blocked by the startup guard anyway); then run FleetPy's own example a), which checks
   `number users = 88`.
 
 ### I-11: Old, unused MTSM files inside `fleetpy/`

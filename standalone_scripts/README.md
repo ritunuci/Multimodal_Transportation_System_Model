@@ -1,6 +1,6 @@
 # Standalone scripts
 
-Scripts that the model run (`run_examples_new_parking.py`), the optimizer (`test_file_backup_latest.py`) and `tools/`
+Scripts that the model run (`run_examples_new_parking.py`), the optimizer (`Bayesian_optimization_script.py`) and `tools/`
 do not import. They were moved here from the repository root and `pre_process/` on 2026-10-23
 (see `docs/progress.md`, Phase 2b), unchanged, to keep the run's code separate.
 

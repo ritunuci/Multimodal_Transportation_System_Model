@@ -1,4 +1,4 @@
-"""Folder locations of the self-contained data tree mtsm/ (see docs/progress.md).
+"""Folder locations of the self-contained data tree mtsm_data/ (see docs/progress.md).
 
 Every path is derived from the location of this file, so the codebase keeps working when it is moved or copied.
 Each constant replaces one folder that used to live outside the codebase (old location in the comment).
@@ -6,7 +6,7 @@ Each constant replaces one folder that used to live outside the codebase (old lo
 import os
 
 CODE_ROOT = os.path.dirname(os.path.abspath(__file__))
-MTSM_DIR = os.path.join(CODE_ROOT, "mtsm")
+MTSM_DIR = os.path.join(CODE_ROOT, "mtsm_data")
 
 # inputs shared by all study areas
 INPUT_PARAMETER_DIR = os.path.join(MTSM_DIR, "input_parameter")             # Bayesian_Optimization/Input_parameter
@@ -43,5 +43,5 @@ def not_self_contained(what):
 
     The old absolute paths of such a branch are kept next to the call as '# STALE:' comments.
     """
-    raise NotImplementedError("%s is not self-contained (mtsm/) yet; its folders are outside the codebase. "
+    raise NotImplementedError("%s is not self-contained (mtsm_data/) yet; its folders are outside the codebase. "
                               "See docs/progress.md." % what)

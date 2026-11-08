@@ -2,7 +2,7 @@
 
     python tools/compare_reference.py [reference_name]      default reference_name: lemon_grove_seed0
 
-Run it after a full run with the reference's input (mtsm/, checked by tools/check_inputs.py) and seed. Every
+Run it after a full run with the reference's input (mtsm_data/, checked by tools/check_inputs.py) and seed. Every
 reference file must be byte-identical; anything else means the code change altered the results.
 Exception: FleetPy's 00_config.json records the absolute location of FleetPy (its data and results folders), so in
 that file FleetPy's root folder is replaced by a placeholder on both sides before comparing. FleetPy's root was the

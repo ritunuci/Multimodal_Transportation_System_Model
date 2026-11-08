@@ -1,4 +1,4 @@
 # Store and check out every file byte for byte (no line-ending conversion, whatever core.autocrlf is set to).
-# The frozen inputs (mtsm/MANIFEST.csv checksums) and docs/reference_results are compared byte for byte, so a
+# The frozen inputs (mtsm_data/MANIFEST.csv checksums) and docs/reference_results are compared byte for byte, so a
 # checkout must return exactly the committed bytes. Source files are CRLF.
 * -text

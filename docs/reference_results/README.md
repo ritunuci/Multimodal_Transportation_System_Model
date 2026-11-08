@@ -7,7 +7,7 @@ model's behavior, and that is a mistake unless it was intended (and then it need
 ## How to check a code change
 
 1. Make sure the inputs are the frozen ones: `python tools/check_inputs.py`, which must report "all frozen inputs match".
-2. Make sure `mtsm/input_parameter/input_parameter.csv` has the values listed below (including `random_seed`).
+2. Make sure `mtsm_data/input_parameter/input_parameter.csv` has the values listed below (including `random_seed`).
 3. Run the model: `python run_examples_new_parking.py` (about 30 min).
 4. Compare: `python tools/compare_reference.py`. It must end with `REPRODUCED`.
 
@@ -27,15 +27,15 @@ Input parameters (`input_parameter.csv`):
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | lemon_grove | TRUE | TRUE | 10 | FALSE | 3.615388 | 5 | 2.3811314 | 2 | 2.3703918 | 1 | 1 | 0 | 10 | 20 | 3 | 0 |
 
-Other inputs: the 14 frozen files in `mtsm/`, with checksums in `mtsm/MANIFEST.csv`.
+Other inputs: the 14 frozen files in `mtsm_data/`, with checksums in `mtsm_data/MANIFEST.csv`.
 
 | Folder | Contents | Written by the run to |
 |---|---|---|
-| `output/` | the 9 reported result files | `mtsm/lemon_grove/output/` |
-| `intermediate/final_network/` | super-networks updated after the last iteration | `mtsm/lemon_grove/final_network/` |
-| `intermediate/initial_network/` | super-networks rebuilt from the `base_*` files | `mtsm/lemon_grove/initial_network/` |
-| `intermediate/initial_network_0719/` | copies of those, read back by the metrics code | `mtsm/lemon_grove/initial_network_0719/` |
-| `intermediate/indiv_output/` | FleetPy user statistics of iterations 0–4 | `mtsm/lemon_grove/indiv_output/` |
+| `output/` | the 9 reported result files | `mtsm_data/lemon_grove/output/` |
+| `intermediate/final_network/` | super-networks updated after the last iteration | `mtsm_data/lemon_grove/final_network/` |
+| `intermediate/initial_network/` | super-networks rebuilt from the `base_*` files | `mtsm_data/lemon_grove/initial_network/` |
+| `intermediate/initial_network_0719/` | copies of those, read back by the metrics code | `mtsm_data/lemon_grove/initial_network_0719/` |
+| `intermediate/indiv_output/` | FleetPy user statistics of iterations 0–4 | `mtsm_data/lemon_grove/indiv_output/` |
 | `intermediate/fleetpy_demand/` | demand handed to FleetPy in the last iteration | `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` |
 | `intermediate/fleetpy_results/` | FleetPy results of the last iteration | `fleetpy/studies/example_study/results/example_pool_repo_AM_sc_1/` |
 

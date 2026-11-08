@@ -2,13 +2,17 @@
 
 Goal: make the results we report for the research reproducible, and make the codebase self-contained (no
 dependency on any folder outside `FleetPy_SanDiego`). Study area: **Lemon Grove only**.
-Reported results: `mtsm/lemon_grove/output/`. Before 2026-10-23 they were written to
+Reported results: `mtsm_data/lemon_grove/output/`. Before 2026-10-23 they were written to
 `D:\Ritun\Siwei_Micro_Transit\Bayesian_Optimization\lemon_grove\output_folder\`.
 Entry point: `run_examples_new_parking.py`, run in the `fleetpy` conda env
 (`C:\Users\Autonomicity\.conda\envs\fleetpy`, Python 3.10.19).
 
 Newest entries go at the bottom of each phase. In the "Baseline findings" section, paths are relative to
-`D:\Ritun\Siwei_Micro_Transit\` (the locations before `mtsm/`). Elsewhere they are relative to the codebase root.
+`D:\Ritun\Siwei_Micro_Transit\` (the locations before `mtsm_data/`). Elsewhere they are relative to the codebase root.
+
+Names: on 2026-11-07 the data folder `mtsm/` was renamed to `mtsm_data/` and the optimizer
+`test_file_backup_latest.py` to `Bayesian_optimization_script.py`. This log uses the new names throughout, also for
+earlier entries; commits before that date use the old names.
 
 ---
 
@@ -17,10 +21,10 @@ Newest entries go at the bottom of each phase. In the "Baseline findings" sectio
 | Phase | What | Status |
 |---|---|---|
 | 1 | Make a single run deterministic: seed, hash seed, PYTHONPATH, Gurobi check | Done, verified 2026-10-23 |
-| 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
-| 1c | Optimizer (`test_file_backup_latest.py`) reads and writes `mtsm/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
+| 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm_data/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
+| 1c | Optimizer (`Bayesian_optimization_script.py`) reads and writes `mtsm_data/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
-| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm/` | In progress: steps 1-2 done 2026-11-07 |
+| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-2 done 2026-11-07 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -34,7 +38,7 @@ Newest entries go at the bottom of each phase. In the "Baseline findings" sectio
 - A run takes about 30 min and converges at iteration 5 for the current `input_parameter.csv` (lemon_grove, fleet 2, headway 10, scenario 10).
 - Every run rebuilds its networks from the `base_*` files. Nothing is read before the same run writes it, so no state carries over between runs.
 - The script and FleetPy run in one process (`n_parallel_sim=1`).
-- The optimizer is **`test_file_backup_latest.py`** (codebase root). `New folder/MOBO_for_micro.py` is an older
+- The optimizer is **`Bayesian_optimization_script.py`** (codebase root). `New folder/MOBO_for_micro.py` is an older
   variant, kept but not used. The optimizer launches the run with `subprocess.run([fleetpy python, script])`. It edits
   `input_parameter.csv` **by column index** (5–13) and reads the evaluation CSV by index (`rows[3][30]`, `rows[3][50]`,
   `rows[2][...]`, all of row 3 except indices 0–9 and 72). So new columns must be appended at the end of
@@ -134,14 +138,14 @@ Newest entries go at the bottom of each phase. In the "Baseline findings" sectio
 
 ---
 
-## Phase 1b: self-contained codebase (`mtsm/`)
+## Phase 1b: self-contained codebase (`mtsm_data/`)
 
 ### Layout (2026-10-23)
-Each folder outside the codebase that the run used now has exactly one folder in `mtsm/`. No folder was split and no
+Each folder outside the codebase that the run used now has exactly one folder in `mtsm_data/`. No folder was split and no
 file was renamed, so the code still builds the same file names. The folder constants are in `mtsm_paths.py`
 (imported as `mtsm`). They are derived from the location of that file, so the codebase still works if it is moved.
 
-| `mtsm/` folder | Former location (under `D:\Ritun\Siwei_Micro_Transit\`) | Contents |
+| `mtsm_data/` folder | Former location (under `D:\Ritun\Siwei_Micro_Transit\`) | Contents |
 |---|---|---|
 | `input_parameter/` | `Bayesian_Optimization\Input_parameter` | `input_parameter.csv` (frozen input) |
 | `region/` | `Data\0719_input` | `pre_nodes.csv`, `final_land_use.csv` (frozen) |
@@ -154,7 +158,7 @@ file was renamed, so the code still builds the same file names. The folder const
 | `lemon_grove/indiv_output/` | `Data\0719_input\indiv_output_folder` | generated each iteration |
 | `lemon_grove/output/` | `Bayesian_Optimization\lemon_grove\output_folder` | **reported results** |
 
-- **Frozen inputs:** 14 files, copied unchanged. `mtsm/MANIFEST.csv` holds path, size, SHA-256 and role.
+- **Frozen inputs:** 14 files, copied unchanged. `mtsm_data/MANIFEST.csv` holds path, size, SHA-256 and role.
   `python tools/check_inputs.py` verifies them; `--write` regenerates the manifest. Only regenerate it after a deliberate
   input change, and record that change here.
 - **FleetPy's own folders stay where FleetPy expects them:** `data/` and `studies/`. They were already inside the codebase, and are now
@@ -180,7 +184,7 @@ file was renamed, so the code still builds the same file names. The folder const
     `BayesianOptimization` are TRUE, and `debug_mode_list` is FALSE. Other configurations still point to folders outside the
     codebase. `zonal_partition` is hard-coded to `False` in the script, so it can't be selected.
   - **Frozen-input check.** Prints a red warning (the run continues) if `check_inputs()` finds a missing or changed input.
-  - **Output folders** in `mtsm/` are created if missing, since git does not keep empty folders.
+  - **Output folders** in `mtsm_data/` are created if missing, since git does not keep empty folders.
 - Not changed: absolute paths on branches the guard blocks (downtown_sd, `TR_PartA`, non-optimizer, zonal, debug), and unused
   variables on the active branches, such as `demand_folder` in `update_network_files.py` and `network_folder` in the main
   script. They no longer cause any file access.
@@ -204,23 +208,23 @@ file was renamed, so the code still builds the same file names. The folder const
     (`C:\Users\Autonomicity\.matplotlib`), the Windows null device opened while importing a library, and one directory listing of the
     tracer's own folder (it was on the import path only because the tracer lives there).
 - Guard test: with `test_area=downtown_sd` and `debug_mode_list=TRUE`, the run stopped at startup with
-  `ERROR: configuration ... is not self-contained (mtsm/) yet: test_area=['downtown_sd'] (only lemon_grove), debug_mode_list=True`
+  `ERROR: configuration ... is not self-contained (mtsm_data/) yet: test_area=['downtown_sd'] (only lemon_grove), debug_mode_list=True`
   and exit code 1. The parameter file was restored afterwards, and `check_inputs.py` passes.
 
 ### Optimizer note
-- Addressed in Phase 1c, for the actual optimizer `test_file_backup_latest.py`.
+- Addressed in Phase 1c, for the actual optimizer `Bayesian_optimization_script.py`.
 
 ---
 
-## Phase 1c: optimizer reads and writes `mtsm/`
+## Phase 1c: optimizer reads and writes `mtsm_data/`
 
-### Changes (2026-10-23), `test_file_backup_latest.py`
+### Changes (2026-10-23), `Bayesian_optimization_script.py`
 | What | Before | Now |
 |---|---|---|
-| Parameter file (read + written each call) | `Bayesian_Optimization/Input_parameter/input_parameter.csv` | `mtsm/input_parameter/input_parameter.csv` |
-| Evaluation file (read) | `Bayesian_Optimization/lemon_grove/output_folder/lemon_grove_evaluation_zonal_partition_False.csv` | `mtsm/lemon_grove/output/` (same name) |
-| Individual results (read) | `Bayesian_Optimization/lemon_grove/output_folder/individual_results_micro_M_…_scen_10.csv` | `mtsm/lemon_grove/output/` (same name) |
-| Optimizer outputs (`per_call_results.csv`, `run_log.txt`, `indv_res/`, `per_itr_agg_sim_output/`, result CSVs, `indiv_call_timings_eval.csv`) | `Bayesian_Optimization/optimization_output/<folder_name>/` | `mtsm/lemon_grove/optimization_output/<folder_name>/` (`folder_name` is still `LG_submission_results_R2`) |
+| Parameter file (read + written each call) | `Bayesian_Optimization/Input_parameter/input_parameter.csv` | `mtsm_data/input_parameter/input_parameter.csv` |
+| Evaluation file (read) | `Bayesian_Optimization/lemon_grove/output_folder/lemon_grove_evaluation_zonal_partition_False.csv` | `mtsm_data/lemon_grove/output/` (same name) |
+| Individual results (read) | `Bayesian_Optimization/lemon_grove/output_folder/individual_results_micro_M_…_scen_10.csv` | `mtsm_data/lemon_grove/output/` (same name) |
+| Optimizer outputs (`per_call_results.csv`, `run_log.txt`, `indv_res/`, `per_itr_agg_sim_output/`, result CSVs, `indiv_call_timings_eval.csv`) | `Bayesian_Optimization/optimization_output/<folder_name>/` | `mtsm_data/lemon_grove/optimization_output/<folder_name>/` (`folder_name` is still `LG_submission_results_R2`) |
 | Model launch | `run_examples_new_parking.py`, relative to the current working directory | absolute path in the codebase, `cwd` set to the codebase root, so the optimizer works from any working directory |
 
 - New constant `mtsm_paths.LG_OPTIMIZATION_OUTPUT_DIR`. The script imports `mtsm_paths as mtsm`.
@@ -228,19 +232,19 @@ file was renamed, so the code still builds the same file names. The folder const
   outside the codebase by nature; see Phase 2), all optimizer logic, column indices and file names.
 - `New folder/MOBO_for_micro.py`: kept unchanged. It still points to the old folders.
 - Earlier optimizer results in `Bayesian_Optimization/optimization_output/` were **not** moved. New optimizer runs start in
-  `mtsm/lemon_grove/optimization_output/`.
+  `mtsm_data/lemon_grove/optimization_output/`.
 
 ### Verification
 - The script compiles, CRLF line endings are kept, and no `D:/` path is left outside comments. **Not run.** A run takes many
   model evaluations and overwrites the parameter file.
 
 ### Consequence to keep in mind
-- The optimizer overwrites `mtsm/input_parameter/input_parameter.csv`, which is a frozen input. After an optimizer
+- The optimizer overwrites `mtsm_data/input_parameter/input_parameter.csv`, which is a frozen input. After an optimizer
   session, the parameter file holds the last candidate's values. `tools/check_inputs.py` and the model's startup check will
   then report it as changed, and `tools/compare_reference.py` will not reproduce until the reference parameters are restored
   (they are listed in `docs/reference_results/README.md`). Long-term fix (Phase 3): give each run its own parameter
   file instead of editing the frozen one.
-- `mtsm/lemon_grove/optimization_output/` is generated and git-ignored (Phase 2a).
+- `mtsm_data/lemon_grove/optimization_output/` is generated and git-ignored (Phase 2a).
 
 ---
 
@@ -255,7 +259,7 @@ file was renamed, so the code still builds the same file names. The folder const
   2. **Phases 1, 1b, 1c**: the current state, tagged **`v1-reproducible`**.
 - The baseline's 7 changed files were reconstructed by undoing every recorded edit in reverse (a scratchpad script; each
   replacement had to match exactly once). Checks:
-  - `run_examples_new_parking.py` came back to exactly 2204 lines and `test_file_backup_latest.py` to 640, as
+  - `run_examples_new_parking.py` came back to exactly 2204 lines and `Bayesian_optimization_script.py` to 640, as
     measured before any edit.
   - The changed lines sit at the same line numbers (154, 283, 2051) as read before any edit.
   - The diff between the two commits contains only the edits listed in Phases 1, 1b and 1c.
@@ -271,8 +275,8 @@ file was renamed, so the code still builds the same file names. The folder const
   `docs/reference_results/`.
 - Ignored as run output: `studies/*/results/`, the per-iteration FleetPy demand files in
   `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`, the contents of
-  `mtsm/lemon_grove/{output,final_network,indiv_output,optimization_output}/` (the folders stay via `.gitkeep`), and the networks
-  rebuilt every run in `mtsm/lemon_grove/initial_network*/`. Exceptions keep the two frozen networks
+  `mtsm_data/lemon_grove/{output,final_network,indiv_output,optimization_output}/` (the folders stay via `.gitkeep`), and the networks
+  rebuilt every run in `mtsm_data/lemon_grove/initial_network*/`. Exceptions keep the two frozen networks
   (`initial_super_network_non_micro_hw_20.csv` and `initial_super_network_micro_hw_20_virstop_100.csv`) tracked.
 - Also ignored: `eval_output_dir/` (2023 outputs), `*.log`, the stray root `lemon_grove_debug_*_fleetpy_demand.csv`, IDE folders,
   and FleetPy's compiled C++ router (not used by this run). FleetPy's generic Python rules are kept.
@@ -332,7 +336,7 @@ file was renamed, so the code still builds the same file names. The folder const
 - `accessibility_calculation()`: on the active branch, the fixed-route network folder (read only for
   `microtransit="non_micro"`, which the run never passes) was a stale path. It is now `None`, and that case stops.
 - `create_nodes_emp_dict()`: removed a dead `super_network_emp` path built from a stale `output_folder` (never opened).
-- `test_file_backup_latest.py`: the model is launched with `sys.executable` instead of
+- `Bayesian_optimization_script.py`: the model is launched with `sys.executable` instead of
   `C:/Users/Autonomicity/.conda/envs/fleetpy/python`. Checked: only the `fleetpy` env has ax/torch/botorch/gurobipy
   (`fleetpy_ax` is empty), so the optimizer runs in `fleetpy` and the model gets the same interpreter as before.
 - Not changed: `tools/compare_reference.py`'s `REFERENCE_CODE_ROOT` (data: where the reference run was made) and FleetPy's
@@ -341,7 +345,7 @@ file was renamed, so the code still builds the same file names. The folder const
 ### Verification (2026-10-23): passed
 - No live absolute path left in the edited files. All compile, CRLF kept, the run's modules import.
 - pyflakes: every new "undefined name" comes after a `not_self_contained()` call in the same function (checked one by one).
-- `determine_dolders` stops for downtown_sd, `BayesianOptimization=False` and `TRPartA=False`, and returns the `mtsm/`
+- `determine_dolders` stops for downtown_sd, `BayesianOptimization=False` and `TRPartA=False`, and returns the `mtsm_data/`
   folders for the reference configuration.
 - Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes
   afterwards. Outside the codebase only matplotlib's font cache, the null device and the tracer's folder.
@@ -423,7 +427,7 @@ file was renamed, so the code still builds the same file names. The folder const
   stopped before writing it (e.g. the Gurobi license error), that file still held the **previous candidate's**
   results, which were recorded for the new candidate without any warning.
 
-### Fix: optimizer stops on a failed model run (2026-10-23), `test_file_backup_latest.py`
+### Fix: optimizer stops on a failed model run (2026-10-23), `Bayesian_optimization_script.py`
 - New `model_output_files(values)`: the two files `collect_output()` reads for a candidate (the evaluation file and
   `individual_results_micro_M_fsize_{d}_op_hr_15_hw_{f}_virstop_75_scen_10.csv`). `collect_output()` now uses it too.
 - `run_script(values)` (was `run_script()`):
@@ -479,7 +483,7 @@ file was renamed, so the code still builds the same file names. The folder const
   `random`/`np.random` during a simulation (`fleetpy/src/FleetSimulationBase.py:163`,
   `fleetpy/src/fleetctrl/repositioning/RepositioningBase.py:228`), and the mode choice of the next iteration continues
   from that state.
-- MTSM keeps its FleetPy-format inputs in `mtsm/` and copies them into `fleetpy/` before each FleetPy run.
+- MTSM keeps its FleetPy-format inputs in `mtsm_data/` and copies them into `fleetpy/` before each FleetPy run.
 - Steps:
   1. Compare with upstream FleetPy.
   2. Move FleetPy, add the runner and the copied inputs, remove the debug-only edits.
@@ -501,7 +505,7 @@ file was renamed, so the code still builds the same file names. The folder const
 - Moved with `git mv` (history kept) into `fleetpy/`: `src/`, `data/`, `studies/`, `run_examples.py`,
   `replay_pyplot.py`, `scenario_creator.py`, `ScenarioCreatorGUI.py`, `README.md`, `LICENSE`, `Input_Parameters.md`,
   `__init__.py`. `requirements.txt` (points to `env/`) stays at the root.
-- Moved to `mtsm/lemon_grove/fleetpy_inputs/` (same folder layout as `fleetpy/`):
+- Moved to `mtsm_data/lemon_grove/fleetpy_inputs/` (same folder layout as `fleetpy/`):
   `data/networks/lemon_grove_example_network/` (11 files),
   `data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv` and the 28 `lemon_grove_*`
   scenario configs.
@@ -511,7 +515,7 @@ file was renamed, so the code still builds the same file names. The folder const
     `random_seed` override), `read_outputs_for_comparison`, `warn_non_optimal_repositioning`, `check_assertions` (now
     gets the log file as an argument) and `create_config_files`;
   - new `stage_inputs(cc, sc)`: copies the two config files and `LG_STAGED_INPUTS` (network nodes, edges, `crs.info`,
-    initial vehicle distribution) from `mtsm/lemon_grove/fleetpy_inputs/` into `fleetpy/` and returns the paths of the
+    initial vehicle distribution) from `mtsm_data/lemon_grove/fleetpy_inputs/` into `fleetpy/` and returns the paths of the
     copied config files. The copies are git-ignored.
 - `run_examples_new_parking.py`:
   - `import os` (it used to come from FleetPy's `from src.misc.globals import *`) and `import fleetpy_runner as fleetpy`
@@ -521,7 +525,7 @@ file was renamed, so the code still builds the same file names. The folder const
   - the old FleetPy example branch (`test_repositioning=True`, never taken) points to `fleetpy/`.
 - `mtsm_paths.py`: new `FLEETPY_DIR`, `LG_FLEETPY_INPUTS_DIR`, `LG_FLEETPY_SCENARIOS_DIR`; `LG_FLEETPY_DEMAND_DIR` and
   `FLEETPY_RESULTS_DIR` are now under `fleetpy/`.
-- `tools/check_inputs.py`, `mtsm/MANIFEST.csv`: 6 new frozen inputs (the FleetPy inputs the reference run reads), 20
+- `tools/check_inputs.py`, `mtsm_data/MANIFEST.csv`: 6 new frozen inputs (the FleetPy inputs the reference run reads), 20
   in all. The 14 existing rows are unchanged.
 - `tools/compare_reference.py`: in `00_config.json`, FleetPy's root folder (the code root when the reference was made,
   now `fleetpy/`) is replaced by a placeholder.
@@ -542,6 +546,16 @@ file was renamed, so the code still builds the same file names. The folder const
   root `src/`, `data/` or `studies/`, or in `standalone_scripts/`; outside the repo only matplotlib's font cache, the
   null device and the tracer's folder.
 
+### Renames (2026-11-07)
+- `mtsm/` -> `mtsm_data/` (it holds the model's data: frozen inputs and outputs, no code) and
+  `test_file_backup_latest.py` -> `Bayesian_optimization_script.py`, both with `git mv`.
+- Code: one line, `MTSM_DIR` in `mtsm_paths.py`; all paths are built from it. The module `mtsm_paths` (imported as
+  `mtsm`) keeps its name. The optimizer needs no change (it uses `mtsm_paths` only and does not name itself).
+- `.gitignore` rules, comments, messages and docs updated. `MANIFEST.csv` (paths relative to the folder) and the
+  reference results (they contain no `mtsm/` path) are unchanged.
+- Verification (2026-11-07): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`; nothing read or written under `mtsm/`.
+
 ---
 
 ## Continuing work in a fresh clone
@@ -558,9 +572,9 @@ file was renamed, so the code still builds the same file names. The folder const
    - After **any** code change, do a full run with the reference inputs and seed; `compare_reference.py` must print `REPRODUCED`
      (unless the change is meant to change results, in which case make and document a new reference).
    - Keep source files in CRLF.
-   - Do not edit the frozen inputs in `mtsm/` without recording it here and regenerating `mtsm/MANIFEST.csv`
+   - Do not edit the frozen inputs in `mtsm_data/` without recording it here and regenerating `mtsm_data/MANIFEST.csv`
      (`python tools/check_inputs.py --write`).
-   - The optimizer (`test_file_backup_latest.py`) overwrites `mtsm/input_parameter/input_parameter.csv` (see Phase 1c).
+   - The optimizer (`Bayesian_optimization_script.py`) overwrites `mtsm_data/input_parameter/input_parameter.csv` (see Phase 1c).
 7. The old folder `D:\Ritun\Siwei_Micro_Transit\FleetPy_SanDiego` is an archive; the old data folders
    (`Bayesian_Optimization`, `Data\0719_input`, `Ritun\Lemon Grove`) are no longer needed by the code.
 8. A new Claude Code session does not know the earlier conversation. Start it with: *"Read docs/progress.md and
@@ -573,7 +587,7 @@ file was renamed, so the code still builds the same file names. The folder const
   row 1 (the fixed-route-only baseline). Row 3 has normal values (corrected 2026-10-23).
 - Rows 1 and 2 of the evaluation CSV are identical `FRT_only_scen` rows. Is the duplicate intended?
 - `FRT_headway = 20` would overwrite a frozen input. `update_initial_net_with_bayesian_headway()` writes
-  `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm/lemon_grove/initial_network/`, and for headway 20 that is the frozen
+  `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm_data/lemon_grove/initial_network/`, and for headway 20 that is the frozen
   `initial_super_network_non_micro_hw_20.csv` (the fixed-route network at the base headway). This predates our changes.
   The startup check would report the file as changed afterwards. To decide: is the overwrite intended, or should
   the rebuilt file get its own name?
@@ -586,10 +600,10 @@ file was renamed, so the code still builds the same file names. The folder const
     (`initial_super_network_micro_hw_10_virstop_75.csv`). It has 568 extra virtual-stop links, but their travel times and
     links are never used. So the employment values are the same either way.
   - Remaining risk: if a future scenario has a different node set, the accessibility numbers would be silently wrong.
-    (Since Phase 1b the file is a frozen, checksummed input in `mtsm/lemon_grove/initial_network_0719/`, so it can no
+    (Since Phase 1b the file is a frozen, checksummed input in `mtsm_data/lemon_grove/initial_network_0719/`, so it can no
     longer change unnoticed.) Fix later: take the node list from the network the scenario actually uses.
 - ~~`output_performance_metrics.py` reads `pre_nodes.csv`, `final_land_use.csv`, the ActivitySim MGRA files and the
-  node→MGRA mapping from outside the codebase~~: done in Phase 1b. They are frozen inputs in `mtsm/`.
+  node→MGRA mapping from outside the codebase~~: done in Phase 1b. They are frozen inputs in `mtsm_data/`.
 
 ## Backups and working files
 - Copy of every folder the run modifies, taken before the first traced run (2026-10-22):

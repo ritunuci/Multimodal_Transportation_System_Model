@@ -1,4 +1,4 @@
-"""Verify the frozen inputs in mtsm/ against mtsm/MANIFEST.csv (size + SHA-256).
+"""Verify the frozen inputs in mtsm_data/ against mtsm_data/MANIFEST.csv (size + SHA-256).
 
     python tools/check_inputs.py           check; exit code 1 if any input is missing or changed
     python tools/check_inputs.py --write   (re)create the manifest from the current files -- only after a
@@ -14,7 +14,7 @@ from mtsm_paths import MTSM_DIR
 
 MANIFEST = os.path.join(MTSM_DIR, "MANIFEST.csv")
 
-# frozen input -> role; paths relative to mtsm/, "/" separated
+# frozen input -> role; paths relative to mtsm_data/, "/" separated
 INPUTS = {
     "input_parameter/input_parameter.csv": "scenario parameters",
     "region/pre_nodes.csv": "region road nodes",

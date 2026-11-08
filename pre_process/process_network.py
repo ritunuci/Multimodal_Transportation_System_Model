@@ -567,7 +567,7 @@ def get_the_virtual_stops(percentage,new_network_folder):
     return virtual_stop_list
 
 def get_transit_link_route():
-    # preprocessing step: Transit_edges_new.csv and new_nodes_transit_network.csv were never copied into mtsm/
+    # preprocessing step: Transit_edges_new.csv and new_nodes_transit_network.csv were never copied into mtsm_data/
     mtsm.not_self_contained("get_transit_link_route (preprocessing)")
     # STALE: lemon_grove_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/"
     old_super_transit_network = os.path.join(lemon_grove_network_folder,

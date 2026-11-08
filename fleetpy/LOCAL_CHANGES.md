@@ -23,7 +23,7 @@ Line endings: files here use CRLF, upstream uses LF. This is not counted as a ch
 - Only `fleetpy_runner.py` (repository root) imports FleetPy. It puts this folder on `sys.path`, because FleetPy
   imports itself as the top-level package `src`.
 - FleetPy finds `data/` and `studies/` next to `src/`, so they stay in this folder.
-- MTSM's Lemon Grove inputs for FleetPy are kept in `mtsm/lemon_grove/fleetpy_inputs/` (same folder layout as this
+- MTSM's Lemon Grove inputs for FleetPy are kept in `mtsm_data/lemon_grove/fleetpy_inputs/` (same folder layout as this
   folder) and copied into this folder before each FleetPy run (`fleetpy_runner.stage_inputs`). The copies are
   git-ignored.
 - In every iteration, MTSM writes the demand for FleetPy into
@@ -81,4 +81,4 @@ These are open; see `docs/open_issues.md`.
   - `studies/example_study/scenarios/`: 29 `downtown_sd_*` configs.
 - **Moved out of this folder (2026-11-07):** the Lemon Grove network (`data/networks/lemon_grove_example_network/`),
   its initial vehicle distribution and the 28 `lemon_grove_*` scenario configs, to
-  `mtsm/lemon_grove/fleetpy_inputs/`.
+  `mtsm_data/lemon_grove/fleetpy_inputs/`.

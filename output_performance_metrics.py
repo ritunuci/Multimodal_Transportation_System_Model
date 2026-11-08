@@ -25,7 +25,7 @@ mgra_pop_inc_dir=os.path.join(asim_output_folder,"MGRA_pop_inc.csv")
 
 def create_mgra_pop_income_table(study_area):
     #MGRA	population	avg_income
-    # preprocessing step: its MGRA files were never copied into mtsm/ (its output is a frozen input there)
+    # preprocessing step: its MGRA files were never copied into mtsm_data/ (its output is a frozen input there)
     mtsm.not_self_contained("create_mgra_pop_income_table (preprocessing)")
 
     # STALE: if study_area == "downtown_sd":
@@ -65,7 +65,7 @@ def create_mgra_pop_income_table(study_area):
     csvfile.close()
 
 def create_adjacent_MGRA_file(study_area):
-    # preprocessing step: its MGRA files were never copied into mtsm/ (its output is a frozen input there)
+    # preprocessing step: its MGRA files were never copied into mtsm_data/ (its output is a frozen input there)
     mtsm.not_self_contained("create_adjacent_MGRA_file (preprocessing)")
 
     # STALE: if study_area == "downtown_sd":
