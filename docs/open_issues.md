@@ -29,7 +29,7 @@ Paths are relative to the codebase root.
 | I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Decision needed | 2026-10-23 |
 | I-06 | Accessibility uses a hard-coded network for its node list | Medium | Open | 2026-10-23 |
 | I-07 | `docs/progress.md` plan table is out of date | Low | Closed (2026-11-07) | 2026-11-07 |
-| I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Open | 2026-10-23 |
+| I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Closed (2026-11-07) | 2026-10-23 |
 | I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | In progress | 2026-11-07 |
 | I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | In progress | 2026-11-07 |
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Open | 2026-11-07 |
@@ -107,14 +107,6 @@ Paths are relative to the codebase root.
 - **Fix:** take the node list from the network the scenario actually uses. If the node set is unchanged, the reference
   still reproduces; check with a full run and `compare_reference.py`.
 
-### I-08: FleetPy's `README.md` still installs from `requirements.txt`
-- **Status:** Open. **Severity:** Low. **Found:** 2026-10-23 (Phase 2b, step 2).
-- **What:** FleetPy's `README.md` (in `fleetpy/` since 2026-11-07) still says `conda install --file requirements.txt`.
-  There is no `requirements.txt` in `fleetpy/`, and the one at the repository root is only a comment pointing to
-  `env/`, so this installs nothing.
-- **Fix:** add a root `README.md` for the model that points to `env/README.md` (FleetPy separation, step 5), and
-  record in `fleetpy/LOCAL_CHANGES.md` that FleetPy's own install instructions do not apply here.
-
 ### I-09: The model's vehicle capacity is stored in FleetPy's vehicle file
 - **Status:** In progress (FleetPy separation, step 3). **Severity:** Medium. **Found:** 2026-11-07 (comparison with
   upstream FleetPy).
@@ -152,6 +144,15 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-08: FleetPy's `README.md` still installs from `requirements.txt`
+- **Status:** Closed (2026-11-07). **Severity:** Low. **Found:** 2026-10-23 (Phase 2b, step 2).
+- **What:** FleetPy's `README.md` (in `fleetpy/` since 2026-11-07) still says `conda install --file requirements.txt`.
+  There is no `requirements.txt` in `fleetpy/`, and the one at the repository root is only a comment pointing to
+  `env/`, so this installs nothing.
+- **Resolution:** the new root `README.md` describes the model and points to `env/README.md`; it says not to use
+  `requirements.txt` or FleetPy's own install instructions. `fleetpy/LOCAL_CHANGES.md` already records that
+  FleetPy's `requirements.txt` was replaced. FleetPy's README is left as upstream. Docs only, no run needed.
 
 ### I-07: `docs/progress.md` plan table is out of date
 - **Status:** Closed (2026-11-07). **Severity:** Low. **Found:** 2026-11-07.
