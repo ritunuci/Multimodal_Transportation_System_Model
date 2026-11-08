@@ -19,7 +19,8 @@ Newest entries go at the bottom of each phase. In the "Baseline findings" sectio
 | 1 | Make a single run deterministic: seed, hash seed, PYTHONPATH, Gurobi check | Done, verified 2026-10-23 |
 | 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
 | 1c | Optimizer (`test_file_backup_latest.py`) reads and writes `mtsm/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
-| 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23: git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). Tag + push to do |
+| 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
+| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm/` | In progress: steps 1-2 done 2026-11-07 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -305,7 +306,7 @@ file was renamed, so the code still builds the same file names. The folder const
 4. Optional: startup check that prints key package versions and warns if they differ from the lock. **Skipped**
    (user's decision, 2026-10-23); `python tools/export_env.py` does the full check on demand.
 5. Rebuild test: new env from `env/` only, full run in a fresh clone, `REPRODUCED`. **Done, passed** (below).
-6. Docs, commit, tag `v2-env-locked`, push.
+6. Docs, commit, push. **Done** (`65861ec`). No `v2-env-locked` tag (user's decision).
 
 ### Step 1: stale hardcoded paths (2026-10-23)
 - Scope: the modules the run imports, plus the optimizer. Standalone scripts the run never imports (`plotting_code.py`,
@@ -467,6 +468,79 @@ file was renamed, so the code still builds the same file names. The folder const
 - What this proves: `env/` fully describes a working environment, and the run depends only on the repo plus that
   environment. Not proven: another machine (same CPU, Windows and MKL here); that is Phase 5.
 - The test env and the test clone were deleted afterwards; the original `fleetpy` env was not touched.
+
+---
+
+## FleetPy as a separate module (`fleetpy/`)
+
+### Plan (2026-11-07, decisions by the user)
+- FleetPy moves into `fleetpy/`. `fleetpy_runner.py` is the only MTSM module that imports it.
+- FleetPy keeps running in the same Python process. A separate process would change the results: FleetPy re-seeds
+  `random`/`np.random` during a simulation (`fleetpy/src/FleetSimulationBase.py:163`,
+  `fleetpy/src/fleetctrl/repositioning/RepositioningBase.py:228`), and the mode choice of the next iteration continues
+  from that state.
+- MTSM keeps its FleetPy-format inputs in `mtsm/` and copies them into `fleetpy/` before each FleetPy run.
+- Steps:
+  1. Compare with upstream FleetPy.
+  2. Move FleetPy, add the runner and the copied inputs, remove the debug-only edits.
+  3. Give the model its own vehicle type (capacity 8), with a checked reference update (I-09).
+  4. Restore FleetPy's example data, archive the downtown San Diego data, run FleetPy's own example (I-10).
+  5. Docs.
+- Not in this pass: deleting the old, unused MTSM files inside `fleetpy/` (I-11).
+
+### Step 1: comparison with upstream (2026-11-07)
+- Upstream `https://github.com/TUM-VT/FleetPy` was downloaded read-only into the scratchpad. Base: commit `7019960`
+  (2022-10-10, `main`). It contains 90 of the 97 `src/` files byte for byte (line endings ignored), more than any
+  other commit. Details and all differences: `fleetpy/LOCAL_CHANGES.md`.
+- Code: 4 pandas-2 fixes; 3 files with commented-out debug prints only; no change to FleetPy's logic.
+  `run_examples.py` (replaced by the user, commit `13fdc29`) is FleetPy's runner with small edits.
+- Data: `data/vehicles/default_vehtype.csv` has capacity 8 instead of 4 and is used by the run (I-09); FleetPy's
+  example data was overwritten with downtown San Diego data (I-10); 464 files were added (I-11).
+
+### Step 2: move, runner, copied inputs (2026-11-07)
+- Moved with `git mv` (history kept) into `fleetpy/`: `src/`, `data/`, `studies/`, `run_examples.py`,
+  `replay_pyplot.py`, `scenario_creator.py`, `ScenarioCreatorGUI.py`, `README.md`, `LICENSE`, `Input_Parameters.md`,
+  `__init__.py`. `requirements.txt` (points to `env/`) stays at the root.
+- Moved to `mtsm/lemon_grove/fleetpy_inputs/` (same folder layout as `fleetpy/`):
+  `data/networks/lemon_grove_example_network/` (11 files),
+  `data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv` and the 28 `lemon_grove_*`
+  scenario configs.
+- `fleetpy_runner.py` (new):
+  - puts `fleetpy/` on `sys.path` and imports `src.*`;
+  - holds the functions moved unchanged from the entry script: `run_single_simulation`, `run_scenarios` (with the
+    `random_seed` override), `read_outputs_for_comparison`, `warn_non_optimal_repositioning`, `check_assertions` (now
+    gets the log file as an argument) and `create_config_files`;
+  - new `stage_inputs(cc, sc)`: copies the two config files and `LG_STAGED_INPUTS` (network nodes, edges, `crs.info`,
+    initial vehicle distribution) from `mtsm/lemon_grove/fleetpy_inputs/` into `fleetpy/` and returns the paths of the
+    copied config files. The copies are git-ignored.
+- `run_examples_new_parking.py`:
+  - `import os` (it used to come from FleetPy's `from src.misc.globals import *`) and `import fleetpy_runner as fleetpy`
+    instead of the `src` imports; the unused `traceback` import removed;
+  - scenario configs are read from, or created in, `mtsm.LG_FLEETPY_SCENARIOS_DIR`;
+  - `fleetpy.stage_inputs(cc, sc)` before each FleetPy run;
+  - the old FleetPy example branch (`test_repositioning=True`, never taken) points to `fleetpy/`.
+- `mtsm_paths.py`: new `FLEETPY_DIR`, `LG_FLEETPY_INPUTS_DIR`, `LG_FLEETPY_SCENARIOS_DIR`; `LG_FLEETPY_DEMAND_DIR` and
+  `FLEETPY_RESULTS_DIR` are now under `fleetpy/`.
+- `tools/check_inputs.py`, `mtsm/MANIFEST.csv`: 6 new frozen inputs (the FleetPy inputs the reference run reads), 20
+  in all. The 14 existing rows are unchanged.
+- `tools/compare_reference.py`: in `00_config.json`, FleetPy's root folder (the code root when the reference was made,
+  now `fleetpy/`) is replaced by a placeholder.
+- `.gitignore`: FleetPy's rules now start with `fleetpy/`; the copied inputs are ignored.
+- Removed the commented-out debug prints (decision D7) in `src/FleetSimulationBase.py`, `src/routing/NetworkBasic.py`
+  and `src/routing/routing_imports/Router.py` (all three now identical to upstream) and two lines in `run_examples.py`.
+  `fleetpy/run_examples.py` keeps the LF line endings it was committed with.
+- New `fleetpy/LOCAL_CHANGES.md`: base version and every local change.
+
+### Verification (2026-11-07): passed
+- pyflakes on the entry script: no new warnings (the only undefined names are the old `pre_node` and `wait_times`).
+  The runner is clean. Everything compiles; CRLF kept.
+- The generated outputs of earlier runs were moved to the scratchpad first, so every compared file was written by this
+  run.
+- Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py`
+  passes; `git status` shows no generated files.
+- Trace: FleetPy reads only inside `fleetpy/`, and its Lemon Grove inputs are the copies; nothing is read under the old
+  root `src/`, `data/` or `studies/`, or in `standalone_scripts/`; outside the repo only matplotlib's font cache, the
+  null device and the tracer's folder.
 
 ---
 

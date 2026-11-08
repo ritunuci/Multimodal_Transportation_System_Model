@@ -714,7 +714,6 @@ class FleetSimulationBase:
                     pbar.set_description(self.scenario_parameters.get(G_SCENARIO_NAME))
                     for sim_time in range(self.start_time, self.end_time, self.time_step):
                         remaining_requests = sum([len(x) for x in self.demand.future_requests.values()])
-                        # print("sim_time",sim_time)
                         self.step(sim_time)
                         cur_perc = int(100 * (1 - remaining_requests/all_requests))
                         pbar.update(cur_perc - pbar.n)

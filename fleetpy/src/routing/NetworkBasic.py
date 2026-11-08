@@ -182,12 +182,8 @@ class NetworkBasic(NetworkBase):
         edges_f = os.path.join(network_name_dir, "base", "edges.csv")
         print(f"Loading edges from {edges_f} ...")
         edges_df = pd.read_csv(edges_f)
-        # print("self.nodes.keys()",self.nodes[97563]) # KeyError:97563
         for _, row in edges_df.iterrows():
-            # print("row", row)
-            # print("self.nodes",self.nodes[row])
             o_node = self.nodes[row[G_EDGE_FROM]]
-            # print("o_node",o_node)
             d_node = self.nodes[row[G_EDGE_TO]]
             tmp_edge = Edge((o_node, d_node), row[G_EDGE_DIST], row[G_EDGE_TT])
             o_node.add_next_edge_to(d_node, tmp_edge)

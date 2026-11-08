@@ -37,9 +37,7 @@ class Router():
         if not forward_flag:
             self.back_end = start_node
         self.destination_nodes = {}
-        # print("destination_nodes",destination_nodes)
         for d in destination_nodes:
-            # print("d",d)
             self.destination_nodes[d] = True
             self.nw.nodes[d].is_target_node = True
         self.number_destinations = len(destination_nodes)

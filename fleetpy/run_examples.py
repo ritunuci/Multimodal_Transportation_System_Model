@@ -16,8 +16,6 @@ from src.misc.globals import *
 # main functions
 # --------------
 def run_single_simulation(scenario_parameters):
-    # print(scenario_parameters[G_SCENARIO_NAME])  # Ritun
-    # print(type(scenario_parameters[G_SCENARIO_NAME]))  # Ritun
     SF = load_simulation_environment(scenario_parameters)
     if scenario_parameters.get("bugfix", False):
         try:

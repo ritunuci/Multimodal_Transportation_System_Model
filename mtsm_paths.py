@@ -26,10 +26,16 @@ LG_INDIV_OUTPUT_DIR = os.path.join(LG_DIR, "indiv_output")                  # Da
 LG_OUTPUT_DIR = os.path.join(LG_DIR, "output")                              # Bayesian_Optimization/lemon_grove/output_folder
 LG_OPTIMIZATION_OUTPUT_DIR = os.path.join(LG_DIR, "optimization_output")    # Bayesian_Optimization/optimization_output (optimizer)
 
-# FleetPy's own folders (already inside the codebase, previously referenced by absolute D:/ paths)
-LG_FLEETPY_DEMAND_DIR = os.path.join(CODE_ROOT, "data", "demand", "lemon_grove_example_demand", "matched",
+# Lemon Grove inputs for FleetPy, in FleetPy's folder layout (data/..., studies/...); fleetpy_runner copies them
+# into fleetpy/ before each FleetPy run
+LG_FLEETPY_INPUTS_DIR = os.path.join(LG_DIR, "fleetpy_inputs")
+LG_FLEETPY_SCENARIOS_DIR = os.path.join(LG_FLEETPY_INPUTS_DIR, "studies", "example_study", "scenarios")
+
+# FleetPy (upstream TUM-VT/FleetPy, see fleetpy/LOCAL_CHANGES.md); it finds data/ and studies/ next to its src/
+FLEETPY_DIR = os.path.join(CODE_ROOT, "fleetpy")
+LG_FLEETPY_DEMAND_DIR = os.path.join(FLEETPY_DIR, "data", "demand", "lemon_grove_example_demand", "matched",
                                      "lemon_grove_example_network")
-FLEETPY_RESULTS_DIR = os.path.join(CODE_ROOT, "studies", "example_study", "results")
+FLEETPY_RESULTS_DIR = os.path.join(FLEETPY_DIR, "studies", "example_study", "results")
 
 
 def not_self_contained(what):

@@ -36,8 +36,8 @@ Other inputs: the 14 frozen files in `mtsm/`, with checksums in `mtsm/MANIFEST.c
 | `intermediate/initial_network/` | super-networks rebuilt from the `base_*` files | `mtsm/lemon_grove/initial_network/` |
 | `intermediate/initial_network_0719/` | copies of those, read back by the metrics code | `mtsm/lemon_grove/initial_network_0719/` |
 | `intermediate/indiv_output/` | FleetPy user statistics of iterations 0–4 | `mtsm/lemon_grove/indiv_output/` |
-| `intermediate/fleetpy_demand/` | demand handed to FleetPy in the last iteration | `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` |
-| `intermediate/fleetpy_results/` | FleetPy results of the last iteration | `studies/example_study/results/example_pool_repo_AM_sc_1/` |
+| `intermediate/fleetpy_demand/` | demand handed to FleetPy in the last iteration | `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` |
+| `intermediate/fleetpy_results/` | FleetPy results of the last iteration | `fleetpy/studies/example_study/results/example_pool_repo_AM_sc_1/` |
 
 The intermediate files are kept so that, when something differs, the earliest differing file shows where the
 change in behavior starts. Not kept, because they differ on every run: `00_simulation.log` (timestamps) and

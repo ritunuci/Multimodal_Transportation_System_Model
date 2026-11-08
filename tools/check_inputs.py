@@ -30,6 +30,15 @@ INPUTS = {
     "lemon_grove/transit/super_network_transit_edges.csv": "transit edges",
     "lemon_grove/transit/network_folder/pre_nodes.csv": "lemon_grove road nodes",
     "lemon_grove/transit/mgra_node_mapping/Nodes_MGRA_mapping.csv": "node -> MGRA mapping",
+    # inputs FleetPy reads; copied into fleetpy/ before each FleetPy run (fleetpy_runner.stage_inputs)
+    "lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/nodes.csv": "FleetPy road network nodes",
+    "lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/edges.csv": "FleetPy road network edges",
+    "lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info": "FleetPy network coordinate system",
+    "lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv":
+        "FleetPy initial vehicle distribution",
+    "lemon_grove/fleetpy_inputs/studies/example_study/scenarios/lemon_grove_constant_config_ir_repo.csv": "FleetPy constant config",
+    "lemon_grove/fleetpy_inputs/studies/example_study/scenarios/lemon_grove_example_ir_heuristics_repositioning_2_veh.csv":
+        "FleetPy scenario config (fleet size 2)",
 }
 
 
