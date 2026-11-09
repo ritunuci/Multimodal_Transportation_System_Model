@@ -28,45 +28,12 @@ import pre_process.dictionary_initialization as dict_init
 import update_initial_network as init_net
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
 import mtsm_paths as mtsm
-from tools.check_inputs import check_inputs
+from mtsm_model import config
 
 # global variables
 # ----------------
 LOG_F = os.path.join(mtsm.CODE_ROOT, "standard_bugfix.log")
 
-
-def str2bool(string_, default='raise'):
-    """
-    Convert a string to a bool.
-
-    Parameters
-    ----------
-    string_ : str
-    default : {'raise', False}
-        Default behaviour if none of the "true" strings is detected.
-
-    Returns
-    -------
-    boolean : bool
-
-    Examples
-    --------
-    # >>> str2bool('True')
-    # True
-    # >>> str2bool('1')
-    # True
-    # >>> str2bool('0')
-    False
-    """
-    true = ['true', 't', '1', 'y', 'yes', 'enabled', 'enable', 'on']
-    false = ['false', 'f', '0', 'n', 'no', 'disabled', 'disable', 'off']
-    if string_.lower() in true:
-        return True
-    elif string_.lower() in false or (not default):
-        return False
-    else:
-        raise ValueError('The value \'{}\' cannot be mapped to boolean.'
-                         .format(string_))
 
 # -------------------------------------------------------------------------------------------------------------------- #
 if __name__ == "__main__":
@@ -84,108 +51,18 @@ if __name__ == "__main__":
     start_time = datetime.datetime.now()
     pre_timeatfinished=start_time
     print("program starts here......start time is:", start_time)
-    input_para_folder = mtsm.INPUT_PARAMETER_DIR
-    input_para_dir=os.path.join(input_para_folder,"input_parameter.csv")
-    TRPartA_test_scenario_list=[]
-    debug_mode_list=[]
-    test_area=[]
-    read_fleet_size=[]
-    mile_meter = 1609.34
+    # the run's parameters (input_parameter.csv) are cfg.<name>; the model's constants are config.<NAME>
+    cfg = config.read_run_config()
+    config.check_run_config(cfg)
 
-    ##
-    with open(input_para_dir) as f:
+    random.seed(cfg.random_seed)
+    np.random.seed(cfg.random_seed)
+    print("random_seed:", cfg.random_seed, "PYTHONHASHSEED:", os.environ.get("PYTHONHASHSEED"))
 
-        csvreader = csv.DictReader(f)
-        for data in csvreader:
-            TRPartA = str2bool(str(data["TRPartA"]))
-            TRPartA_test_scenario_list.append(int(data["TRPartA_test_scenario_list"]))
-            debug_mode_list.append(str2bool(str(data["debug_mode_list"])))
-            transit_fare = float(data["transit_fare ($)"])
-            microtransit_dist_based_rate = float(data["microtransit_dist_based_rate ($/mile)"])/mile_meter
-            microtransit_start_fare = float(data["microtransit_start_fare ($)"])
-            test_area.append(str(data["test_area"]))
-            BayesianOptimization = str2bool(str(data["BayesianOptimization"]))
-            fleet_size = int(data["Fleet_size"])
-            PkFareFactor = float(data["PkFareFactor"])
-            OffPkFareFactor=float(data["OffPkFareFactor"])
-            Fixed2MicroFactor=float(data["Fixed2MicroFactor"])
-            Micro2FixedFactor=float(data["Micro2FixedFactor"])
-            headway = int(data["FRT_headway"]) #Ritun
-            base_FRT_headway = 20
-            base_FRT_fare = 2.5  # Ritun: base fare for fixed route transit
-            initial_rejection_rate = float(data["initial_rejection_rate"])
-            micro_rejection_penalty = float(data["micro_rejection_penalty ($)"])
-            # one seed drives both the mode-choice draws here and FleetPy's random_seed; 0 if the column is absent
-            random_seed = int(data.get("random_seed") or 0)
+    headway_scenarios = [cfg.headway]  # [30,60]  #Ritun
+    fleet_size_scenarios = cfg.read_fleet_size
 
-            read_fleet_size.append(fleet_size)
-
-    f.close()
-
-    # The code supports only Lemon Grove with TRPartA=TRUE, BayesianOptimization=TRUE and debug_mode_list=FALSE; the
-    # branches for the other values were removed (docs/progress.md). The three columns stay in input_parameter.csv
-    # because the optimizer writes its parameters by column position (docs/open_issues.md, I-15).
-    unsupported = []
-    if any(area != "lemon_grove" for area in test_area):
-        unsupported.append(f"test_area={test_area} (only lemon_grove)")
-    if not TRPartA:
-        unsupported.append("TRPartA=False")
-    if not BayesianOptimization:
-        unsupported.append("BayesianOptimization=False")
-    if any(debug_mode_list):
-        unsupported.append("debug_mode_list=True")
-    if unsupported:
-        sys.exit("ERROR: configuration in %s is not supported: %s"
-                 % (input_para_dir, ", ".join(unsupported)))
-    input_problems = check_inputs()
-    if input_problems:
-        print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm_data/MANIFEST.csv -> results are not comparable to "
-              f"docs/reference_results: {input_problems}{Style.RESET_ALL}")
-    for folder in (mtsm.LG_FINAL_NETWORK_DIR, mtsm.LG_INDIV_OUTPUT_DIR, mtsm.LG_OUTPUT_DIR):
-        os.makedirs(folder, exist_ok=True)
-
-    random.seed(random_seed)
-    np.random.seed(random_seed)
-    print("random_seed:", random_seed, "PYTHONHASHSEED:", os.environ.get("PYTHONHASHSEED"))
-
-    # True: individual-level convergence test (used). False: aggregate-level test, kept for later but unfinished;
-    # see the convergence test in the iteration loop below and docs/open_issues.md, I-16.
-    indiv_converg_test=True
-
-    maximum_iteration = 15
-    ###############
-    #
-    aggregation = "whole_region" #["census_track","whole_region"]
-    convergence_gap = 0.01       # Ritun changed it from 0.01
-    #####################
-    #Gas cost
-    #####
-    F_gas_per_mile = 0.350  #The fuel cost for the CNG buses averaged $0.35 per mile
-    M_gas_per_mile = 0.550  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile
-
-
-
-    #################
-    ##########
-    # Different operating hours testing scenarios
-    operating_period_1 = ["AM", "PM"] #10 hr
-    operating_period_2 = ["AM", "MD", "PM"] #15hr
-    operating_period_3 = ["AM", "MD", "PM", "EV"] #19hr
-
-    #####################
-    # output_metrics
-    mode_change_threshold=0.05
-
-
-
-    microtransit_running_scenarios = ["micro"]
-    repositioning_list=[True]
-    operating_periods_scenarios = [operating_period_2]  # just for testing [operating_period_1,operating_period_2]
-    virtual_stop_scenarios = [75]  # [75,100]
-    headway_scenarios = [headway]  # [30,60]  #Ritun
-    fleet_size_scenarios = read_fleet_size
-
-    for study_area in test_area:
+    for study_area in cfg.test_area:
         demand_folder,initial_network_folder,final_network_folder,fleetpy_demand_folder,output_folder=fld_dir.determine_dolders(study_area)
         new_fleetpy_demand = os.path.join(fleetpy_demand_folder,"%s_debug_False_fleetpy_demand.csv" % str(study_area))
         #############
@@ -221,7 +98,7 @@ if __name__ == "__main__":
         ###################
         ######################################################
 
-        initial_super_network_dir, initial_super_network, final_super_network_dir, final_super_network=tst_scen_create.scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_periods_scenarios,time_periods,fleet_size_scenarios,headway_scenarios,initial_network_folder,final_network_folder,base_FRT_headway)
+        initial_super_network_dir, initial_super_network, final_super_network_dir, final_super_network=tst_scen_create.scen_create(microtransit_setup_scenarios,config.VIRTUAL_STOP_SCENARIOS,config.OPERATING_PERIODS_SCENARIOS,time_periods,fleet_size_scenarios,headway_scenarios,initial_network_folder,final_network_folder,config.BASE_FRT_HEADWAY)
         #################################################
         # 1108: prepare for the request files - demand side
         ###################################################
@@ -249,7 +126,7 @@ if __name__ == "__main__":
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
 
-            for repositioning in repositioning_list:
+            for repositioning in config.REPOSITIONING_LIST:
 
                 ##########################
                 # store the auto shortest path result
@@ -261,10 +138,10 @@ if __name__ == "__main__":
                 ########################
                 agent_visited_temp_F, agent_time_visited_temp_F, agent_dist_visited_temp_F, agent_fare_visited_temp_F, agent_path_F, agent_time_path_F, agent_transit_time_path_all_F, agent_transit_dist_path_all_F = dict_init.F_transit_sp_dict_init()
 
-                for test_scenario in TRPartA_test_scenario_list:
-                    print("aggregation:",aggregation,"; mode_change_threshold:",mode_change_threshold,"; convergence_gap:",convergence_gap,"; maximum_iteration:",maximum_iteration,  "; F_gas_per_mile ($/mi):",F_gas_per_mile,
-                    "; M_gas_per_mile ($/mi):", M_gas_per_mile,"; repositioning",repositioning,"; Testing Scenario:",test_scenario,"; transit_fare ($):", transit_fare,"; microtransit_start_fare ($):",microtransit_start_fare,"; microtransit_dist_based_rate ($/mi):",microtransit_dist_based_rate*mile_meter,
-                          "; Peak fare factor (0~1):",PkFareFactor,"; Off-peak fare factor (0~1):",OffPkFareFactor,"; Fixed to Micro discount factor (0~1):",Fixed2MicroFactor,"; Micro to Fixed discount factor (0~1):",Micro2FixedFactor)
+                for test_scenario in cfg.TRPartA_test_scenario_list:
+                    print("aggregation:",config.AGGREGATION,"; mode_change_threshold:",config.MODE_CHANGE_THRESHOLD,"; convergence_gap:",config.CONVERGENCE_GAP,"; maximum_iteration:",config.MAXIMUM_ITERATION,  "; F_gas_per_mile ($/mi):",config.F_GAS_PER_MILE,
+                    "; M_gas_per_mile ($/mi):", config.M_GAS_PER_MILE,"; repositioning",repositioning,"; Testing Scenario:",test_scenario,"; transit_fare ($):", cfg.transit_fare,"; microtransit_start_fare ($):",cfg.microtransit_start_fare,"; microtransit_dist_based_rate ($/mi):",cfg.microtransit_dist_based_rate*config.MILE_METER,
+                          "; Peak fare factor (0~1):",cfg.PkFareFactor,"; Off-peak fare factor (0~1):",cfg.OffPkFareFactor,"; Fixed to Micro discount factor (0~1):",cfg.Fixed2MicroFactor,"; Micro to Fixed discount factor (0~1):",cfg.Micro2FixedFactor)
 
 
 
@@ -274,7 +151,7 @@ if __name__ == "__main__":
                         tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,test_scenario)
                         num_headway_scen+=1
                         num_virstop_scen = 0
-                        for virstop in virtual_stop_scenarios: #virtual stops - not necessarily influence the cost, but will influence the mobility
+                        for virstop in config.VIRTUAL_STOP_SCENARIOS: #virtual stops - not necessarily influence the cost, but will influence the mobility
                             num_virstop_scen+=1
                             num_fleet_size_scen = 0
                             for fleet_size in fleet_size_scenarios: #fleetsize - influence the cost & mobility
@@ -290,7 +167,7 @@ if __name__ == "__main__":
                                 if isExist==False:
                                     fleetpy.create_config_files(sc, study_area, repositioning, fleet_size)
 
-                                for operating_periods in operating_periods_scenarios: #fleetsize - influence the cost & mobility
+                                for operating_periods in config.OPERATING_PERIODS_SCENARIOS: #fleetsize - influence the cost & mobility
                                     num_operating_periods_scen+=1
                                     if operating_periods==["AM", "MD", "PM", "EV"]:
                                         M_operating_hrs=19
@@ -303,7 +180,7 @@ if __name__ == "__main__":
 
                                     F_transit_trips = os.path.join(fleetpy_demand_folder, "debug_False_F_transit_demand_%s_op_hr_%s_hw_%s_virstop_%s.csv" % (str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
 
-                                    for microtransit_run in microtransit_running_scenarios:
+                                    for microtransit_run in config.MICROTRANSIT_RUNNING_SCENARIOS:
                                         if microtransit_run == "micro_only" and num_headway_scen>1:
                                             continue
                                         else:
@@ -325,7 +202,7 @@ if __name__ == "__main__":
                                                       "; operating_periods:", operating_periods, "scen,",num_operating_periods_scen,"microtransit_scen:",microtransit_run,";")
 
                                                 iteration=0
-                                                rejection_rate = initial_rejection_rate / 100  # Ritun added: Feb 14
+                                                rejection_rate = cfg.initial_rejection_rate / 100  # Ritun added: Feb 14
                                                 last_rejection_rate = 0
                                                 iter_agent_choice_prob=OrderedDict()
                                                 iter_agent_selected_mode=OrderedDict()
@@ -421,7 +298,7 @@ if __name__ == "__main__":
                                                                           rejection_rate_dict[iteration - 2] +
                                                                           rejection_rate_dict[
                                                                               iteration - 3]) / 3
-                                                    total_rejection_penalty = rejection_rate * micro_rejection_penalty
+                                                    total_rejection_penalty = rejection_rate * cfg.micro_rejection_penalty
                                                     print(f"TOATL REJECTION PENALTY IS: {total_rejection_penalty}")
 
                                                     print("iteration:",iteration)
@@ -481,9 +358,9 @@ if __name__ == "__main__":
                                                                 except:
                                                                     raise Exception("iteration",iteration,"converged",converged,"....headway",headway, "(mins),", "microtransit", microtransit_run,"; virtual_stop:", virstop, "(%),", "time_period", time_period,"; fleet_size:", fleet_size, "(veh)," ,"; operating_periods:", operating_periods,";")
                                                     initial_super_network["non_micro"][
-                                                        base_FRT_headway] = n_a.read_super_network(
+                                                        config.BASE_FRT_HEADWAY] = n_a.read_super_network(
                                                         initial_super_network_dir["non_micro"][
-                                                            base_FRT_headway])
+                                                            config.BASE_FRT_HEADWAY])
 
                                                     change_mode_ag_list=[]
                                                     print("Demand Component.....assigning travelers to different modes...")
@@ -499,7 +376,7 @@ if __name__ == "__main__":
 
                                                             M_rq_id_list = []
                                                             for agent in agent_list_:
-                                                                change_mode=True  #change_mode is True, unless the probability difference is smaller than the mode_change_threshold
+                                                                change_mode=True  #change_mode is True, unless the probability difference is smaller than MODE_CHANGE_THRESHOLD
 
                                                                 origin = agent.rq_O
                                                                 dest = agent.rq_D
@@ -529,7 +406,7 @@ if __name__ == "__main__":
                                                                 #1108 Siwei: read the initial super-network according to "microtransit", "fixed route trasnit headway","virstop", and "time_period"
                                                                 T_F_network = \
                                                                     initial_super_network["non_micro"][
-                                                                        base_FRT_headway]
+                                                                        config.BASE_FRT_HEADWAY]
                                                                 if iteration==0:
                                                                     if microtransit_run == "micro":
                                                                         if time_period in operating_periods:
@@ -556,8 +433,8 @@ if __name__ == "__main__":
 
                                                                 # *****don't calculate it along the way - only*********
                                                                 # calculate generalized cost shortest path for agent on Auto network
-                                                                if test_scenario == TRPartA_test_scenario_list[0]:
-                                                                    parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,transit_fare,microtransit_start_fare,microtransit_dist_based_rate,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario=0, mode="C", verbose=False, iteration=iteration)
+                                                                if test_scenario == cfg.TRPartA_test_scenario_list[0]:
+                                                                    parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario=0, mode="C", verbose=False, iteration=iteration)
                                                                     auto_time_path_all_ = n_a.getTrajectory_O_to_D(origin, dest,auto_time_path,auto_visited_temp)
                                                                     agent_auto_visited_temp[rq_id] = auto_visited_temp
                                                                     agent_auto_time_visited_temp[rq_id] = auto_time_visited_temp
@@ -576,8 +453,8 @@ if __name__ == "__main__":
                                                                     auto_time_path_all_ = agent_auto_time_path_all_[rq_id]
 
                                                                 # calculate generalized cost shortest path for agent on W_F network
-                                                                if test_scenario == TRPartA_test_scenario_list[0]:
-                                                                        visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,base_FRT_fare, microtransit_start_fare,microtransit_dist_based_rate,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
+                                                                if test_scenario == cfg.TRPartA_test_scenario_list[0]:
+                                                                        visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,config.BASE_FRT_FARE, cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
                                                                         transit_time_path_all_F = n_a.getTrajectory_O_to_D(origin, dest,time_path_F,visited_temp_F)
                                                                         transit_dist_path_all_F = n_a.getTrajectory_O_to_D(origin, dest,dist_path_F,dist_visited_temp_F)  # calculate fixed transit VMT
 
@@ -604,7 +481,7 @@ if __name__ == "__main__":
                                                                 if microtransit_run == "micro_only" and (time_period not in operating_periods):
                                                                     aaa=0
                                                                 else:
-                                                                    visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,transit_fare,microtransit_start_fare,microtransit_dist_based_rate,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
+                                                                    visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
                                                                     transit_time_path_all_ = n_a.getTrajectory_O_to_D(origin, dest, time_path, visited_temp)
                                                                     transit_dist_path_all_ = n_a.getTrajectory_O_to_D(origin, dest, dist_path,dist_visited_temp) #calculate microtransit and fixed transit VMT
 
@@ -672,7 +549,7 @@ if __name__ == "__main__":
                                                                 if iteration>0:
                                                                     diff_prob_T=abs(pre_iter_prob_T[rq_id]-prob_T)
 
-                                                                    if diff_prob_T <= mode_change_threshold: # if probability does not change a lot, then we don't change agents' modes.
+                                                                    if diff_prob_T <= config.MODE_CHANGE_THRESHOLD: # if probability does not change a lot, then we don't change agents' modes.
                                                                         change_mode=False
                                                                     else:
                                                                         change_mode = True #03/02/2026: Siwei added this line
@@ -710,7 +587,7 @@ if __name__ == "__main__":
                                                                         off_micro_ag_mode[rq_id] = "T"
                                                                         off_micro_T_trips += 1
                                                                         off_micro_ag_tot_tt[rq_id] = travel_time_F
-                                                                        off_micro_ag_tot_dist[rq_id] = travel_dist_F/mile_meter
+                                                                        off_micro_ag_tot_dist[rq_id] = travel_dist_F/config.MILE_METER
 
                                                                         off_micro_agent_gen_cost[rq_id]=gen_cost_F
                                                                         trimmed_transit_time_path_F = transit_time_path_all_F[1:-1]
@@ -756,13 +633,13 @@ if __name__ == "__main__":
                                                                             # calculate the number of fixed route transit trip legs
                                                                             if link_type == 1:
                                                                                 distance_F = dist - pre_dist
-                                                                                off_micro_VMT_F+=(distance_F/mile_meter)
-                                                                                off_micro_transit_link_vmt[time_period][(pre_node, node)] += (distance_F / mile_meter)
+                                                                                off_micro_VMT_F+=(distance_F/config.MILE_METER)
+                                                                                off_micro_transit_link_vmt[time_period][(pre_node, node)] += (distance_F / config.MILE_METER)
                                                                                 off_micro_transit_link_pax[time_period][(pre_node, node)]+=1
                                                                             if link_type==0:
                                                                                 distance_W = dist - pre_dist
-                                                                                off_micro_VMT_W += (distance_W / mile_meter)
-                                                                                off_micro_ag_VMT_W[rq_id]+=(distance_W / mile_meter)
+                                                                                off_micro_VMT_W += (distance_W / config.MILE_METER)
+                                                                                off_micro_ag_VMT_W[rq_id]+=(distance_W / config.MILE_METER)
                                                                             pre_dist = dist
                                                                             pre_node = node
 
@@ -770,10 +647,10 @@ if __name__ == "__main__":
                                                                     else:  # agent choose the car mode
                                                                         off_micro_ag_mode[rq_id] = "C"
                                                                         off_micro_ag_tot_tt[rq_id]= travel_time_auto
-                                                                        off_micro_ag_tot_dist[rq_id] = travel_dist_auto/mile_meter
+                                                                        off_micro_ag_tot_dist[rq_id] = travel_dist_auto/config.MILE_METER
                                                                         off_micro_auto_trips+=1
                                                                         off_micro_agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket
-                                                                        off_micro_VMT_auto += (travel_dist_auto/mile_meter)
+                                                                        off_micro_VMT_auto += (travel_dist_auto/config.MILE_METER)
                                                                         off_micro_agent_gen_cost[rq_id]=gen_cost_auto
 
 
@@ -926,22 +803,22 @@ if __name__ == "__main__":
                                                                             # calculate the number of fixed route transit trip legs
                                                                             if link_type == 1:
                                                                                 distance_F = dist - pre_dist
-                                                                                VMT_F += (distance_F / mile_meter)
-                                                                                ag_VMT_F_intermediate += (distance_F / mile_meter)
-                                                                                transit_link_vmt[time_period][(pre_node, node)]+=(distance_F / mile_meter)
+                                                                                VMT_F += (distance_F / config.MILE_METER)
+                                                                                ag_VMT_F_intermediate += (distance_F / config.MILE_METER)
+                                                                                transit_link_vmt[time_period][(pre_node, node)]+=(distance_F / config.MILE_METER)
                                                                                 transit_link_pax[time_period][(pre_node, node)]+=1
 
 
 
                                                                             if link_type == 0:
                                                                                 distance_W = dist - pre_dist
-                                                                                VMT_W += (distance_W / mile_meter)
-                                                                                ag_VMT_W_intermediate += (distance_W / mile_meter)
+                                                                                VMT_W += (distance_W / config.MILE_METER)
+                                                                                ag_VMT_W_intermediate += (distance_W / config.MILE_METER)
 
                                                                             if link_type == 4:
                                                                                 distance_M = dist - pre_dist
-                                                                                VMT_M += (distance_M / mile_meter)
-                                                                                ag_VMT_M_intermediate += (distance_M / mile_meter)
+                                                                                VMT_M += (distance_M / config.MILE_METER)
+                                                                                ag_VMT_M_intermediate += (distance_M / config.MILE_METER)
                                                                             pre_dist = dist
                                                                             pre_node=node
 
@@ -965,7 +842,7 @@ if __name__ == "__main__":
                                                                         agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket cost
                                                                         agent_op_cost_Fix[rq_id] = 0
                                                                         agent_op_cost_Micro[rq_id] = 0
-                                                                        VMT_auto+=(travel_dist_auto/mile_meter)
+                                                                        VMT_auto+=(travel_dist_auto/config.MILE_METER)
                                                                         agent_gen_cost[rq_id]=gen_cost_auto
 
                                                                         ag_VMT_W[rq_id] = 0
@@ -1021,14 +898,14 @@ if __name__ == "__main__":
 
                                                                     else:
                                                                         num_car_trips += 1
-                                                                        VMT_auto += (travel_dist_auto / mile_meter)
+                                                                        VMT_auto += (travel_dist_auto / config.MILE_METER)
 
 
 
                                                             #03/02/2026: Siwei comment it
                                                             num_transit_users = tt_num_agents - num_car_trips
 
-                                                            print("number of agents prob_T changed greater than threshold",mode_change_threshold,":", len(change_mode_ag_list))
+                                                            print("number of agents prob_T changed greater than threshold",config.MODE_CHANGE_THRESHOLD,":", len(change_mode_ag_list))
 
 
                                                         csvfile_M.close()
@@ -1039,20 +916,20 @@ if __name__ == "__main__":
                                                     ####################
                                                     #Convergence test right after the Binary Choice Model
                                                     ##########################################
-                                                    # indiv_converg_test (set at the top) chooses between two convergence tests:
+                                                    # config.INDIV_CONVERG_TEST (mtsm_model/config.py) chooses between two convergence tests:
                                                     # - True (used): individual-level test, conv_test.indiv_convergence_test(). For every traveler it compares the
                                                     #   choice probabilities [prob_Auto, prob_T] with the previous iteration and sums (p_now - p_before)^2 / p_before
-                                                    #   over all travelers and both modes. An iteration passes if the sum is <= convergence_gap. The model has
-                                                    #   converged after two passing iterations (num_converged == 2), or at maximum_iteration.
+                                                    #   over all travelers and both modes. An iteration passes if the sum is <= CONVERGENCE_GAP. The model has
+                                                    #   converged after two passing iterations (num_converged == 2), or at MAXIMUM_ITERATION.
                                                     # - False (not used, kept for later): aggregate-level test, conv_test.convergence_test(M_share, M_share_pre). It
                                                     #   compares only the overall microtransit mode share with the previous iteration: converged if the share changed
                                                     #   by at most 1% (relative). It is unfinished and does not work if switched on as it is (docs/open_issues.md, I-16):
                                                     #     * its call below is commented out, and nothing computes M_share / M_share_pre, so `converged` never
                                                     #       becomes True;
-                                                    #     * the stop at maximum_iteration is only in the individual-level branch, so the loop would never end;
+                                                    #     * the stop at MAXIMUM_ITERATION is only in the individual-level branch, so the loop would never end;
                                                     #     * convergence_test() raises UnboundLocalError when the share changed by more than 1%.
                                                     # aggregated level convergence test
-                                                    if indiv_converg_test == False:
+                                                    if config.INDIV_CONVERG_TEST == False:
                                                         if iteration >= 1:
                                                             print("convergence check.....")
                                                             # converged,per_diff=conv_test.convergence_test(M_share,M_share_pre)
@@ -1060,7 +937,7 @@ if __name__ == "__main__":
                                                     else:
                                                         if iteration >= 1:
                                                             print("convergence check.....")
-                                                            converged_, sum_sq_per_diff = conv_test.indiv_convergence_test(iter_agent_choice_prob[iteration], iter_agent_choice_prob[iteration - 1],convergence_gap)
+                                                            converged_, sum_sq_per_diff = conv_test.indiv_convergence_test(iter_agent_choice_prob[iteration], iter_agent_choice_prob[iteration - 1],config.CONVERGENCE_GAP)
 
                                                             iter_sum_sq_per_diff.append((iteration,sum_sq_per_diff))
 
@@ -1070,8 +947,8 @@ if __name__ == "__main__":
                                                                     converged = True
 
 
-                                                            if iteration == maximum_iteration:
-                                                                # stop after maximum_iteration iterations even if the test has not passed twice
+                                                            if iteration == config.MAXIMUM_ITERATION:
+                                                                # stop after MAXIMUM_ITERATION iterations even if the test has not passed twice
                                                                 converged = True
 
                                                             print("Individual Level Convergence Test:","sum of square percentage difference ", sum_sq_per_diff, "converged",converged)
@@ -1088,16 +965,16 @@ if __name__ == "__main__":
                                                                                        transit_line_duration[
                                                                                            route_id] / 60 * 170  # 5 lines and $fixed route transit operating cost 170/veh-hour
                                                                         F_oper_cost_base += 2 * (
-                                                                                F_operating_hrs * 60 / base_FRT_headway) * \
+                                                                                F_operating_hrs * 60 / config.BASE_FRT_HEADWAY) * \
                                                                                             transit_line_duration[
                                                                                                 route_id] / 60 * 170  # Ritun Jan 7, 2024: add base F operating cost calculation
                                                                         transit_tt_VMT += 2 * (
                                                                                 F_operating_hrs * 60 / headway) * dist
                                                                         transit_tt_VMT_base += 2 * (
-                                                                                F_operating_hrs * 60 / base_FRT_headway) * dist
+                                                                                F_operating_hrs * 60 / config.BASE_FRT_HEADWAY) * dist
 
-                                                                F_gas_cost = transit_tt_VMT * F_gas_per_mile
-                                                                F_gas_cost_base = transit_tt_VMT_base * F_gas_per_mile  # Ritun Jan 7, 2024: add base F gas cost calculation
+                                                                F_gas_cost = transit_tt_VMT * config.F_GAS_PER_MILE
+                                                                F_gas_cost_base = transit_tt_VMT_base * config.F_GAS_PER_MILE  # Ritun Jan 7, 2024: add base F gas cost calculation
                                                                 F_oper_cost += F_gas_cost
                                                                 F_oper_cost_base += F_gas_cost_base  # Ritun Jan 7, 2024: add base F gas cost calculation
 
@@ -1174,7 +1051,7 @@ if __name__ == "__main__":
                                                                             f_waiting_time = 0
                                                                             T_walking_time = 0
                                                                             c_tt_travel_time = agent_travel_time[rq_id]
-                                                                            c_tt_travel_dist = agent_travel_dist[rq_id]/mile_meter
+                                                                            c_tt_travel_dist = agent_travel_dist[rq_id]/config.MILE_METER
 
                                                                         origin=agent_O[rq_id]
                                                                         dest=agent_D[rq_id]
@@ -1196,7 +1073,7 @@ if __name__ == "__main__":
                                                                             print("microtransit distance (%s) not equal to microtransit travel time (%s):",ag_VMT_M[rq_id],agent_M_tot_travel_time[rq_id])
                                                                         writer_indiv.writerow({"rq_id": rq_id,"origin": origin, "dest": dest,
                                                                              "dp_time": dp_time,"mode": mode, "switch_mode":agent_switch_mode[rq_id],
-                                                                             "tt (s)": agent_travel_time[rq_id],"dist (mi)": agent_travel_dist[rq_id] / mile_meter,
+                                                                             "tt (s)": agent_travel_time[rq_id],"dist (mi)": agent_travel_dist[rq_id] / config.MILE_METER,
                                                                              "tt_C (s)": c_tt_travel_time,"dist_C (mi)": c_tt_travel_dist,"tt_M (s)":agent_M_tot_travel_time[rq_id],
                                                                              "dist_M (mi)": ag_VMT_M[rq_id],"tt_F (s)":agent_F_tot_travel_time[rq_id],"dist_F (mi)": ag_VMT_F[rq_id],
                                                                               "agent_M_tot_wait_time (s)": m_waiting_time,"agent_F_tot_wait_time (s)": f_waiting_time,
@@ -1235,7 +1112,7 @@ if __name__ == "__main__":
                                                                 #under every different fixed route transit headway, we need to calculate the cost again
                                                                 if (num_virstop_scen==1) and (num_fleet_size_scen==1) and (num_operating_periods_scen==1) and (microtransit_run=="micro") and (repositioning==True):
                                                                     #calculate off_micro metrics
-                                                                    off_micro_F_revenue=off_micro_F_trips*base_FRT_fare
+                                                                    off_micro_F_revenue=off_micro_F_trips*config.BASE_FRT_FARE
                                                                     if off_micro_F_trips==0:
                                                                         off_micro_F_sub_per_ridership=-999
                                                                         off_micro_tt_sub = -999
@@ -1285,7 +1162,7 @@ if __name__ == "__main__":
                                                                     individual_result_dir = os.path.join(output_folder,"individual_results_%s_M_fsize_%s_op_hr_%s_hw_%s_virstop_%s_scen_%s.csv" % (str(microtransit_run), str(fleet_size),str(M_operating_hrs), str(headway),str(virstop),str(test_scenario)))
 
                                                                     aaa=1
-                                                                    if test_scenario==TRPartA_test_scenario_list[0]:
+                                                                    if test_scenario==cfg.TRPartA_test_scenario_list[0]:
                                                                         with open(individual_result_dir,'w+',newline='', encoding='utf-8') as csvfile_indiv_fixed_only:
                                                                             fieldnames = ["rq_id", "origin","dest", "dp_time","mode","switch_mode","tt (s)","dist (mi)",
                                                                                           "tt_C (s)","dist_C (mi)","tt_M (s)","dist_M (mi)",
@@ -1376,7 +1253,7 @@ if __name__ == "__main__":
                                                                                     off_micro_T_trips - off_micro_W_trips)
 
                                                                         # Write the fixed only scenario
-                                                                        if test_scenario == TRPartA_test_scenario_list[0]:
+                                                                        if test_scenario == cfg.TRPartA_test_scenario_list[0]:
                                                                             writer.writerow({"test_scen": 0,"dscrptn": "FRT_only_scen", "study_area": study_area,"repositioning": str(False),
                                                                                              "microtrasnit": "non_micro","hdwy (min)": headway,
                                                                                              "vir_stop (%)": 0,"flt_sz": 0, "op_periods": 0,"tt_agents": tt_num_agents,
@@ -1422,7 +1299,7 @@ if __name__ == "__main__":
                                                                     pure_F_users=(off_micro_T_trips-off_micro_W_trips)
 
                                                                     # Write the fixed only scenario
-                                                                    if test_scenario == TRPartA_test_scenario_list[0]:
+                                                                    if test_scenario == cfg.TRPartA_test_scenario_list[0]:
 
                                                                         writer.writerow({"test_scen":0,"dscrptn":"FRT_only_scen","study_area":study_area,"repositioning":str(False),"microtrasnit":"non_micro","hdwy (min)": headway, "vir_stop (%)": 0, "flt_sz": 0,"op_periods": 0,
                                                                                      "tt_agents": tt_num_agents,"car_users": off_micro_auto_trips,"car_mode_share (%)": off_micro_auto_trips/tt_num_agents,
@@ -1450,7 +1327,7 @@ if __name__ == "__main__":
                                                                 util_rate, veh_occ, total_vmt, empty_vkm, avg_speed_mph = output_metrics.get_fleetpy_eval_output_metrics(repositioning)
                                                                 tt_VMT = VMT_auto + total_vmt + transit_tt_VMT
 
-                                                                M_gas_cost = total_vmt * M_gas_per_mile
+                                                                M_gas_cost = total_vmt * config.M_GAS_PER_MILE
                                                                 M_mode_operating_cost += M_gas_cost
 
                                                                 M_sub_per_ridership = (M_mode_operating_cost - M_revenue) / num_M_trips # microtransit subsidy per microtransit trips
@@ -1579,14 +1456,14 @@ if __name__ == "__main__":
                                                         #######################################################################################################
                                                         # FleetPy runs on copies of the inputs in mtsm_data/lemon_grove/fleetpy_inputs/ placed inside fleetpy/
                                                         cc_fleetpy, sc_fleetpy = fleetpy.stage_inputs(cc, sc)
-                                                        fleetpy.run_scenarios(cc_fleetpy, sc_fleetpy, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=random_seed)
+                                                        fleetpy.run_scenarios(cc_fleetpy, sc_fleetpy, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=cfg.random_seed)
                                                         fleetpy.warn_non_optimal_repositioning(cc_fleetpy, sc_fleetpy)
                                                         list_results = fleetpy.read_outputs_for_comparison(cc_fleetpy, sc_fleetpy)
                                                         all_scenario_assert_dict = {0: {"number users": 88}}
                                                         fleetpy.check_assertions(list_results, all_scenario_assert_dict, LOG_F)
                                                         print("FleetPy finishes. Now update the microtransit part in super-network.....","iteration:",iteration)
                                                         wait_times = update.update_network_files(repositioning,microtransit_run,headway,virstop,M_operating_hrs,fleet_size,study_area,iteration,
-                                                                                    aggregation)
+                                                                                    config.AGGREGATION)
 
                                                         # Ritun added: Feb 14
                                                         if repositioning == True:

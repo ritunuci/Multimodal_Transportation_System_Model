@@ -27,7 +27,7 @@ earlier entries; commits before that date use the old names.
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | Done 2026-11-08 (open: I-11, I-12) |
 | 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
 | 2e | Remove the `TRPartA`, `BayesianOptimization` and `debug_mode` branches (columns kept in the input file) | Done 2026-11-09 (open: I-15) |
-| 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | In progress: decisions and step 1 of 9 done 2026-11-09 (open: I-16) |
+| 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | In progress: decisions and steps 1-2 of 9 done 2026-11-09 (open: I-16) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |

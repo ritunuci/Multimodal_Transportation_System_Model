@@ -1,7 +1,7 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Step 1 is done (see
-"Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 and 2 are done
+(see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
 
@@ -126,7 +126,18 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      after step 1);
    - the helper modules' `__main__` test harnesses and their commented-out code were not changed; the
      standalone scripts were not changed (they still call the old signatures; nothing runs them).
-2. **Config and constants** → `config.py`.
+2. **Config and constants** → `config.py`. **Done 2026-11-09** (`REPRODUCED`):
+   - new package `mtsm_model/` with `config.py`: `RunConfig` (the parameters of `input_parameter.csv`; same reading
+     code as before: the lists take every row, the other fields the last row), `read_run_config()`,
+     `check_run_config()` (the startup check, the frozen-input check, the output folders), `str2bool()`, and the
+     fixed settings and constants as commented module constants;
+   - the entry script uses `cfg.<name>` for input parameters and `config.<NAME>` for constants (the old variable
+     names, constants in upper case; renamed by token, so strings and keyword arguments are unchanged).
+     `headway_scenarios = [cfg.headway]` and `fleet_size_scenarios = cfg.read_fleet_size` stay in the entry script,
+     because `headway` and `fleet_size` are loop variables there;
+   - constants still written as numbers inside the code (operating costs $170/h and $130/h, the time-period
+     limits, the microtransit node offset 1171, the parking charge factors) move to `config.py` together with the
+     code that uses them (steps 4-7), so that each step changes one part of the script.
 3. **State dataclasses** → `state.py`. This is a mechanical rename of the dictionaries
    (`agent_O[rq_id]` → `state.agent_O[rq_id]`): the same objects, the same order.
 4. **Trip legs** → `trip_legs.py`, removing the three copies.
