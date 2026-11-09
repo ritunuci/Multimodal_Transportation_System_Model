@@ -24,7 +24,7 @@ earlier entries; commits before that date use the old names.
 | 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm_data/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
 | 1c | Optimizer (`Bayesian_optimization_script.py`) reads and writes `mtsm_data/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
-| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-4 done (2026-11-07/08); step 5 (docs) to do |
+| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | Done 2026-11-08 (open: I-11, I-12) |
 | 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
@@ -491,7 +491,7 @@ file was renamed, so the code still builds the same file names. The folder const
   3. Give the model its own vehicle type (capacity 8), with a checked reference update (I-09). Done 2026-11-08.
   4. Restore FleetPy's example data, archive the downtown San Diego data, run FleetPy's own example (I-10).
      Done 2026-11-08 as step 1 of "Removing downtown San Diego" (downtown data deleted instead of archived).
-  5. Docs.
+  5. Docs. Done 2026-11-08.
 - Not in this pass: deleting the old, unused MTSM files inside `fleetpy/` (I-11).
 
 ### Step 1: comparison with upstream (2026-11-07)
@@ -576,6 +576,17 @@ file was renamed, so the code still builds the same file names. The folder const
   `docs/reference_results/README.md`). Then **32 identical, `REPRODUCED`**; `check_inputs.py` passes; no generated
   files in `git status`. The 9 reported results never differed. The trace shows FleetPy reading the copied
   `lemon_grove_vehtype.csv`.
+
+### Step 5: docs and result (2026-11-08)
+- `fleetpy/LOCAL_CHANGES.md` final: a summary of how this FleetPy differs from upstream `7019960`, the current state
+  of its data first, then the history of the undone data changes; line endings described as they are.
+- "Continuing work in a fresh clone": rules for `fleetpy/` added.
+- Result: FleetPy is upstream `7019960` with four pandas-2 fixes, small `run_examples.py` edits and one README line;
+  it holds no MTSM parameter or input. MTSM reaches it only through `fleetpy_runner.py`, in the same process, and
+  copies its own inputs (network, initial vehicle distribution, vehicle type, scenario configs) from
+  `mtsm_data/lemon_grove/fleetpy_inputs/` into `fleetpy/` before each run. Still open: old unused MTSM files inside
+  `fleetpy/` (I-11) and FleetPy's own example a) serving 90 instead of 88 users (I-12).
+- Docs only, no run needed.
 
 ---
 
@@ -684,6 +695,9 @@ file was renamed, so the code still builds the same file names. The folder const
    - Do not edit the frozen inputs in `mtsm_data/` without recording it here and regenerating `mtsm_data/MANIFEST.csv`
      (`python tools/check_inputs.py --write`).
    - The optimizer (`Bayesian_optimization_script.py`) overwrites `mtsm_data/input_parameter/input_parameter.csv` (see Phase 1c).
+   - `fleetpy/` is upstream FleetPy: do not change it without recording the change in `fleetpy/LOCAL_CHANGES.md`. Inputs
+     the model gives FleetPy belong in `mtsm_data/lemon_grove/fleetpy_inputs/` (copied in by `fleetpy_runner.py`).
+     Files restored from upstream keep upstream's LF line endings.
 7. The old folder `D:\Ritun\Siwei_Micro_Transit\FleetPy_SanDiego` is an archive; the old data folders
    (`Bayesian_Optimization`, `Data\0719_input`, `Ritun\Lemon Grove`) are no longer needed by the code.
 8. A new Claude Code session does not know the earlier conversation. Start it with: *"Read docs/progress.md and

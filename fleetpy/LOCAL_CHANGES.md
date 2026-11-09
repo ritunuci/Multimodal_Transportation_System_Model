@@ -16,7 +16,12 @@ commit contains more. No upstream file in `src/`, `data/` or `studies/` is missi
 The 7 other `src/` files differ only by the local changes below. Upstream FleetPy has moved on since (latest commit
 2026-10-01); this repository has not been updated to it.
 
-Line endings: files here use CRLF, upstream uses LF. This is not counted as a change.
+Line endings are not counted as a change: the code files here use CRLF, upstream uses LF; `run_examples.py` and the
+data files restored from upstream on 2026-11-08 keep upstream's LF.
+
+**Summary (2026-11-08):** this folder differs from upstream `7019960` only by four pandas-2 fixes in `src/`, small
+edits to `run_examples.py`, one line in `README.md`, and old files added for MTSM that nothing reads (I-11). It
+holds no model parameter or input of MTSM.
 
 ## How MTSM uses FleetPy
 
@@ -24,8 +29,9 @@ Line endings: files here use CRLF, upstream uses LF. This is not counted as a ch
   imports itself as the top-level package `src`.
 - FleetPy finds `data/` and `studies/` next to `src/`, so they stay in this folder.
 - MTSM's Lemon Grove inputs for FleetPy are kept in `mtsm_data/lemon_grove/fleetpy_inputs/` (same folder layout as this
-  folder) and copied into this folder before each FleetPy run (`fleetpy_runner.stage_inputs`). The copies are
-  git-ignored.
+  folder) and copied into this folder before each FleetPy run (`fleetpy_runner.stage_inputs`): the road network,
+  the initial vehicle distribution, the vehicle type `lemon_grove_vehtype` (capacity 8) and the two scenario config
+  files of the run. The copies are git-ignored. Model inputs belong there, not in this folder.
 - In every iteration, MTSM writes the demand for FleetPy into
   `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` and reads FleetPy's results from
   `studies/example_study/results/`. Both are git-ignored.
@@ -58,12 +64,9 @@ FleetPy's original `requirements.txt` (numpy 1.19.5, pandas 1.2.0, ...) is not i
 
 ## Local changes to data
 
-See `docs/open_issues.md`.
+Current state (2026-11-08): `data/` and `studies/` match upstream, except for files added for MTSM that the run
+does not read:
 
-- **Vehicle types restored (2026-11-08):** `data/vehicles/default_vehtype.csv` and `low_range_vehtype.csv` had
-  `maximum_passengers` changed from 4 to 8, because the Lemon Grove run used `default_vehtype`. Both are back to
-  upstream. The model now has its own vehicle type, `lemon_grove_vehtype` (capacity 8), in
-  `mtsm_data/lemon_grove/fleetpy_inputs/data/vehicles/`, copied into `data/vehicles/` before each run (I-09).
 - **Added files still here** (not in upstream; none of them is read by the Lemon Grove run; I-11):
   - `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`: 69 old files;
   - `data/demand/example_demand/matched/example_network/`: 9 `lemon_grove_zonal_partition's effect on ...` plots;
@@ -71,6 +74,13 @@ See `docs/open_issues.md`.
     `example_ir_only_{5,10,15,20,30,40,50}_veh.csv` and `debug_example_ir_only*.csv` (6). They use
     `rq_file=fleetpy_demand.csv`, a name that existed in both the downtown and the Lemon Grove demand folder, and no
     code names them.
+
+Earlier changes to FleetPy's data, all undone (details in `docs/progress.md` and `docs/open_issues.md`):
+
+- **Vehicle types restored (2026-11-08):** `data/vehicles/default_vehtype.csv` and `low_range_vehtype.csv` had
+  `maximum_passengers` changed from 4 to 8, because the Lemon Grove run used `default_vehtype`. Both are back to
+  upstream. The model now has its own vehicle type, `lemon_grove_vehtype` (capacity 8), in
+  `mtsm_data/lemon_grove/fleetpy_inputs/data/vehicles/`, copied into `data/vehicles/` before each run (I-09).
 - **Downtown San Diego removed (2026-11-08):** the downtown configs had used FleetPy's `example_network` and
   `example_demand`, so FleetPy's example data had been overwritten. The 14 overwritten files (example network,
   demand `example_100/200/400`, initial vehicle distribution, depots, charging stations, zone mapping, 5 example
