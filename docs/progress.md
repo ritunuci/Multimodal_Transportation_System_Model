@@ -25,7 +25,7 @@ earlier entries; commits before that date use the old names.
 | 1c | Optimizer (`Bayesian_optimization_script.py`) reads and writes `mtsm_data/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-2 done 2026-11-07 |
-| 2d | Remove downtown San Diego: code (also commented), inputs and outputs | In progress: steps 0-2 done 2026-11-08 |
+| 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -490,6 +490,7 @@ file was renamed, so the code still builds the same file names. The folder const
   2. Move FleetPy, add the runner and the copied inputs, remove the debug-only edits.
   3. Give the model its own vehicle type (capacity 8), with a checked reference update (I-09).
   4. Restore FleetPy's example data, archive the downtown San Diego data, run FleetPy's own example (I-10).
+     Done 2026-11-08 as step 1 of "Removing downtown San Diego" (downtown data deleted instead of archived).
   5. Docs.
 - Not in this pass: deleting the old, unused MTSM files inside `fleetpy/` (I-11).
 
@@ -629,6 +630,18 @@ file was renamed, so the code still builds the same file names. The folder const
   `update_initial_network.py`; the entry script imports it from there. `process_network.py` keeps the one-time
   network preprocessing (and loses its now unused `shutil` import).
 - The `micro_only` branch with the downtown node limit is left as it is: I-13.
+- The downtown parts of the preprocessing (`process_network.py`, `generate_demand_files.py` `__main__`) are kept
+  unchanged, as the record of how the frozen inputs were made (user's decision): I-14.
+
+### Step 3: docs (2026-11-08)
+- `README.md`: the study-area note says downtown San Diego was removed (tag `last-with-downtown-sd`) and points to
+  I-14; the layout table lists `update_initial_network.py` (updated in step 2b).
+- `docs/open_issues.md`: I-05 names the new location of `update_initial_net_with_bayesian_headway()`; I-10 closed
+  (step 1); I-13 and I-14 added (step 2b).
+- `fleetpy/LOCAL_CHANGES.md`: updated in step 1.
+- `standalone_scripts/` and `READ_ME_THIS_IS_IMPORTANT.txt` (the record of the TR Part A submission) are not
+  changed. Docs only, no run needed.
+- Removing downtown San Diego is done.
 - Checks: compiles; pyflakes reports no new warnings; CRLF kept.
 - Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.

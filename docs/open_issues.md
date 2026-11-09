@@ -35,6 +35,7 @@ Paths are relative to the codebase root.
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Open | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
+| I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 
 ---
 
@@ -88,7 +89,8 @@ Paths are relative to the codebase root.
 ### I-05: `FRT_headway = 20` overwrites a frozen network
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
   reproducibility work.
-- **What:** `update_initial_net_with_bayesian_headway()` (`pre_process/process_network.py`) writes
+- **What:** `update_initial_net_with_bayesian_headway()` (`update_initial_network.py`; in
+  `pre_process/process_network.py` until 2026-11-08) writes
   `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm_data/lemon_grove/initial_network/`. For headway 20 this is
   the frozen `initial_super_network_non_micro_hw_20.csv` (the fixed-route network at the base headway).
 - **Impact:** a run or optimizer candidate with headway 20 changes a frozen input. The startup check and
@@ -155,6 +157,20 @@ Paths are relative to the codebase root.
   Lemon Grove `micro_only` run would leave the waiting time of walk nodes 732-1098 at their initial values.
 - **Fix:** decided to leave it for now (2026-11-08). If `micro_only` is needed: use the same Lemon Grove check as
   the `micro` branch, then test it.
+
+### I-14: The preprocessing code still contains downtown San Diego
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
+- **What:** `pre_process/process_network.py` (`get_transit_link_route`, `construct_initial_network`, `__main__`
+  with `new_downtown_sd=True`) and the `__main__` of `pre_process/generate_demand_files.py`
+  (`test_area = ["downtown_sd","lemon_grove"]`) still build or handle both study areas.
+- **Why it was left:** this is the one-time preprocessing that built the frozen inputs in `mtsm_data/`; the run
+  does not use it, and it cannot be run here (its source data is not in the repository), so an edit could not be
+  tested. The user decided to keep it unchanged as the record of how the inputs were made (2026-11-08).
+- **Impact:** none on results. The repository is not yet free of downtown San Diego code.
+- **Fix (later):** remove `"downtown_sd"` from the loops and delete the downtown branches and the downtown part of
+  `__main__`, with a note that the preprocessing has not been re-run since; the original stays at tag
+  `last-with-downtown-sd`. Alternatively, bring the source data into the repository first, so that the
+  preprocessing can be re-run and checked.
 
 ---
 

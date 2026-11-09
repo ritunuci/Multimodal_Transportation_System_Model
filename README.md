@@ -9,8 +9,9 @@ searches the design parameters for the trade-off between operator subsidy and tr
 The microtransit service is simulated with [FleetPy](https://github.com/TUM-VT/FleetPy) (TU Munich), which is
 included in `fleetpy/`.
 
-**Study area of this repository: Lemon Grove (San Diego County).** The code also contains a downtown San Diego
-configuration, but its inputs are not in this repository and a startup check refuses to run it.
+**Study area of this repository: Lemon Grove (San Diego County).** An earlier downtown San Diego configuration was
+removed on 2026-11-08; the last version that has it is tagged `last-with-downtown-sd`. The one-time preprocessing in
+`pre_process/` still mentions it ([`docs/open_issues.md`](docs/open_issues.md), I-14).
 
 ![MTSM framework](docs/mtsm_framework.png)
 
