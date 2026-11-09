@@ -29,6 +29,7 @@ import update_initial_network as init_net
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
 import mtsm_paths as mtsm
 from mtsm_model import config
+from mtsm_model.state import BaseCase, TravelerState, IterationTotals
 
 # global variables
 # ----------------
@@ -208,80 +209,17 @@ if __name__ == "__main__":
                                                 iter_agent_selected_mode=OrderedDict()
                                                 converged=False
 
-                                                # Metrics of turn-off microtransit
-                                                off_micro_T_trips = 0
-                                                off_micro_W_trips = 0
-                                                off_micro_F_trips = 0
-                                                off_micro_auto_trips = 0
-                                                off_micro_agent_tot_walk_time = OrderedDict()
-                                                off_micro_agent_F_tot_wait_time = OrderedDict()
-                                                off_micro_agent_op_cost = OrderedDict()
-                                                off_micro_VMT_F = 0
-                                                off_micro_VMT_W = 0
-                                                off_micro_VMT_auto = 0
-                                                off_micro_agent_gen_cost = OrderedDict()
-                                                off_micro_ag_tot_tt = OrderedDict()
-                                                off_micro_ag_mode = OrderedDict()
-                                                off_micro_ag_tot_dist = OrderedDict()
-                                                off_micro_agent_ran_num = OrderedDict()
-                                                off_micro_agent_choice_prob = OrderedDict()
-                                                off_micro_c_tt_travel_time = OrderedDict()
-                                                off_micro_f_tt_travel_time = OrderedDict()
-                                                off_micro_ag_VMT_W = OrderedDict()
+                                                # Metrics of turn-off microtransit (the fixed-route-only base case)
+                                                base = BaseCase()
                                                 transit_tt_VMT = 0
                                                 transit_tt_VMT_base = 0
 
-
-
-
                                                 num_converged=0
 
-                                                pre_iter_prob_T = OrderedDict()
-                                                pre_iter_mode = OrderedDict()
-                                                pre_iter_M_info = OrderedDict()
-                                                pre_iter_F_info = OrderedDict()
-
-                                                ag_VMT_F = OrderedDict()
-                                                ag_VMT_M = OrderedDict()
-                                                ag_VMT_W = OrderedDict()
-
-                                                ag_num_W_trips = OrderedDict()
-                                                ag_num_M_trips = OrderedDict()
-                                                ag_num_F_trips = OrderedDict()
-
-                                                #agent level attributes
-                                                travel_time_delta = OrderedDict()
-                                                gen_cost_delta = OrderedDict()
-                                                mob_logsum_delta = OrderedDict()
-                                                agent_beta_fare = OrderedDict()
-
-                                                agent_O = OrderedDict()
-                                                agent_D = OrderedDict()
-                                                agent_rq_time = OrderedDict()
-                                                agent_choice_prob = OrderedDict()
-                                                agent_switch_mode = OrderedDict()
-                                                agent_ran_num = OrderedDict()
-                                                agent_M_tot_wait_time = OrderedDict()
-                                                agent_F_tot_wait_time = OrderedDict()
-                                                agent_M_tot_travel_time = OrderedDict()
-                                                agent_F_tot_travel_time = OrderedDict()
-
-                                                agent_M_tot_travel_dist = OrderedDict()
-                                                agent_F_tot_travel_dist = OrderedDict()
-
-                                                agent_tot_walk_time = OrderedDict()
-                                                agent_travel_time = OrderedDict()
-                                                agent_travel_dist = OrderedDict()
-                                                agent_op_cost = OrderedDict()  # agent_out-of-pocket cost
-                                                agent_op_cost_Fix  = OrderedDict()
-                                                agent_op_cost_Micro = OrderedDict()
-
-                                                agent_gen_cost = OrderedDict()
+                                                # per-traveler values with microtransit, kept across the iterations
+                                                state = TravelerState()
 
                                                 iter_sum_sq_per_diff=[]
-
-                                                agent_income = OrderedDict()
-                                                agent_transit_15min_acc = OrderedDict()
 
                                                 rejection_rate_dict = {}  # Ritun added Feb 14
 
@@ -315,21 +253,10 @@ if __name__ == "__main__":
                                                     ###########################################
                                                     # Initial dictionaries to store performance metrics
 
-                                                    num_car_trips = 0
-                                                    num_transit_users = 0
-                                                    num_M_trips = 0
-                                                    num_F_trips = 0
-                                                    num_W_trips = 0
+                                                    totals = IterationTotals()
 
-                                                    pure_M_user = 0
-                                                    pure_F_user = 0
-                                                    M_F_user = 0
 
                                                     #calculate VMT when micro transit is turned on
-                                                    VMT_M = 0
-                                                    VMT_F = 0
-                                                    VMT_auto = 0
-                                                    VMT_W = 0
 
 
 
@@ -383,12 +310,12 @@ if __name__ == "__main__":
                                                                 rq_time = agent.rq_time
                                                                 rq_id = agent.rq_id
 
-                                                                agent_O[rq_id] = origin
-                                                                agent_D[rq_id] = dest
-                                                                agent_rq_time[rq_id] = rq_time
-                                                                agent_income[rq_id]= agent.income
-                                                                agent_transit_15min_acc[rq_id] = agent.transit_15min_acc
-                                                                agent_beta_fare[rq_id] = agent.bt_t_fr
+                                                                state.agent_O[rq_id] = origin
+                                                                state.agent_D[rq_id] = dest
+                                                                state.agent_rq_time[rq_id] = rq_time
+                                                                state.agent_income[rq_id]= agent.income
+                                                                state.agent_transit_15min_acc[rq_id] = agent.transit_15min_acc
+                                                                state.agent_beta_fare[rq_id] = agent.bt_t_fr
 
                                                                 if rq_time <= (10 * 3600):
                                                                     time_period = "AM"
@@ -401,8 +328,8 @@ if __name__ == "__main__":
 
 
 
-                                                                agent_M_tot_travel_dist[rq_id] = 0
-                                                                agent_F_tot_travel_dist[rq_id] = 0
+                                                                state.agent_M_tot_travel_dist[rq_id] = 0
+                                                                state.agent_F_tot_travel_dist[rq_id] = 0
                                                                 #1108 Siwei: read the initial super-network according to "microtransit", "fixed route trasnit headway","virstop", and "time_period"
                                                                 T_F_network = \
                                                                     initial_super_network["non_micro"][
@@ -536,18 +463,18 @@ if __name__ == "__main__":
 
                                                                 # calculate travel time savings by allowing microtransit
                                                                 travel_time_auto=auto_time_visited_temp[dest]
-                                                                travel_time_delta[rq_id] = travel_time_F - travel_time_T
+                                                                state.travel_time_delta[rq_id] = travel_time_F - travel_time_T
 
                                                                 travel_dist_auto = auto_dist_visited_temp[dest]
                                                                 agent_op_cost_auto=auto_fare_visited_temp[dest]
-                                                                gen_cost_delta[rq_id] = gen_cost_F - gen_cost_T
+                                                                state.gen_cost_delta[rq_id] = gen_cost_F - gen_cost_T
                                                                 if microtransit_run == "micro_only" and (time_period not in operating_periods):
                                                                     prob_Auto, prob_T = 1,0
                                                                 else:
                                                                     prob_Auto, prob_T = b_c.binary_logit_model(gen_cost_auto, gen_cost_T)
 
                                                                 if iteration>0:
-                                                                    diff_prob_T=abs(pre_iter_prob_T[rq_id]-prob_T)
+                                                                    diff_prob_T=abs(state.pre_iter_prob_T[rq_id]-prob_T)
 
                                                                     if diff_prob_T <= config.MODE_CHANGE_THRESHOLD: # if probability does not change a lot, then we don't change agents' modes.
                                                                         change_mode=False
@@ -556,7 +483,7 @@ if __name__ == "__main__":
                                                                         change_mode_ag_list.append(rq_id)
 
 
-                                                                pre_iter_prob_T[rq_id]=prob_T
+                                                                state.pre_iter_prob_T[rq_id]=prob_T
                                                                 if microtransit_run == "micro_only":
                                                                     prob_Auto_no_micro, prob_T_no_micro = 1,0
                                                                 else:
@@ -565,31 +492,31 @@ if __name__ == "__main__":
                                                                 # calculate the mobility logsum change (logsum delta)
                                                                 mob_logsum_micro = b_c.mobility_logsum(gen_cost_auto, gen_cost_T)
                                                                 mob_logsum_fixed = b_c.mobility_logsum(gen_cost_auto, gen_cost_F)
-                                                                mob_logsum_delta[rq_id] = (mob_logsum_micro - mob_logsum_fixed)/agent_beta_fare[rq_id]
+                                                                state.mob_logsum_delta[rq_id] = (mob_logsum_micro - mob_logsum_fixed)/state.agent_beta_fare[rq_id]
 
-                                                                off_micro_agent_choice_prob[rq_id]= [prob_Auto_no_micro, prob_T_no_micro]
+                                                                base.off_micro_agent_choice_prob[rq_id]= [prob_Auto_no_micro, prob_T_no_micro]
                                                                 iter_agent_choice_prob[iteration][rq_id] = [prob_Auto, prob_T]
 
 
                                                                 ran_num = random.random()
                                                                 #calculate the output metrics of turn-off microtransit
                                                                 if (num_virstop_scen == 1) and (num_fleet_size_scen == 1) and (num_operating_periods_scen == 1) and (iteration==0):
-                                                                    off_micro_ag_tot_dist[rq_id] = 0
-                                                                    off_micro_ag_tot_tt[rq_id] = 0
-                                                                    off_micro_agent_gen_cost[rq_id] = 0
-                                                                    off_micro_ag_VMT_W[rq_id] = 0
-                                                                    off_micro_agent_F_tot_wait_time[rq_id] = 0
-                                                                    off_micro_agent_tot_walk_time[rq_id] = 0
+                                                                    base.off_micro_ag_tot_dist[rq_id] = 0
+                                                                    base.off_micro_ag_tot_tt[rq_id] = 0
+                                                                    base.off_micro_agent_gen_cost[rq_id] = 0
+                                                                    base.off_micro_ag_VMT_W[rq_id] = 0
+                                                                    base.off_micro_agent_F_tot_wait_time[rq_id] = 0
+                                                                    base.off_micro_agent_tot_walk_time[rq_id] = 0
 
-                                                                    off_micro_agent_ran_num[rq_id]=ran_num
+                                                                    base.off_micro_agent_ran_num[rq_id]=ran_num
                                                                     if ran_num < prob_T_no_micro:
 
-                                                                        off_micro_ag_mode[rq_id] = "T"
-                                                                        off_micro_T_trips += 1
-                                                                        off_micro_ag_tot_tt[rq_id] = travel_time_F
-                                                                        off_micro_ag_tot_dist[rq_id] = travel_dist_F/config.MILE_METER
+                                                                        base.off_micro_ag_mode[rq_id] = "T"
+                                                                        base.off_micro_T_trips += 1
+                                                                        base.off_micro_ag_tot_tt[rq_id] = travel_time_F
+                                                                        base.off_micro_ag_tot_dist[rq_id] = travel_dist_F/config.MILE_METER
 
-                                                                        off_micro_agent_gen_cost[rq_id]=gen_cost_F
+                                                                        base.off_micro_agent_gen_cost[rq_id]=gen_cost_F
                                                                         trimmed_transit_time_path_F = transit_time_path_all_F[1:-1]
                                                                         pre_link_type = None
                                                                         sum_link_type_F = 0  # recorde the pure walking trips
@@ -598,7 +525,7 @@ if __name__ == "__main__":
 
 
 
-                                                                        off_micro_agent_op_cost[rq_id] = agent_op_cost_F
+                                                                        base.off_micro_agent_op_cost[rq_id] = agent_op_cost_F
                                                                         for (node, time, link_type,route) in trimmed_transit_time_path_F:
                                                                             # calculate the number of fixed route transit trip legs
                                                                             if (pre_link_type != 1 and pre_link_type != 3) and (link_type == 1):
@@ -606,16 +533,16 @@ if __name__ == "__main__":
                                                                                 request_time = rq_time + int(time)
                                                                             if (pre_link_type == 1) and (link_type != 1 and link_type != 3):
                                                                                 F_dest_node = pre_node
-                                                                                off_micro_F_trips += 1
+                                                                                base.off_micro_F_trips += 1
 
                                                                             # 11/07 Siwei: calculate the fixed route transit waiting time
                                                                             if (pre_link_type != 2) and (link_type == 2):
                                                                                 F_wait_time = (time - pre_time)
-                                                                                off_micro_agent_F_tot_wait_time[rq_id] += F_wait_time
+                                                                                base.off_micro_agent_F_tot_wait_time[rq_id] += F_wait_time
                                                                             # 11/07 Siwei: calculate the walking time
                                                                             if link_type == 0:
                                                                                 walk_time = (time - pre_time)
-                                                                                off_micro_agent_tot_walk_time[rq_id] += walk_time
+                                                                                base.off_micro_agent_tot_walk_time[rq_id] += walk_time
 
 
                                                                             pre_time = time
@@ -623,7 +550,7 @@ if __name__ == "__main__":
                                                                             pre_node = node
                                                                             pre_link_type = link_type
                                                                         if sum_link_type_F == 0:
-                                                                            off_micro_W_trips += 1
+                                                                            base.off_micro_W_trips += 1
 
                                                                         #calculate VMT for fixed transit and walking when microtransit turned off
                                                                         trimmed_transit_dist_path_F=transit_dist_path_all_F[1:-1]
@@ -633,25 +560,25 @@ if __name__ == "__main__":
                                                                             # calculate the number of fixed route transit trip legs
                                                                             if link_type == 1:
                                                                                 distance_F = dist - pre_dist
-                                                                                off_micro_VMT_F+=(distance_F/config.MILE_METER)
+                                                                                base.off_micro_VMT_F+=(distance_F/config.MILE_METER)
                                                                                 off_micro_transit_link_vmt[time_period][(pre_node, node)] += (distance_F / config.MILE_METER)
                                                                                 off_micro_transit_link_pax[time_period][(pre_node, node)]+=1
                                                                             if link_type==0:
                                                                                 distance_W = dist - pre_dist
-                                                                                off_micro_VMT_W += (distance_W / config.MILE_METER)
-                                                                                off_micro_ag_VMT_W[rq_id]+=(distance_W / config.MILE_METER)
+                                                                                base.off_micro_VMT_W += (distance_W / config.MILE_METER)
+                                                                                base.off_micro_ag_VMT_W[rq_id]+=(distance_W / config.MILE_METER)
                                                                             pre_dist = dist
                                                                             pre_node = node
 
 
                                                                     else:  # agent choose the car mode
-                                                                        off_micro_ag_mode[rq_id] = "C"
-                                                                        off_micro_ag_tot_tt[rq_id]= travel_time_auto
-                                                                        off_micro_ag_tot_dist[rq_id] = travel_dist_auto/config.MILE_METER
-                                                                        off_micro_auto_trips+=1
-                                                                        off_micro_agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket
-                                                                        off_micro_VMT_auto += (travel_dist_auto/config.MILE_METER)
-                                                                        off_micro_agent_gen_cost[rq_id]=gen_cost_auto
+                                                                        base.off_micro_ag_mode[rq_id] = "C"
+                                                                        base.off_micro_ag_tot_tt[rq_id]= travel_time_auto
+                                                                        base.off_micro_ag_tot_dist[rq_id] = travel_dist_auto/config.MILE_METER
+                                                                        base.off_micro_auto_trips+=1
+                                                                        base.off_micro_agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket
+                                                                        base.off_micro_VMT_auto += (travel_dist_auto/config.MILE_METER)
+                                                                        base.off_micro_agent_gen_cost[rq_id]=gen_cost_auto
 
 
 
@@ -659,36 +586,36 @@ if __name__ == "__main__":
                                                                 if change_mode==True:
 
                                                                     if iteration ==0: #when it is in iteration 0, all travelers get M and F travel time initialized
-                                                                        agent_switch_mode[rq_id] = 0
-                                                                        agent_M_tot_travel_time[rq_id] = 0
-                                                                        agent_F_tot_travel_time[rq_id] = 0
-                                                                        ag_VMT_F[rq_id] = 0
-                                                                        ag_VMT_W[rq_id] = 0
-                                                                        ag_VMT_M[rq_id] = 0
-                                                                        ag_num_W_trips[rq_id] = 0
-                                                                        ag_num_M_trips[rq_id] = 0
-                                                                        ag_num_F_trips[rq_id] = 0
+                                                                        state.agent_switch_mode[rq_id] = 0
+                                                                        state.agent_M_tot_travel_time[rq_id] = 0
+                                                                        state.agent_F_tot_travel_time[rq_id] = 0
+                                                                        state.ag_VMT_F[rq_id] = 0
+                                                                        state.ag_VMT_W[rq_id] = 0
+                                                                        state.ag_VMT_M[rq_id] = 0
+                                                                        state.ag_num_W_trips[rq_id] = 0
+                                                                        state.ag_num_M_trips[rq_id] = 0
+                                                                        state.ag_num_F_trips[rq_id] = 0
 
-                                                                    agent_ran_num[rq_id] = ran_num
-                                                                    agent_choice_prob[rq_id] = [prob_Auto,prob_T]
+                                                                    state.agent_ran_num[rq_id] = ran_num
+                                                                    state.agent_choice_prob[rq_id] = [prob_Auto,prob_T]
 
                                                                     if ran_num < prob_T:  # agent choose the transit mode
                                                                         ##when mode change=true, and transit mode is chosen, all travelers get M and F travel time initialized
                                                                         current_mode = "T"
-                                                                        pre_iter_mode[rq_id] = current_mode
+                                                                        state.pre_iter_mode[rq_id] = current_mode
 
-                                                                        agent_switch_mode[rq_id] = 0
-                                                                        agent_M_tot_travel_time[rq_id] = 0
-                                                                        agent_F_tot_travel_time[rq_id] = 0
-                                                                        ag_num_W_trips[rq_id] = 0
-                                                                        ag_num_M_trips[rq_id] = 0
-                                                                        ag_num_F_trips[rq_id] = 0
+                                                                        state.agent_switch_mode[rq_id] = 0
+                                                                        state.agent_M_tot_travel_time[rq_id] = 0
+                                                                        state.agent_F_tot_travel_time[rq_id] = 0
+                                                                        state.ag_num_W_trips[rq_id] = 0
+                                                                        state.ag_num_M_trips[rq_id] = 0
+                                                                        state.ag_num_F_trips[rq_id] = 0
 
 
 
-                                                                        agent_gen_cost[rq_id] = gen_cost_T
+                                                                        state.agent_gen_cost[rq_id] = gen_cost_T
                                                                         if ran_num>=prob_T_no_micro:
-                                                                            agent_switch_mode[rq_id]=1 #this means: if no microtransit, this agent will choose car, but with microtransit, this agent will choose transit mode
+                                                                            state.agent_switch_mode[rq_id]=1 #this means: if no microtransit, this agent will choose car, but with microtransit, this agent will choose transit mode
                                                                         trimmed_transit_time_path = transit_time_path_all_[1:-1]
                                                                         pre_link_type = None
                                                                         sum_link_type = 0  # recorde the pure walking trips
@@ -697,18 +624,18 @@ if __name__ == "__main__":
                                                                         M_tot_wait_time = 0
 
                                                                         # 1107 Siwei
-                                                                        agent_M_tot_wait_time[rq_id] = 0
-                                                                        agent_F_tot_wait_time[rq_id] = 0
+                                                                        state.agent_M_tot_wait_time[rq_id] = 0
+                                                                        state.agent_F_tot_wait_time[rq_id] = 0
 
 
 
-                                                                        agent_tot_walk_time[rq_id] = 0
-                                                                        agent_travel_time[rq_id]=travel_time_T
-                                                                        agent_travel_dist[rq_id] =travel_dist_T
-                                                                        agent_op_cost[rq_id] = agent_op_cost_T  # agent_out-of-pocket cost
+                                                                        state.agent_tot_walk_time[rq_id] = 0
+                                                                        state.agent_travel_time[rq_id]=travel_time_T
+                                                                        state.agent_travel_dist[rq_id] =travel_dist_T
+                                                                        state.agent_op_cost[rq_id] = agent_op_cost_T  # agent_out-of-pocket cost
 
-                                                                        agent_op_cost_Fix[rq_id] = agent_F_fare
-                                                                        agent_op_cost_Micro[rq_id] = agent_M_fare
+                                                                        state.agent_op_cost_Fix[rq_id] = agent_F_fare
+                                                                        state.agent_op_cost_Micro[rq_id] = agent_M_fare
 
                                                                         for (node, time, link_type,route) in trimmed_transit_time_path:
                                                                             # calculate the number of microtransit trip legs
@@ -729,38 +656,38 @@ if __name__ == "__main__":
                                                                                 M_rq_id_list.append(rq_id_fleetpy)
                                                                                 #document the previous iteration microtransit information
                                                                                 #rq_time, start, end, request_id
-                                                                                pre_iter_M_info[rq_id]=(request_time,MicroTransitNodes[M_origin_node],MicroTransitNodes[M_dest_node],rq_id_fleetpy)
+                                                                                state.pre_iter_M_info[rq_id]=(request_time,MicroTransitNodes[M_origin_node],MicroTransitNodes[M_dest_node],rq_id_fleetpy)
 
-                                                                                num_M_trips += 1
-                                                                                ag_num_M_trips[rq_id] +=1
+                                                                                totals.num_M_trips += 1
+                                                                                state.ag_num_M_trips[rq_id] +=1
                                                                             # calculate the number of fixed route transit trip legs
                                                                             if (pre_link_type != 1 and pre_link_type != 3) and (link_type == 1):
                                                                                 F_origin_node = node
                                                                                 request_time = rq_time + int(time)
                                                                             if (pre_link_type == 1) and (link_type != 1 and link_type != 3):
                                                                                 F_dest_node = pre_node
-                                                                                num_F_trips += 1
-                                                                                ag_num_F_trips[rq_id] +=1
+                                                                                totals.num_F_trips += 1
+                                                                                state.ag_num_F_trips[rq_id] +=1
                                                                                 writer_F.writerow({'depart_time':request_time , 'start': F_origin_node,'end': F_dest_node,'request_id': rq_id})
                                                                                 # document the previous iteration fixed route transit information
                                                                                 # rq_time, start, end, request_id
-                                                                                pre_iter_F_info[rq_id]=(request_time,F_origin_node,F_dest_node,rq_id)
+                                                                                state.pre_iter_F_info[rq_id]=(request_time,F_origin_node,F_dest_node,rq_id)
                                                                             # 11/07 Siwei: calculate the microtransit waiting time
                                                                             if (pre_link_type != 5) and (link_type == 5):
                                                                                 M_wait_time = (time - pre_time)
                                                                                 if iteration>0 and M_wait_time == 180:
                                                                                     print(f"MICRO WAIT TIME = {M_wait_time}")
-                                                                                agent_M_tot_wait_time[rq_id] += M_wait_time
+                                                                                state.agent_M_tot_wait_time[rq_id] += M_wait_time
 
                                                                             # 11/07 Siwei: calculate the fixed route transit waiting time
                                                                             if (pre_link_type != 2) and (link_type == 2):
                                                                                 F_wait_time = (time - pre_time)
-                                                                                agent_F_tot_wait_time[rq_id] += F_wait_time
+                                                                                state.agent_F_tot_wait_time[rq_id] += F_wait_time
 
                                                                             # 11/07 Siwei: calculate the walking time
                                                                             if link_type == 0:
                                                                                 walk_time = (time - pre_time)
-                                                                                agent_tot_walk_time[rq_id] += walk_time
+                                                                                state.agent_tot_walk_time[rq_id] += walk_time
                                                                             # 12/22 Siwei: calculate the microtransit travel time
                                                                             if link_type ==4:
                                                                                 M_travel_time = (time - pre_time)
@@ -768,28 +695,28 @@ if __name__ == "__main__":
                                                                                 if iteration>0 and M_travel_time == 0:
                                                                                     print(f"MICRO Link Travel Time = {M_travel_time}")
 
-                                                                                agent_M_tot_travel_time[rq_id] += M_travel_time
+                                                                                state.agent_M_tot_travel_time[rq_id] += M_travel_time
 
                                                                             # 12/22 Siwei: calculate the fixed route transit travel time
                                                                             if link_type == 1 or link_type ==3:
                                                                                 F_travel_time = (time - pre_time)
-                                                                                agent_F_tot_travel_time[rq_id] += F_travel_time
+                                                                                state.agent_F_tot_travel_time[rq_id] += F_travel_time
 
                                                                             pre_time = time
                                                                             sum_link_type += link_type
                                                                             pre_node = node
                                                                             pre_link_type = link_type
                                                                         if sum_link_type == 0:
-                                                                            num_W_trips += 1
-                                                                            ag_num_W_trips[rq_id]+=1
+                                                                            totals.num_W_trips += 1
+                                                                            state.ag_num_W_trips[rq_id]+=1
                                                                         #calculate pure microtransit users:
-                                                                        if ag_num_M_trips[rq_id] != 0 and ag_num_F_trips[rq_id] == 0:
-                                                                            pure_M_user += 1
+                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] == 0:
+                                                                            totals.pure_M_user += 1
                                                                         # calculate pure fixed route transit users:
-                                                                        if ag_num_M_trips[rq_id] == 0 and ag_num_F_trips[rq_id] != 0:
-                                                                            pure_F_user += 1
-                                                                        if ag_num_M_trips[rq_id] != 0 and ag_num_F_trips[rq_id] != 0:
-                                                                            M_F_user += 1
+                                                                        if state.ag_num_M_trips[rq_id] == 0 and state.ag_num_F_trips[rq_id] != 0:
+                                                                            totals.pure_F_user += 1
+                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] != 0:
+                                                                            totals.M_F_user += 1
                                                                         # calculate VMT for fixed transit and walking when microtransit turned on
 
 
@@ -803,7 +730,7 @@ if __name__ == "__main__":
                                                                             # calculate the number of fixed route transit trip legs
                                                                             if link_type == 1:
                                                                                 distance_F = dist - pre_dist
-                                                                                VMT_F += (distance_F / config.MILE_METER)
+                                                                                totals.VMT_F += (distance_F / config.MILE_METER)
                                                                                 ag_VMT_F_intermediate += (distance_F / config.MILE_METER)
                                                                                 transit_link_vmt[time_period][(pre_node, node)]+=(distance_F / config.MILE_METER)
                                                                                 transit_link_pax[time_period][(pre_node, node)]+=1
@@ -812,67 +739,67 @@ if __name__ == "__main__":
 
                                                                             if link_type == 0:
                                                                                 distance_W = dist - pre_dist
-                                                                                VMT_W += (distance_W / config.MILE_METER)
+                                                                                totals.VMT_W += (distance_W / config.MILE_METER)
                                                                                 ag_VMT_W_intermediate += (distance_W / config.MILE_METER)
 
                                                                             if link_type == 4:
                                                                                 distance_M = dist - pre_dist
-                                                                                VMT_M += (distance_M / config.MILE_METER)
+                                                                                totals.VMT_M += (distance_M / config.MILE_METER)
                                                                                 ag_VMT_M_intermediate += (distance_M / config.MILE_METER)
                                                                             pre_dist = dist
                                                                             pre_node=node
 
-                                                                        ag_VMT_W[rq_id]=ag_VMT_W_intermediate
-                                                                        ag_VMT_M[rq_id]=ag_VMT_M_intermediate
-                                                                        ag_VMT_F[rq_id]=ag_VMT_F_intermediate
+                                                                        state.ag_VMT_W[rq_id]=ag_VMT_W_intermediate
+                                                                        state.ag_VMT_M[rq_id]=ag_VMT_M_intermediate
+                                                                        state.ag_VMT_F[rq_id]=ag_VMT_F_intermediate
 
                                                                     else:  # agent choose the car mode
 
                                                                         current_mode = "C"
-                                                                        agent_M_tot_travel_time[rq_id] = 0
-                                                                        agent_F_tot_travel_time[rq_id] = 0
+                                                                        state.agent_M_tot_travel_time[rq_id] = 0
+                                                                        state.agent_F_tot_travel_time[rq_id] = 0
                                                                         # 03/09/2026 Siwei add the following lines of code
-                                                                        ag_VMT_M[rq_id] = 0
-                                                                        agent_M_tot_wait_time[rq_id]=0
+                                                                        state.ag_VMT_M[rq_id] = 0
+                                                                        state.agent_M_tot_wait_time[rq_id]=0
 
-                                                                        pre_iter_mode[rq_id] = current_mode
-                                                                        num_car_trips += 1
-                                                                        agent_travel_time[rq_id] = travel_time_auto
-                                                                        agent_travel_dist[rq_id] = travel_dist_auto
-                                                                        agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket cost
-                                                                        agent_op_cost_Fix[rq_id] = 0
-                                                                        agent_op_cost_Micro[rq_id] = 0
-                                                                        VMT_auto+=(travel_dist_auto/config.MILE_METER)
-                                                                        agent_gen_cost[rq_id]=gen_cost_auto
+                                                                        state.pre_iter_mode[rq_id] = current_mode
+                                                                        totals.num_car_trips += 1
+                                                                        state.agent_travel_time[rq_id] = travel_time_auto
+                                                                        state.agent_travel_dist[rq_id] = travel_dist_auto
+                                                                        state.agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket cost
+                                                                        state.agent_op_cost_Fix[rq_id] = 0
+                                                                        state.agent_op_cost_Micro[rq_id] = 0
+                                                                        totals.VMT_auto+=(travel_dist_auto/config.MILE_METER)
+                                                                        state.agent_gen_cost[rq_id]=gen_cost_auto
 
-                                                                        ag_VMT_W[rq_id] = 0
-                                                                        agent_F_tot_wait_time[rq_id] = 0
-                                                                        agent_tot_walk_time[rq_id] = 0
+                                                                        state.ag_VMT_W[rq_id] = 0
+                                                                        state.agent_F_tot_wait_time[rq_id] = 0
+                                                                        state.agent_tot_walk_time[rq_id] = 0
                                                                 else:
-                                                                    ag_prev_iter_mode=pre_iter_mode[rq_id]
+                                                                    ag_prev_iter_mode=state.pre_iter_mode[rq_id]
                                                                     if ag_prev_iter_mode =="T":
 
-                                                                        VMT_F += ag_VMT_F[rq_id]
-                                                                        VMT_W += ag_VMT_W[rq_id]
-                                                                        VMT_M += ag_VMT_M[rq_id]
+                                                                        totals.VMT_F += state.ag_VMT_F[rq_id]
+                                                                        totals.VMT_W += state.ag_VMT_W[rq_id]
+                                                                        totals.VMT_M += state.ag_VMT_M[rq_id]
 
-                                                                        num_W_trips += ag_num_W_trips[rq_id]
-                                                                        num_F_trips += ag_num_F_trips[rq_id]
-                                                                        num_M_trips += ag_num_M_trips[rq_id]
+                                                                        totals.num_W_trips += state.ag_num_W_trips[rq_id]
+                                                                        totals.num_F_trips += state.ag_num_F_trips[rq_id]
+                                                                        totals.num_M_trips += state.ag_num_M_trips[rq_id]
 
 
 
-                                                                        if ag_num_M_trips[rq_id] != 0 and ag_num_F_trips[rq_id] == 0:
-                                                                            pure_M_user += 1
+                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] == 0:
+                                                                            totals.pure_M_user += 1
                                                                         # calculate pure fixed route transit users:
-                                                                        if ag_num_M_trips[rq_id] == 0 and ag_num_F_trips[rq_id] != 0:
-                                                                            pure_F_user += 1
-                                                                        if ag_num_M_trips[rq_id] != 0 and ag_num_F_trips[rq_id] != 0:
-                                                                            M_F_user += 1
+                                                                        if state.ag_num_M_trips[rq_id] == 0 and state.ag_num_F_trips[rq_id] != 0:
+                                                                            totals.pure_F_user += 1
+                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] != 0:
+                                                                            totals.M_F_user += 1
 
-                                                                        if rq_id in pre_iter_M_info:
+                                                                        if rq_id in state.pre_iter_M_info:
                                                                             # rq_time, start, end, request_id
-                                                                            (pre_ier_rq_time, pre_iter_start,pre_iter_end, pre_iter_request_id) = pre_iter_M_info[rq_id]
+                                                                            (pre_ier_rq_time, pre_iter_start,pre_iter_end, pre_iter_request_id) = state.pre_iter_M_info[rq_id]
                                                                             rq_id_fleetpy = pre_iter_request_id
                                                                             while (rq_id_fleetpy in M_rq_id_list):  # this condition is to deal with the situation where 1 person has more than 1 microtransit trips
                                                                                 rq_id_fleetpy += 1
@@ -881,29 +808,29 @@ if __name__ == "__main__":
 
 
                                                                             if pre_ier_rq_time <= (10 * 3600):                  # Ritun added: March 2nd, 2026
-                                                                                agent_M_tot_wait_time[rq_id] = wait_times["AM"] * ag_num_M_trips[rq_id]
+                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["AM"] * state.ag_num_M_trips[rq_id]
                                                                             elif pre_ier_rq_time <= (15 * 3600):
-                                                                                agent_M_tot_wait_time[rq_id] = wait_times["MD"] * ag_num_M_trips[rq_id]
+                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["MD"] * state.ag_num_M_trips[rq_id]
                                                                             elif pre_ier_rq_time <= (20 * 3600):
-                                                                                agent_M_tot_wait_time[rq_id] = wait_times["PM"] * ag_num_M_trips[rq_id]
+                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["PM"] * state.ag_num_M_trips[rq_id]
                                                                             else:
                                                                                 print("!!!! EVENING MICRO USER DETECTED !!!!")
-                                                                                agent_M_tot_wait_time[rq_id] = wait_times["EV"] * ag_num_M_trips[rq_id]
+                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["EV"] * state.ag_num_M_trips[rq_id]
 
-                                                                        if rq_id in pre_iter_F_info:
+                                                                        if rq_id in state.pre_iter_F_info:
                                                                             #(request_time,F_origin_node,F_dest_node,rq_id)
-                                                                            (pre_ier_rq_time_F, pre_iter_start_F,pre_iter_end_F, pre_iter_request_id_F) = pre_iter_F_info[rq_id]
+                                                                            (pre_ier_rq_time_F, pre_iter_start_F,pre_iter_end_F, pre_iter_request_id_F) = state.pre_iter_F_info[rq_id]
                                                                             writer_F.writerow({'depart_time': pre_ier_rq_time_F, 'start': pre_iter_start_F,'end': pre_iter_end_F, 'request_id': pre_iter_request_id_F})
-                                                                        agent_travel_time[rq_id]=agent_M_tot_wait_time[rq_id]+agent_M_tot_travel_time[rq_id]+agent_F_tot_travel_time[rq_id]+agent_F_tot_wait_time[rq_id]+agent_tot_walk_time[rq_id]
+                                                                        state.agent_travel_time[rq_id]=state.agent_M_tot_wait_time[rq_id]+state.agent_M_tot_travel_time[rq_id]+state.agent_F_tot_travel_time[rq_id]+state.agent_F_tot_wait_time[rq_id]+state.agent_tot_walk_time[rq_id]
 
                                                                     else:
-                                                                        num_car_trips += 1
-                                                                        VMT_auto += (travel_dist_auto / config.MILE_METER)
+                                                                        totals.num_car_trips += 1
+                                                                        totals.VMT_auto += (travel_dist_auto / config.MILE_METER)
 
 
 
                                                             #03/02/2026: Siwei comment it
-                                                            num_transit_users = tt_num_agents - num_car_trips
+                                                            totals.num_transit_users = tt_num_agents - totals.num_car_trips
 
                                                             print("number of agents prob_T changed greater than threshold",config.MODE_CHANGE_THRESHOLD,":", len(change_mode_ag_list))
 
@@ -1021,76 +948,76 @@ if __name__ == "__main__":
                                                                     num_F=0
                                                                     num_W=0
                                                                     T_walking_time=0
-                                                                    for rq_id in travel_time_delta:
+                                                                    for rq_id in state.travel_time_delta:
                                                                         T_walking_time = 0 #03/22/26 - Siwei
                                                                         tt_saved_with_micro = 0
                                                                         gen_cost_saved_with_micro = 0
                                                                         c_tt_travel_time = 0
                                                                         c_tt_travel_dist = 0
-                                                                        if pre_iter_mode[rq_id]=="T": #031726: Siwei add this line
+                                                                        if state.pre_iter_mode[rq_id]=="T": #031726: Siwei add this line
                                                                             mode="T"
-                                                                            m_waiting_time = agent_M_tot_wait_time[rq_id]
+                                                                            m_waiting_time = state.agent_M_tot_wait_time[rq_id]
                                                                             if m_waiting_time>0:
                                                                                 num_M+=1
-                                                                            f_waiting_time = agent_F_tot_wait_time[rq_id]
+                                                                            f_waiting_time = state.agent_F_tot_wait_time[rq_id]
                                                                             if f_waiting_time > 0:
                                                                                 num_F += 1
-                                                                            T_walking_time=agent_tot_walk_time[rq_id]
+                                                                            T_walking_time=state.agent_tot_walk_time[rq_id]
                                                                             if T_walking_time > 0:
                                                                                 num_W += 1
 
-                                                                            total_T_revenue += agent_op_cost[rq_id]
-                                                                            total_F_revenue += agent_op_cost_Fix[rq_id]
-                                                                            total_M_revenue += agent_op_cost_Micro[rq_id]
+                                                                            total_T_revenue += state.agent_op_cost[rq_id]
+                                                                            total_F_revenue += state.agent_op_cost_Fix[rq_id]
+                                                                            total_M_revenue += state.agent_op_cost_Micro[rq_id]
                                                                             if m_waiting_time >0:
-                                                                                tt_saved_with_micro = travel_time_delta[rq_id]
-                                                                                gen_cost_saved_with_micro = gen_cost_delta[rq_id]
+                                                                                tt_saved_with_micro = state.travel_time_delta[rq_id]
+                                                                                gen_cost_saved_with_micro = state.gen_cost_delta[rq_id]
                                                                         else:
                                                                             mode="C"
                                                                             m_waiting_time = 0
                                                                             f_waiting_time = 0
                                                                             T_walking_time = 0
-                                                                            c_tt_travel_time = agent_travel_time[rq_id]
-                                                                            c_tt_travel_dist = agent_travel_dist[rq_id]/config.MILE_METER
+                                                                            c_tt_travel_time = state.agent_travel_time[rq_id]
+                                                                            c_tt_travel_dist = state.agent_travel_dist[rq_id]/config.MILE_METER
 
-                                                                        origin=agent_O[rq_id]
-                                                                        dest=agent_D[rq_id]
-                                                                        dp_time=agent_rq_time[rq_id]
+                                                                        origin=state.agent_O[rq_id]
+                                                                        dest=state.agent_D[rq_id]
+                                                                        dp_time=state.agent_rq_time[rq_id]
 
-                                                                        total_op_cost+=agent_op_cost[rq_id]
-                                                                        total_mob_increase+=mob_logsum_delta[rq_id]
-                                                                        total_switch_mode+=agent_switch_mode[rq_id]
+                                                                        total_op_cost+=state.agent_op_cost[rq_id]
+                                                                        total_mob_increase+=state.mob_logsum_delta[rq_id]
+                                                                        total_switch_mode+=state.agent_switch_mode[rq_id]
                                                                         total_M_wait_time += m_waiting_time
                                                                         total_F_wait_time += f_waiting_time
                                                                         total_walk_time += T_walking_time
-                                                                        tt_gen_cost += agent_gen_cost[rq_id]
+                                                                        tt_gen_cost += state.agent_gen_cost[rq_id]
 
                                                                         # 03/02/2026 Siwei: previously "agent_M_tot_wait_time (s)": m_waiting_time
                                                                         # 03/02/2026 Siwei: now
                                                                         #03/09/2026 Siwei add the following lines of code
-                                                                        if (agent_M_tot_travel_time[rq_id]==0) and (ag_VMT_M[rq_id]!=0):
+                                                                        if (state.agent_M_tot_travel_time[rq_id]==0) and (state.ag_VMT_M[rq_id]!=0):
                                                                             aaa=0
-                                                                            print("microtransit distance (%s) not equal to microtransit travel time (%s):",ag_VMT_M[rq_id],agent_M_tot_travel_time[rq_id])
+                                                                            print("microtransit distance (%s) not equal to microtransit travel time (%s):",state.ag_VMT_M[rq_id],state.agent_M_tot_travel_time[rq_id])
                                                                         writer_indiv.writerow({"rq_id": rq_id,"origin": origin, "dest": dest,
-                                                                             "dp_time": dp_time,"mode": mode, "switch_mode":agent_switch_mode[rq_id],
-                                                                             "tt (s)": agent_travel_time[rq_id],"dist (mi)": agent_travel_dist[rq_id] / config.MILE_METER,
-                                                                             "tt_C (s)": c_tt_travel_time,"dist_C (mi)": c_tt_travel_dist,"tt_M (s)":agent_M_tot_travel_time[rq_id],
-                                                                             "dist_M (mi)": ag_VMT_M[rq_id],"tt_F (s)":agent_F_tot_travel_time[rq_id],"dist_F (mi)": ag_VMT_F[rq_id],
+                                                                             "dp_time": dp_time,"mode": mode, "switch_mode":state.agent_switch_mode[rq_id],
+                                                                             "tt (s)": state.agent_travel_time[rq_id],"dist (mi)": state.agent_travel_dist[rq_id] / config.MILE_METER,
+                                                                             "tt_C (s)": c_tt_travel_time,"dist_C (mi)": c_tt_travel_dist,"tt_M (s)":state.agent_M_tot_travel_time[rq_id],
+                                                                             "dist_M (mi)": state.ag_VMT_M[rq_id],"tt_F (s)":state.agent_F_tot_travel_time[rq_id],"dist_F (mi)": state.ag_VMT_F[rq_id],
                                                                               "agent_M_tot_wait_time (s)": m_waiting_time,"agent_F_tot_wait_time (s)": f_waiting_time,
-                                                                             "out_of_pock_cost ($)":agent_op_cost[rq_id],"tt_saved_with_micro (s)": tt_saved_with_micro,"gen_cost_saved_with_micro": gen_cost_delta[rq_id],
-                                                                             "mob_logsum_increased_with_micro":mob_logsum_delta[rq_id],"agent_prob (auto,transit)":agent_choice_prob[rq_id],
-                                                                             "agent_ran_num": agent_ran_num[rq_id],
-                                                                             "tt_W (s)": T_walking_time,"dist_W (mi)": ag_VMT_W[rq_id],"income (USD)":agent_income[rq_id],"agent_transit_15min_acc":agent_transit_15min_acc[rq_id]})
+                                                                             "out_of_pock_cost ($)":state.agent_op_cost[rq_id],"tt_saved_with_micro (s)": tt_saved_with_micro,"gen_cost_saved_with_micro": state.gen_cost_delta[rq_id],
+                                                                             "mob_logsum_increased_with_micro":state.mob_logsum_delta[rq_id],"agent_prob (auto,transit)":state.agent_choice_prob[rq_id],
+                                                                             "agent_ran_num": state.agent_ran_num[rq_id],
+                                                                             "tt_W (s)": T_walking_time,"dist_W (mi)": state.ag_VMT_W[rq_id],"income (USD)":state.agent_income[rq_id],"agent_transit_15min_acc":state.agent_transit_15min_acc[rq_id]})
 
 
 
                                                                 csvfile_indiv.close()
                                                                 if num_M!=0:
-                                                                    avg_M_wait_time = total_M_wait_time /num_M_trips #total microtransit waiting time/microtransit trips
+                                                                    avg_M_wait_time = total_M_wait_time /totals.num_M_trips #total microtransit waiting time/microtransit trips
                                                                 else:
                                                                     avg_M_wait_time=0
                                                                 if num_F!=0:
-                                                                    avg_F_wait_time = total_F_wait_time/num_F_trips #total waiting time/ total number of F trips
+                                                                    avg_F_wait_time = total_F_wait_time/totals.num_F_trips #total waiting time/ total number of F trips
                                                                 else:
                                                                     avg_F_wait_time=0
                                                                 if num_W!=0:
@@ -1099,26 +1026,26 @@ if __name__ == "__main__":
                                                                     avg_walk_time=0
                                                                 F_revenue=total_F_revenue
                                                                 M_revenue=total_M_revenue
-                                                                if num_F_trips==0:
+                                                                if totals.num_F_trips==0:
                                                                     if microtransit_run == "micro_only":
                                                                         F_sub_per_ridership = 0
                                                                     else:
                                                                         F_sub_per_ridership=-999
                                                                 else:
-                                                                    F_sub_per_ridership=(F_oper_cost-F_revenue)/num_F_trips # fixed transit subsidy per fixed transit trip
+                                                                    F_sub_per_ridership=(F_oper_cost-F_revenue)/totals.num_F_trips # fixed transit subsidy per fixed transit trip
 
 
                                                                 #calculate the turn-off micro transit scenario
                                                                 #under every different fixed route transit headway, we need to calculate the cost again
                                                                 if (num_virstop_scen==1) and (num_fleet_size_scen==1) and (num_operating_periods_scen==1) and (microtransit_run=="micro") and (repositioning==True):
                                                                     #calculate off_micro metrics
-                                                                    off_micro_F_revenue=off_micro_F_trips*config.BASE_FRT_FARE
-                                                                    if off_micro_F_trips==0:
+                                                                    off_micro_F_revenue=base.off_micro_F_trips*config.BASE_FRT_FARE
+                                                                    if base.off_micro_F_trips==0:
                                                                         off_micro_F_sub_per_ridership=-999
                                                                         off_micro_tt_sub = -999
                                                                     else:
                                                                         off_micro_tt_sub =(F_oper_cost - off_micro_F_revenue)
-                                                                        off_micro_F_sub_per_ridership = off_micro_tt_sub / off_micro_F_trips
+                                                                        off_micro_F_sub_per_ridership = off_micro_tt_sub / base.off_micro_F_trips
 
                                                                     off_micro_w_trip_legs=0
                                                                     off_micro_tot_walk_time=0
@@ -1129,17 +1056,17 @@ if __name__ == "__main__":
                                                                     off_micro_total_op_cost=0
                                                                     off_micro_tt_gen_cost = 0
 
-                                                                    for rq_id in travel_time_delta:
-                                                                        off_micro_total_op_cost += off_micro_agent_op_cost[rq_id]
-                                                                        off_micro_tt_gen_cost += off_micro_agent_gen_cost[rq_id]
+                                                                    for rq_id in state.travel_time_delta:
+                                                                        off_micro_total_op_cost += base.off_micro_agent_op_cost[rq_id]
+                                                                        off_micro_tt_gen_cost += base.off_micro_agent_gen_cost[rq_id]
 
-                                                                    for rq_id in off_micro_agent_tot_walk_time:
-                                                                        if off_micro_agent_tot_walk_time[rq_id]>0:
+                                                                    for rq_id in base.off_micro_agent_tot_walk_time:
+                                                                        if base.off_micro_agent_tot_walk_time[rq_id]>0:
                                                                             off_micro_w_trip_legs+=1
-                                                                            off_micro_tot_walk_time+=off_micro_agent_tot_walk_time[rq_id]
-                                                                        if off_micro_agent_F_tot_wait_time[rq_id]>0:
+                                                                            off_micro_tot_walk_time+=base.off_micro_agent_tot_walk_time[rq_id]
+                                                                        if base.off_micro_agent_F_tot_wait_time[rq_id]>0:
                                                                             off_micro_F_trip_legs+=1
-                                                                            off_micro_tot_F_wait_time+=off_micro_agent_F_tot_wait_time[rq_id]
+                                                                            off_micro_tot_F_wait_time+=base.off_micro_agent_F_tot_wait_time[rq_id]
 
 
 
@@ -1154,8 +1081,8 @@ if __name__ == "__main__":
                                                                         if off_micro_F_trip_legs==0:
                                                                             off_micro_avg_F_wait_time = headway*60/2
                                                                         else:
-                                                                            off_micro_avg_F_wait_time=off_micro_tot_F_wait_time/off_micro_F_trips # total waiting time/fixed transit trips
-                                                                    off_micro_tt_VMT = off_micro_VMT_auto + 0+ transit_tt_VMT
+                                                                            off_micro_avg_F_wait_time=off_micro_tot_F_wait_time/base.off_micro_F_trips # total waiting time/fixed transit trips
+                                                                    off_micro_tt_VMT = base.off_micro_VMT_auto + 0+ transit_tt_VMT
 
                                                                     microtransit_run_pre=microtransit_run
                                                                     microtransit_run="non_micro"
@@ -1174,14 +1101,14 @@ if __name__ == "__main__":
                                                                                 csvfile_indiv_fixed_only,
                                                                                 fieldnames=fieldnames)
                                                                             writer_indiv_fixed_only.writeheader()
-                                                                            for rq_id in travel_time_delta:
+                                                                            for rq_id in state.travel_time_delta:
 
-                                                                                mode = off_micro_ag_mode[
+                                                                                mode = base.off_micro_ag_mode[
                                                                                     rq_id]
 
-                                                                                origin = agent_O[rq_id]
-                                                                                dest = agent_D[rq_id]
-                                                                                dp_time = agent_rq_time[
+                                                                                origin = state.agent_O[rq_id]
+                                                                                dest = state.agent_D[rq_id]
+                                                                                dp_time = state.agent_rq_time[
                                                                                     rq_id]
 
                                                                                 tt_M = 0
@@ -1193,15 +1120,15 @@ if __name__ == "__main__":
                                                                                 if mode == "T":
                                                                                     tt_C = 0
                                                                                     dist_C = 0
-                                                                                    if off_micro_agent_F_tot_wait_time[rq_id] > 0:
-                                                                                        tt_F = off_micro_ag_tot_tt[rq_id]
-                                                                                        dist_F = off_micro_ag_tot_dist[rq_id]
+                                                                                    if base.off_micro_agent_F_tot_wait_time[rq_id] > 0:
+                                                                                        tt_F = base.off_micro_ag_tot_tt[rq_id]
+                                                                                        dist_F = base.off_micro_ag_tot_dist[rq_id]
                                                                                     else:
                                                                                         tt_F = 0
                                                                                         dist_F = 0
                                                                                 else:
-                                                                                    tt_C =off_micro_ag_tot_tt[rq_id]
-                                                                                    dist_C = off_micro_ag_tot_dist[rq_id]
+                                                                                    tt_C =base.off_micro_ag_tot_tt[rq_id]
+                                                                                    dist_C = base.off_micro_ag_tot_dist[rq_id]
                                                                                     tt_F = 0
                                                                                     dist_F = 0
 
@@ -1213,10 +1140,10 @@ if __name__ == "__main__":
                                                                                      "mode": mode,
                                                                                      "switch_mode": 0,
                                                                                      "tt (s)":
-                                                                                         off_micro_ag_tot_tt[
+                                                                                         base.off_micro_ag_tot_tt[
                                                                                              rq_id],
                                                                                      "dist (mi)":
-                                                                                         off_micro_ag_tot_dist[
+                                                                                         base.off_micro_ag_tot_dist[
                                                                                              rq_id],
                                                                                      "tt_C (s)": tt_C,
                                                                                      "dist_C (mi)": dist_C,
@@ -1225,43 +1152,43 @@ if __name__ == "__main__":
                                                                                      "tt_F (s)": tt_F,
                                                                                      "dist_F (mi)": dist_F,
                                                                                      "out_of_pock_cost ($)":
-                                                                                         off_micro_agent_op_cost[
+                                                                                         base.off_micro_agent_op_cost[
                                                                                              rq_id],
                                                                                      "tt_saved_with_micro (s)": 0,
                                                                                      "gen_cost_saved_with_micro": 0,
                                                                                      "mob_logsum_increased_with_micro": 0,
                                                                                      "agent_prob (auto,transit)":
-                                                                                         off_micro_agent_choice_prob[
+                                                                                         base.off_micro_agent_choice_prob[
                                                                                              rq_id],
                                                                                      "agent_ran_num":
-                                                                                         off_micro_agent_ran_num[
+                                                                                         base.off_micro_agent_ran_num[
                                                                                              rq_id],
                                                                                      "agent_M_tot_wait_time (s)": 0,
                                                                                      "agent_F_tot_wait_time (s)":
-                                                                                         off_micro_agent_F_tot_wait_time[
+                                                                                         base.off_micro_agent_F_tot_wait_time[
                                                                                              rq_id],
                                                                                      "tt_W (s)":
-                                                                                         off_micro_agent_tot_walk_time[
+                                                                                         base.off_micro_agent_tot_walk_time[
                                                                                              rq_id],
                                                                                      "dist_W (mi)":
-                                                                                         off_micro_ag_VMT_W[
+                                                                                         base.off_micro_ag_VMT_W[
                                                                                              rq_id]})
 
                                                                         microtransit_run = microtransit_run_pre
 
                                                                         pure_F_users = (
-                                                                                    off_micro_T_trips - off_micro_W_trips)
+                                                                                    base.off_micro_T_trips - base.off_micro_W_trips)
 
                                                                         # Write the fixed only scenario
                                                                         if test_scenario == cfg.TRPartA_test_scenario_list[0]:
                                                                             writer.writerow({"test_scen": 0,"dscrptn": "FRT_only_scen", "study_area": study_area,"repositioning": str(False),
                                                                                              "microtrasnit": "non_micro","hdwy (min)": headway,
                                                                                              "vir_stop (%)": 0,"flt_sz": 0, "op_periods": 0,"tt_agents": tt_num_agents,
-                                                                                             "car_users": off_micro_auto_trips,"car_mode_share (%)": off_micro_auto_trips / tt_num_agents,
-                                                                                             "trsit_mode_users (W_M_F)": off_micro_T_trips,"transit_mode_share (%)": off_micro_T_trips / tt_num_agents,
+                                                                                             "car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips / tt_num_agents,
+                                                                                             "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)": base.off_micro_T_trips / tt_num_agents,
                                                                                              "pure_M_users": 0,"M_trips": 0,"M_mode_share (%)": 0 / tt_num_agents,"pure_F_users": pure_F_users,
-                                                                                             "F_trips": off_micro_F_trips,"F_mode_share (%)": off_micro_F_trips / tt_num_agents,
-                                                                                             "pure_walk_users": off_micro_W_trips,"W_mode_share (%)": off_micro_W_trips / tt_num_agents,
+                                                                                             "F_trips": base.off_micro_F_trips,"F_mode_share (%)": base.off_micro_F_trips / tt_num_agents,
+                                                                                             "pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)": base.off_micro_W_trips / tt_num_agents,
                                                                                              "walk_users": off_micro_w_trip_legs,"M_pls_F_users": 0,
                                                                                              "M_pls_F_mode_share (%)": 0,"F_oper_cost ($)": F_oper_cost_base,
                                                                                              "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue,
@@ -1270,22 +1197,22 @@ if __name__ == "__main__":
                                                                                              "sub_per_F_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
                                                                                              "sub_per_M_trip ($)": 0,"sub_per_M_rider ($)": 0,"sub_per_T_trip ($)": off_micro_F_sub_per_ridership,
                                                                                              "sub_per_T_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
-                                                                                             "sub_per_M_pax_mile ($/mi)": 0,"sub_per_F_pax_mile ($/mi)": off_micro_tt_sub / off_micro_VMT_F,
-                                                                                             "sub_per_T_pax_mile ($/mi)": off_micro_tt_sub / off_micro_VMT_F,"sub_per_M_VMT ($/mi)": 0,
+                                                                                             "sub_per_M_pax_mile ($/mi)": 0,"sub_per_F_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,
+                                                                                             "sub_per_T_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,"sub_per_M_VMT ($/mi)": 0,
                                                                                              "sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
                                                                                              "sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
                                                                                              "tt_auto_gas_cost ($)": off_micro_total_op_cost - off_micro_F_revenue,
-                                                                                             "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue) / off_micro_VMT_auto,
+                                                                                             "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_VMT_auto,
                                                                                              "avg_M_fare": 0,"avg_F_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
                                                                                              "avg_T_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
-                                                                                             "avg_auto_gas_cost": (off_micro_total_op_cost - off_micro_F_revenue) / off_micro_auto_trips,
+                                                                                             "avg_auto_gas_cost": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_auto_trips,
                                                                                              "tt_o_pckt_cost ($)": off_micro_total_op_cost,"tt_mob_lgsm_inc_with_micro": 0,
                                                                                              "tt_gen_cost": off_micro_tt_gen_cost,"tt_mode_switch": 0,
                                                                                              "M_avg_wait_time (s)": 0,"F_avg_wait_time (s)": off_micro_avg_F_wait_time,
                                                                                              "avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)": off_micro_tot_walk_time / 3600,
-                                                                                             "car_VMT (mi)": off_micro_VMT_auto,"M_VMT (mi)": 0,
-                                                                                             "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT,"F_PMT (mi)": off_micro_VMT_F,"F_PMT/F_VMT": off_micro_VMT_F / transit_tt_VMT,
-                                                                                             "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": off_micro_VMT_W,
+                                                                                             "car_VMT (mi)": base.off_micro_VMT_auto,"M_VMT (mi)": 0,
+                                                                                             "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT,
+                                                                                             "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": base.off_micro_VMT_W,
                                                                                              "wghted_acc_emp_5_min": tot_weighted_5_min_F,"wghted_acc_emp_10_min": tot_weighted_10_min_F,
                                                                                              "wghted_acc_emp_15_min": tot_weighted_15_min_F,"M_util_rate (%)": 0,
                                                                                              "M_veh_occ": 0,"M_avg_speed (mph)": 0,"cnvrg (iter, sm_sq_per_diff)": 0, "fleetpy_wait": 0, "rejection_rate": 0})
@@ -1296,27 +1223,27 @@ if __name__ == "__main__":
 
                                                                     microtransit_run=microtransit_run_pre
 
-                                                                    pure_F_users=(off_micro_T_trips-off_micro_W_trips)
+                                                                    pure_F_users=(base.off_micro_T_trips-base.off_micro_W_trips)
 
                                                                     # Write the fixed only scenario
                                                                     if test_scenario == cfg.TRPartA_test_scenario_list[0]:
 
                                                                         writer.writerow({"test_scen":0,"dscrptn":"FRT_only_scen","study_area":study_area,"repositioning":str(False),"microtrasnit":"non_micro","hdwy (min)": headway, "vir_stop (%)": 0, "flt_sz": 0,"op_periods": 0,
-                                                                                     "tt_agents": tt_num_agents,"car_users": off_micro_auto_trips,"car_mode_share (%)": off_micro_auto_trips/tt_num_agents,
-                                                                                     "trsit_mode_users (W_M_F)": off_micro_T_trips,"transit_mode_share (%)":off_micro_T_trips/tt_num_agents,"pure_M_users":0, "M_trips": 0,"M_mode_share (%)":0/tt_num_agents,
-                                                                                     "pure_F_users":pure_F_users,"F_trips": off_micro_F_trips,"F_mode_share (%)":off_micro_F_trips/tt_num_agents,"pure_walk_users": off_micro_W_trips,"W_mode_share (%)":off_micro_W_trips/tt_num_agents,
+                                                                                     "tt_agents": tt_num_agents,"car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips/tt_num_agents,
+                                                                                     "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)":base.off_micro_T_trips/tt_num_agents,"pure_M_users":0, "M_trips": 0,"M_mode_share (%)":0/tt_num_agents,
+                                                                                     "pure_F_users":pure_F_users,"F_trips": base.off_micro_F_trips,"F_mode_share (%)":base.off_micro_F_trips/tt_num_agents,"pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)":base.off_micro_W_trips/tt_num_agents,
                                                                                      "walk_users":off_micro_w_trip_legs, "M_pls_F_users":0,"M_pls_F_mode_share (%)":0,"F_oper_cost ($)": F_oper_cost_base,
                                                                                      "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue, "M_revenue ($)": 0,"Total_T_revenue ($)":off_micro_F_revenue, "tot_sub ($)":off_micro_tt_sub,
                                                                                      "sub_per_F_trip ($)": off_micro_F_sub_per_ridership,"sub_per_F_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),"sub_per_M_trip ($)": 0,"sub_per_M_rider ($)":0,"sub_per_T_trip ($)":off_micro_F_sub_per_ridership,"sub_per_T_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),
-                                                                                     "sub_per_M_pax_mile ($/mi)":0,"sub_per_F_pax_mile ($/mi)":off_micro_tt_sub/off_micro_VMT_F,"sub_per_T_pax_mile ($/mi)":off_micro_tt_sub/off_micro_VMT_F,
+                                                                                     "sub_per_M_pax_mile ($/mi)":0,"sub_per_F_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,"sub_per_T_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,
                                                                                      "sub_per_M_VMT ($/mi)": 0,"sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),"sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
-                                                                                     "tt_auto_gas_cost ($)":off_micro_total_op_cost-off_micro_F_revenue,"auto_gas_cost_per_mile ($/mi)":(off_micro_total_op_cost-off_micro_F_revenue)/off_micro_VMT_auto,
-                                                                                     "avg_M_fare": 0, "avg_F_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users),"avg_T_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users), "avg_auto_gas_cost":(off_micro_total_op_cost-off_micro_F_revenue)/off_micro_auto_trips,
+                                                                                     "tt_auto_gas_cost ($)":off_micro_total_op_cost-off_micro_F_revenue,"auto_gas_cost_per_mile ($/mi)":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_VMT_auto,
+                                                                                     "avg_M_fare": 0, "avg_F_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users),"avg_T_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users), "avg_auto_gas_cost":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_auto_trips,
                                                                                     "tt_o_pckt_cost ($)": off_micro_total_op_cost,
                                                                                      "tt_mob_lgsm_inc_with_micro": 0,"tt_gen_cost":off_micro_tt_gen_cost,
                                                                                      "tt_mode_switch": 0,"M_avg_wait_time (s)": 0,
                                                                                      "F_avg_wait_time (s)": off_micro_avg_F_wait_time,"avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)":off_micro_tot_walk_time/3600,
-                                                                                     "car_VMT (mi)":off_micro_VMT_auto,"M_VMT (mi)":0,"M_PMT (mi)":0,"M_PMT/M_VMT":0,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":off_micro_VMT_F,"F_PMT/F_VMT":off_micro_VMT_F/transit_tt_VMT,"tt_VMT (mi)":off_micro_tt_VMT,"tt_walk_dist (mi)":off_micro_VMT_W,
+                                                                                     "car_VMT (mi)":base.off_micro_VMT_auto,"M_VMT (mi)":0,"M_PMT (mi)":0,"M_PMT/M_VMT":0,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":base.off_micro_VMT_F,"F_PMT/F_VMT":base.off_micro_VMT_F/transit_tt_VMT,"tt_VMT (mi)":off_micro_tt_VMT,"tt_walk_dist (mi)":base.off_micro_VMT_W,
                                                                                      "wghted_acc_emp_5_min":tot_weighted_5_min_F,
                                                                                      "wghted_acc_emp_10_min":tot_weighted_10_min_F,
                                                                                      "wghted_acc_emp_15_min":tot_weighted_15_min_F,
@@ -1325,14 +1252,14 @@ if __name__ == "__main__":
                                                                 #calculate the turn-on micro transit scenario
 
                                                                 util_rate, veh_occ, total_vmt, empty_vkm, avg_speed_mph = output_metrics.get_fleetpy_eval_output_metrics(repositioning)
-                                                                tt_VMT = VMT_auto + total_vmt + transit_tt_VMT
+                                                                tt_VMT = totals.VMT_auto + total_vmt + transit_tt_VMT
 
                                                                 M_gas_cost = total_vmt * config.M_GAS_PER_MILE
                                                                 M_mode_operating_cost += M_gas_cost
 
-                                                                M_sub_per_ridership = (M_mode_operating_cost - M_revenue) / num_M_trips # microtransit subsidy per microtransit trips
+                                                                M_sub_per_ridership = (M_mode_operating_cost - M_revenue) / totals.num_M_trips # microtransit subsidy per microtransit trips
                                                                 tt_sub = (F_oper_cost + M_mode_operating_cost - F_revenue - M_revenue)
-                                                                tt_sub_per_ridership = tt_sub / (num_F_trips + num_M_trips)
+                                                                tt_sub_per_ridership = tt_sub / (totals.num_F_trips + totals.num_M_trips)
 
                                                                 if microtransit_run=="micro_only":
                                                                     PMT_VMT_ratio_F = 0
@@ -1340,7 +1267,7 @@ if __name__ == "__main__":
                                                                     headway = 0
                                                                     off_micro_tot_walk_time = 0
                                                                 else:
-                                                                    PMT_VMT_ratio_F = VMT_F / transit_tt_VMT
+                                                                    PMT_VMT_ratio_F = totals.VMT_F / transit_tt_VMT
 
 
                                                                 if test_scenario==0:
@@ -1366,52 +1293,52 @@ if __name__ == "__main__":
                                                                 if test_scenario == 10:
                                                                     dscrptn = "Ritun BO (time-based+intrmdl_trfr+Micro_start+dist_based_fr)"
 
-                                                                if (pure_F_user + M_F_user)!=0:
-                                                                    sub_per_F_rider = (F_oper_cost-F_revenue)/(pure_F_user+M_F_user)
+                                                                if (totals.pure_F_user + totals.M_F_user)!=0:
+                                                                    sub_per_F_rider = (F_oper_cost-F_revenue)/(totals.pure_F_user+totals.M_F_user)
                                                                 else:
                                                                     sub_per_F_rider = 999
 
-                                                                if (pure_M_user+M_F_user) != 0:
-                                                                    sub_per_M_rider=(M_mode_operating_cost-M_revenue)/(pure_M_user+M_F_user)
+                                                                if (totals.pure_M_user+totals.M_F_user) != 0:
+                                                                    sub_per_M_rider=(M_mode_operating_cost-M_revenue)/(totals.pure_M_user+totals.M_F_user)
                                                                 else:
                                                                     sub_per_M_rider = 999
 
-                                                                if (pure_M_user+M_F_user) != 0:
-                                                                    avg_M_fare = M_revenue/(pure_M_user+M_F_user)
+                                                                if (totals.pure_M_user+totals.M_F_user) != 0:
+                                                                    avg_M_fare = M_revenue/(totals.pure_M_user+totals.M_F_user)
                                                                 else:
                                                                     avg_M_fare = 0
 
-                                                                if (pure_F_user+M_F_user) != 0:
-                                                                    avg_F_fare = F_revenue/(pure_F_user+M_F_user)
+                                                                if (totals.pure_F_user+totals.M_F_user) != 0:
+                                                                    avg_F_fare = F_revenue/(totals.pure_F_user+totals.M_F_user)
                                                                 else:
                                                                     avg_F_fare = 0
 
-                                                                if (pure_M_user + pure_F_user + M_F_user) != 0:
-                                                                    avg_T_fare = (M_revenue + F_revenue) / (pure_M_user + pure_F_user + M_F_user)
+                                                                if (totals.pure_M_user + totals.pure_F_user + totals.M_F_user) != 0:
+                                                                    avg_T_fare = (M_revenue + F_revenue) / (totals.pure_M_user + totals.pure_F_user + totals.M_F_user)
                                                                 else:
                                                                     avg_T_fare = 0
 
-                                                                if (VMT_F)!=0:
-                                                                    sub_per_F_pax_mile =(F_oper_cost-F_revenue)/(VMT_F)
+                                                                if (totals.VMT_F)!=0:
+                                                                    sub_per_F_pax_mile =(F_oper_cost-F_revenue)/(totals.VMT_F)
                                                                 else:
                                                                     sub_per_F_pax_mile = 999
 
 
                                                                 writer.writerow({"test_scen":test_scenario,"dscrptn":dscrptn,"study_area":study_area,"repositioning":repositioning,"microtrasnit":microtransit_run,"hdwy (min)": headway, "vir_stop (%)": virstop, "flt_sz": fleet_size, "op_periods": operating_periods,
-                                                                     "tt_agents": tt_num_agents,"car_users": num_car_trips,  "car_mode_share (%)": num_car_trips/tt_num_agents,
-                                                                     "trsit_mode_users (W_M_F)": num_transit_users ,"transit_mode_share (%)":num_transit_users/tt_num_agents,"pure_M_users":pure_M_user,"M_trips":num_M_trips,"M_mode_share (%)":pure_M_user/tt_num_agents,
-                                                                      "pure_F_users":pure_F_user,"F_trips":num_F_trips,"F_mode_share (%)":pure_F_user/tt_num_agents,"pure_walk_users":num_W_trips,"W_mode_share (%)":num_W_trips/tt_num_agents,
-                                                                      "walk_users":num_W,"M_pls_F_users":M_F_user,"M_pls_F_mode_share (%)":M_F_user/tt_num_agents, "F_oper_cost ($)": F_oper_cost,
+                                                                     "tt_agents": tt_num_agents,"car_users": totals.num_car_trips,  "car_mode_share (%)": totals.num_car_trips/tt_num_agents,
+                                                                     "trsit_mode_users (W_M_F)": totals.num_transit_users ,"transit_mode_share (%)":totals.num_transit_users/tt_num_agents,"pure_M_users":totals.pure_M_user,"M_trips":totals.num_M_trips,"M_mode_share (%)":totals.pure_M_user/tt_num_agents,
+                                                                      "pure_F_users":totals.pure_F_user,"F_trips":totals.num_F_trips,"F_mode_share (%)":totals.pure_F_user/tt_num_agents,"pure_walk_users":totals.num_W_trips,"W_mode_share (%)":totals.num_W_trips/tt_num_agents,
+                                                                      "walk_users":num_W,"M_pls_F_users":totals.M_F_user,"M_pls_F_mode_share (%)":totals.M_F_user/tt_num_agents, "F_oper_cost ($)": F_oper_cost,
                                                                      "M_oper_cost ($)": M_mode_operating_cost,"F_revenue ($)":F_revenue,"M_revenue ($)":M_revenue,"Total_T_revenue ($)":F_revenue+M_revenue,"tot_sub ($)":tt_sub,
                                                                       "sub_per_F_trip ($)":F_sub_per_ridership,"sub_per_F_rider ($)":sub_per_F_rider, "sub_per_M_trip ($)":M_sub_per_ridership,"sub_per_M_rider ($)":sub_per_M_rider,"sub_per_T_trip ($)":tt_sub_per_ridership,
-                                                                      "sub_per_T_rider ($)":tt_sub/(pure_F_user+pure_M_user+M_F_user),"sub_per_M_pax_mile ($/mi)":(M_mode_operating_cost-M_revenue)/(VMT_M),"sub_per_F_pax_mile ($/mi)":sub_per_F_pax_mile,"sub_per_T_pax_mile ($/mi)":(tt_sub)/(VMT_M+VMT_F),
+                                                                      "sub_per_T_rider ($)":tt_sub/(totals.pure_F_user+totals.pure_M_user+totals.M_F_user),"sub_per_M_pax_mile ($/mi)":(M_mode_operating_cost-M_revenue)/(totals.VMT_M),"sub_per_F_pax_mile ($/mi)":sub_per_F_pax_mile,"sub_per_T_pax_mile ($/mi)":(tt_sub)/(totals.VMT_M+totals.VMT_F),
                                                                       "sub_per_M_VMT ($/mi)": (M_mode_operating_cost - M_revenue) / (total_vmt),"sub_per_F_VMT ($/mi)": (F_oper_cost - F_revenue)/(transit_tt_VMT),"sub_per_T_VMT ($/mi)": (tt_sub) / (total_vmt + transit_tt_VMT),
-                                                                      "tt_auto_gas_cost ($)":total_op_cost-(F_revenue+M_revenue),"auto_gas_cost_per_mile ($/mi)":(total_op_cost-(F_revenue+M_revenue))/VMT_auto,
-                                                                       "avg_M_fare": avg_M_fare, "avg_F_fare":avg_F_fare,"avg_T_fare":avg_T_fare, "avg_auto_gas_cost":(total_op_cost-(F_revenue+M_revenue))/num_car_trips,
+                                                                      "tt_auto_gas_cost ($)":total_op_cost-(F_revenue+M_revenue),"auto_gas_cost_per_mile ($/mi)":(total_op_cost-(F_revenue+M_revenue))/totals.VMT_auto,
+                                                                       "avg_M_fare": avg_M_fare, "avg_F_fare":avg_F_fare,"avg_T_fare":avg_T_fare, "avg_auto_gas_cost":(total_op_cost-(F_revenue+M_revenue))/totals.num_car_trips,
                                                                       "tt_o_pckt_cost ($)": total_op_cost,"tt_mob_lgsm_inc_with_micro": total_mob_increase,"tt_gen_cost":tt_gen_cost,
                                                                       "tt_mode_switch": total_switch_mode, "M_avg_wait_time (s)": avg_M_wait_time,
                                                                       "F_avg_wait_time (s)": avg_F_wait_time, "avg_walk_time (s)":avg_walk_time,"tt_walk_time (h)":total_walk_time/3600,
-                                                                      "car_VMT (mi)":VMT_auto,"M_VMT (mi)":total_vmt,"M_PMT (mi)":VMT_M,"M_PMT/M_VMT":VMT_M/total_vmt,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":VMT_F,"F_PMT/F_VMT":PMT_VMT_ratio_F,"tt_VMT (mi)":tt_VMT,"tt_walk_dist (mi)":VMT_W,
+                                                                      "car_VMT (mi)":totals.VMT_auto,"M_VMT (mi)":total_vmt,"M_PMT (mi)":totals.VMT_M,"M_PMT/M_VMT":totals.VMT_M/total_vmt,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":totals.VMT_F,"F_PMT/F_VMT":PMT_VMT_ratio_F,"tt_VMT (mi)":tt_VMT,"tt_walk_dist (mi)":totals.VMT_W,
                                                                       "wghted_acc_emp_5_min":avg_period_total_weighted_5_min,
                                                                       "wghted_acc_emp_10_min":avg_period_total_weighted_10_min,
                                                                       "wghted_acc_emp_15_min":avg_period_total_weighted_15_min,

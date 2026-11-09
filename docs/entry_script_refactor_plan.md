@@ -1,6 +1,6 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 and 2 are done
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 3 are done
 (see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
@@ -139,7 +139,19 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      limits, the microtransit node offset 1171, the parking charge factors) move to `config.py` together with the
      code that uses them (steps 4-7), so that each step changes one part of the script.
 3. **State dataclasses** → `state.py`. This is a mechanical rename of the dictionaries
-   (`agent_O[rq_id]` → `state.agent_O[rq_id]`): the same objects, the same order.
+   (`agent_O[rq_id]` → `state.agent_O[rq_id]`): the same objects, the same order. **Done 2026-11-09** (`REPRODUCED`):
+   - `TravelerState` (`state`): the per-traveler dicts (`agent_*`, `ag_*`, `pre_iter_*`, the deltas), created once
+     per scenario where they were initialized before; `BaseCase` (`base`): the `off_micro_*` values of the
+     fixed-route-only base case; `IterationTotals` (`totals`): the counts and VMT totals reset at the start of each
+     iteration (`num_*`, `pure_*_user`, `M_F_user`, `VMT_*`);
+   - each name was bound only at its initialization (checked before the change; the one other assignment,
+     `num_transit_users = ...`, became `totals.num_transit_users = ...`), so the rename does not change what is
+     read where;
+   - the iteration control and history (`iteration`, `converged`, `rejection_rate`, `iter_agent_choice_prob`,
+     `iter_sum_sq_per_diff`, ...) and `transit_tt_VMT` stay local; they move with the iteration loop (step 6) and
+     the results (step 7);
+   - `off_micro_c_tt_travel_time` and `off_micro_f_tt_travel_time` are created but never filled (their uses were
+     commented out); kept as fields for now, marked "not filled".
 4. **Trip legs** → `trip_legs.py`, removing the three copies.
 5. **Paths and choice** → `paths.py`, `choice.py`.
 6. **One iteration** → `iteration.py`; the FleetPy step → `microtransit.py`, together with the kept block.

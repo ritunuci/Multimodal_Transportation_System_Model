@@ -66,7 +66,7 @@ and the increase in travelers' mobility logsum due to microtransit. For each can
 | Path | Content |
 |---|---|
 | `run_examples_new_parking.py` | Entry script: reads the inputs and runs the iteration loop above |
-| `mtsm_model/` | The model, being moved out of the entry script step by step ([plan](docs/entry_script_refactor_plan.md)). `config.py`: the run's parameters from `input_parameter.csv`, the startup check, and the model's constants |
+| `mtsm_model/` | The model, being moved out of the entry script step by step ([plan](docs/entry_script_refactor_plan.md)). `config.py`: the run's parameters from `input_parameter.csv`, the startup check, and the model's constants; `state.py`: the per-traveler state, the fixed-route-only base case and the iteration totals |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
 | `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
 | `get_microtransit_skims.py`, `get_walk_transit_skims.py`, `get_auto_skims.py`, `network_algorithms.py` | Super-networks and least generalized cost paths |

@@ -2,4 +2,5 @@
 (docs/entry_script_refactor_plan.md). run_examples_new_parking.py is still the entry point.
 
 - config: the run's parameters (input_parameter.csv), the startup check, and the model's fixed settings and constants.
+- state: the model's state during a scenario (TravelerState, BaseCase, IterationTotals).
 """
