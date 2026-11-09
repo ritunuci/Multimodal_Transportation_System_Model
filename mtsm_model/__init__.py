@@ -6,4 +6,7 @@
 - trip_legs: split a traveler's path into walk / microtransit / fixed-route legs.
 - paths: a traveler's networks and least generalized cost paths (car, walk + FRT, walk + microtransit + FRT).
 - choice: trip costs, logit probabilities, logsum, and the mode-change threshold.
+- networks: read the super-networks of an iteration.
+- iteration: one iteration of the choice model for all travelers; writes the FRT and FleetPy demand files.
+- microtransit: run FleetPy and update the super-networks with its results.
 """

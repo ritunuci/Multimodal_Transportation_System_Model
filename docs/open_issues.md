@@ -225,6 +225,8 @@ Paths are relative to the codebase root.
 - **Impact:** none on the current runs: `input_parameter.csv` has one row, so there is one fare scenario. A file with
   several rows (several fare scenarios in one run) would give wrong car costs, and so wrong mode choices, in all but
   the first scenario.
+- **Where:** since restructuring step 6 the carried values are explicit: `paths.PathCache.last_parking_dur` /
+  `last_bt_c_gas`, read in `iteration.run_iteration` when the car path comes from the cache.
 - **Fix:** cache `parking_dur` and `bt_c_gas` with the car path (two fields of `paths.AutoPath`). This does not change
   the reference (one fare scenario); test it with a two-row parameter file.
 

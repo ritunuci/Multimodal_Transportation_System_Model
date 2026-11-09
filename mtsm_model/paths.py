@@ -55,6 +55,10 @@ class PathCache:
     """The car and FRT paths of each traveler (keyed by rq_id), from the first fare scenario."""
     auto: OrderedDict = field(default_factory=OrderedDict)
     frt: OrderedDict = field(default_factory=OrderedDict)
+    # parking_dur and bt_c_gas of the last car path computed; the other fare scenarios use them for every traveler
+    # (docs/open_issues.md, I-18)
+    last_parking_dur: Any = None
+    last_bt_c_gas: Any = None
 
 
 def networks_for_traveler(microtransit_run, iteration, time_period, operating_periods, initial_super_network,
@@ -100,6 +104,7 @@ def auto_path(path_cache, study_area, auto_network, agent, cfg, iteration):
     auto = AutoPath(auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,
                     auto_path, auto_time_path, auto_time_path_all_)
     path_cache.auto[agent.rq_id] = auto
+    path_cache.last_parking_dur, path_cache.last_bt_c_gas = parking_dur, bt_c_gas
     return parking_dur, bt_c_gas, auto
 
 

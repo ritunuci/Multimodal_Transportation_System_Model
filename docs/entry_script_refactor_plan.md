@@ -1,6 +1,6 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 5 are done
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 6 are done
 (see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
@@ -103,10 +103,13 @@ The rule stays: after every step, a full seed-0 run must print `REPRODUCED` (all
   "Ritun added", which adds synthetic microtransit demand before FleetPy runs (`syn_rq`, local agents, 3 extra
   requests per microtransit traveler, rq ids from 60000). The user needs it. It stays as commented-out code. It
   moves with the FleetPy step (planned `microtransit.py`) to the same position, just before FleetPy is run,
-  unchanged.
+  unchanged. **Since step 6:** in `mtsm_model/microtransit.py`, `run_fleetpy_and_update_networks()`, first lines
+  of the function (the 27 lines are identical to `92ae5fa` apart from the indentation; checked).
 - **Its import must stay too,** although nothing active uses it:
   `from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq`.
-  It moves along with the block.
+  It moves along with the block. **Since step 6:** in `mtsm_model/microtransit.py`. The block's names are
+  available there: `demand_file` and `new_fleetpy_demand` are arguments of the function, `pd`, `Fore`, `Style` and
+  `syn_rq` are imported.
 
 ## Steps
 
@@ -183,6 +186,20 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      of the previous traveler was also kept for "micro_only" outside the operating periods, but never read there
      (transit probability 0); it is now `None`.
 6. **One iteration** → `iteration.py`; the FleetPy step → `microtransit.py`, together with the kept block.
+   **Done 2026-11-09** (`REPRODUCED`):
+   - `iteration.run_iteration()`: the choice loop over all travelers, moved verbatim (re-indented); writes the FRT
+     and FleetPy demand files and returns the `IterationTotals`. `networks.read_iteration_networks()`: reading the
+     super-networks of the iteration. `microtransit.run_fleetpy_and_update_networks()`: FleetPy, the network
+     update and the rejection rate, with the block under "Must be kept";
+   - checked with `ast` first: the inputs of each block became keyword arguments (pyflakes: no undefined names in
+     the new modules); the outputs read later are the return values (`totals`; `wait_times`, `rejection_rate`,
+     `last_rejection_rate`, `last_fleetpy_wait_time`). `wait_times` starts as `None` in each scenario: it is read
+     only from iteration 1 on, after FleetPy has set it;
+   - the one carried-over value across fare scenarios (I-18, `parking_dur` / `bt_c_gas`) would have been lost
+     in a function; it is now kept explicitly in `PathCache` (`last_parking_dur`, `last_bt_c_gas`), with the same
+     behavior;
+   - the convergence test and the results after convergence stay in the entry script for step 7. The long argument
+     lists become a `Scenario` object in step 8.
 7. **Results after convergence** → `results.py`.
 8. **Scenario loop and `run_model`** → `scenarios.py`, `model.py`. The entry script shrinks to about 50 lines.
 9. **Docs:** `progress.md`, the README layout table, a short code map in the README.
