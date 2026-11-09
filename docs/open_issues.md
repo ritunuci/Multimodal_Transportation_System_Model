@@ -90,7 +90,8 @@ Paths are relative to the codebase root.
   pass, both under `if test_scenario == TRPartA_test_scenario_list[0]`: once inside the block that writes the
   fixed-route-only individual results (line 1380), and once more right after that block (line 1427). The two
   `writerow` calls are not identical in their source, but give identical rows here (line numbers as of
-  restructuring step 1, `docs/entry_script_refactor_plan.md`).
+  restructuring step 1, `docs/entry_script_refactor_plan.md`). Since step 7 both are in
+  `mtsm_model/results.py`, `write_converged_results()` (lines 330 and 377).
 - **To decide:** is the duplicate intended? If not, remove one of the two `writerow` calls.
   Any change to the file's rows also changes the optimizer's row indices and the reference results, so it needs a new
   reference.

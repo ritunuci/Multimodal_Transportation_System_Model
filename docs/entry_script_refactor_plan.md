@@ -1,6 +1,6 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 6 are done
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 7 are done
 (see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
@@ -200,7 +200,19 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      behavior;
    - the convergence test and the results after convergence stay in the entry script for step 7. The long argument
      lists become a `Scenario` object in step 8.
-7. **Results after convergence** → `results.py`.
+7. **Results after convergence** → `results.py`. **Done 2026-11-09** (`REPRODUCED`):
+   - `results.write_converged_results()`: the whole block after `if converged == True:`, moved verbatim
+     (re-indented); `scenario_count += 1` stays in the caller, which is the only reader;
+   - checked with `ast` first: no value set in the block is read after it. `headway` and `microtransit_run` are
+     changed only temporarily inside it (base case, "micro_only") and restored on every path, so local copies
+     are equivalent. `transit_tt_VMT` / `transit_tt_VMT_base` were set to 0 at the start of each scenario and used
+     only here; they now start at 0 in the function. Nothing computed under the "first virtual-stop / fleet /
+     period scenario" condition (the base case) is read outside that condition;
+   - one difference for invalid input: the fare scenario's description is set only for `test_scenario` 0-10;
+     with another value the old code would have reused the previous scenario's description (or failed), the
+     function fails;
+   - kept as one function for now: its parts share many intermediate values (operating costs, revenues, the base
+     case). Splitting it (costs / individual results / evaluation rows) is possible later, with the same checks.
 8. **Scenario loop and `run_model`** → `scenarios.py`, `model.py`. The entry script shrinks to about 50 lines.
 9. **Docs:** `progress.md`, the README layout table, a short code map in the README.
 

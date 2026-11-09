@@ -9,4 +9,5 @@
 - networks: read the super-networks of an iteration.
 - iteration: one iteration of the choice model for all travelers; writes the FRT and FleetPy demand files.
 - microtransit: run FleetPy and update the super-networks with its results.
+- results: the results of a converged scenario (costs, subsidies, accessibility, individual results, evaluation rows).
 """
