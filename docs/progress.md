@@ -25,7 +25,7 @@ earlier entries; commits before that date use the old names.
 | 1c | Optimizer (`Bayesian_optimization_script.py`) reads and writes `mtsm_data/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-2 done 2026-11-07 |
-| 2d | Remove downtown San Diego: code (also commented), inputs and outputs | In progress: steps 0-1 done 2026-11-08 |
+| 2d | Remove downtown San Diego: code (also commented), inputs and outputs | In progress: steps 0-2 done 2026-11-08 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -593,6 +593,29 @@ file was renamed, so the code still builds the same file names. The folder const
 - Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`; FleetPy read no example or
   downtown file (only the copied Lemon Grove inputs and the vehicle types).
+
+### Step 2: code in the run (2026-11-08)
+- Removed from the files the run executes: every `study_area == "downtown_sd"` branch, the downtown-only constants
+  (node ranges 731/732-871/872-1603, accessibility thresholds 34986/43787, fallback employment values, per-route
+  speeds), the flag `dt_sd_full_trnst_ntwk` (from 11 function definitions and their calls), and the `# STALE:` and
+  other comments that held downtown paths (`Data/0719_input/` outside `lemon_grove/`, `Downtown_SD_*`,
+  `Bayesian_Optimization/downtown_sd`). Files: `run_examples_new_parking.py`, `folder_directory.py`,
+  `network_algorithms.py`, `output_performance_metrics.py` (also its `__main__` test now names `lemon_grove`),
+  `update_network_files.py`, `get_microtransit_skims.py`, `Bayesian_optimization_script.py` (comments only), and
+  the independent downtown blocks in `pre_process/generate_demand_files.py` and `pre_process/process_network.py`.
+- Where Lemon Grove was the `else:` of a downtown `if` (microtransit node mapping in the entry script), the Lemon
+  Grove code now runs unconditionally; the run only allows `lemon_grove`.
+- Left, for a decision: (a) the old mode-choice functions marked "old downtown_sd version" in
+  `inte_sys_mode_choice.py` (`get_demand_nodes`, `MNL_choice` and the functions that use them) and
+  `get_microtransit_skims.get_microtransit_skims`; nothing calls them. (b) Preprocessing in `pre_process/` that
+  builds both areas: `process_network.get_transit_link_route`, `construct_initial_network` and the `__main__`
+  network construction (`new_downtown_sd=True`), and `generate_demand_files.py`'s `__main__`. (c) The `micro_only`
+  branch of `update_network_files.update_network_files` uses the downtown limit `from_node <= 731` without a study
+  area check; the run never takes it (`microtransit_running_scenarios = ["micro"]`).
+- Checks: compiles; pyflakes reports no new warnings (4 old undefined names went away with a deleted block); CRLF
+  kept.
+- Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.
 
 ---
 

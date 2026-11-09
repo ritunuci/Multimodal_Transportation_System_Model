@@ -419,17 +419,6 @@ def modify_ind_parameter(study_area,debug_mode,bt_c_0_m=0,bt_c_ivt_m = 0.103,
             demand_profile_beta_file_new=os.path.join(new_lemon_grove_demand_folder,"%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
             demand_profile_beta_file = os.path.join(lemon_grove_demand_folder, "%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
 
-    if study_area=="downtown_sd":
-        # STALE: network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input"
-        # STALE: new_demand_input_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/demand_folder"
-        if debug_mode==True:
-            debug = "debug_"
-            demand_profile_beta_file = os.path.join(network_folder,"%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
-            demand_profile_beta_file_new = os.path.join(new_demand_input_folder, "%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
-        else:
-            debug = ""
-            demand_profile_beta_file = os.path.join(network_folder,"%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
-            demand_profile_beta_file_new=os.path.join(new_demand_input_folder,"%s_%strips_nodes_study_area_with_beta.csv" % (str(study_area),str(debug)))
 
     with open(demand_profile_beta_file_new, 'w+', newline='') as csvfile_modify:
         fieldnames = ['rq_time', 'start', 'end', 'request_id', "bt_c_0", "bt_c_ivt", "bt_c_gas", "bt_t_0","bt_t_wk","bt_m_wt","bt_f_wt", "bt_m_ivt", "bt_f_ivt", "bt_f_trfer", "bt_t_fr"]
@@ -498,10 +487,6 @@ def TRPartA_demand_files(study_area,debug_mode):
 
 
 
-    if study_area=="downtown_sd":
-        # STALE: MGRA_Node_folder="D:\Siwei_Micro_Transit/Data/0719_input/MGRA_nodes_mapping"
-        # STALE: study_area_network_folder="D:/Ritun/Siwei_Micro_Transit/Data/0719_input/downtown_sd_Network_folder"
-        mean_income = 88894.5
     if study_area=="lemon_grove":
         # STALE: MGRA_Node_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/MGRA_Node_Mapping"
         # STALE: study_area_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Lemon Grove/Network_folder"
@@ -578,21 +563,6 @@ def TRPartA_demand_files(study_area,debug_mode):
 
                     bt_m_ivt_m = 0.104  # bt_m_ivt
                     bt_f_ivt_m = 0.106  # bt_f_ivt
-                    bt_f_trfer_m = 0.504  # bt_f_trfer
-
-                    bt_t_fr_m = bt_c_gas_m  # bt_f_trfer
-                if study_area =="downtown_sd":
-                    bt_c_0_m = 0 #beta_car_0 - alternative specific constant as a reference mode
-                    bt_c_ivt_m = 0.184  # beta_car_ivt
-                    bt_c_gas_m = 0.994 * (mean_income /income) # beta_car_ivt
-
-                    bt_t_0_m = 0.022  # beta_car_0 - alternative specific constant as a reference mode
-                    bt_t_wk_m = 0.293  # beta_t_walking
-                    bt_m_wt_m = 0.104  # beta_microtransit_waiting
-                    bt_f_wt_m = 0.069  # beta_fixed_route_transit_waiting
-
-                    bt_m_ivt_m = 0.104  # bt_m_ivt
-                    bt_f_ivt_m = 0.102  # bt_f_ivt
                     bt_f_trfer_m = 0.504  # bt_f_trfer
 
                     bt_t_fr_m = bt_c_gas_m  # bt_f_trfer
@@ -962,33 +932,5 @@ if __name__ == '__main__':
             #                              bt_m_wt_m=bt_m_wt_m, bt_f_wt_m=bt_f_wt_m,bt_m_ivt_m=bt_m_ivt_m,
             #                              bt_f_ivt_m=bt_f_ivt_m, bt_f_trfer_m=bt_f_trfer_m, bt_t_fr_m=bt_t_fr_m)
             #
-            # if study_area=="downtown_sd":
-            #     bt_c_0_m = 0 #beta_car_0 - alternative specific constant as a reference mode
-            #     bt_c_ivt_m = 0.184  # beta_car_ivt
-            #     bt_c_gas_m = 0.994  # beta_car_ivt
-            #
-            #     bt_t_0_m = 0.022  # beta_car_0 - alternative specific constant as a reference mode
-            #     bt_t_wk_m = 0.213  # beta_t_walking
-            #     bt_m_wt_m = 0.104  # beta_microtransit_waiting
-            #     bt_f_wt_m = 0.069  # beta_fixed_route_transit_waiting
-            #
-            #     bt_m_ivt_m = 0.104  # bt_m_ivt
-            #     bt_f_ivt_m = 0.102  # bt_f_ivt
-            #     bt_f_trfer_m = 0.504  # bt_f_trfer
-            #
-            #     bt_t_fr_m = 0.554  # bt_f_trfer
-            #
-            #     if create_from_scratch==True:
-            #         demand_profile_beta_file = os.path.join(lemon_grove_demand_folder,"demand_profile_lemon_grove_with_beta.csv")
-            #         debug_demand_profile_beta_file = os.path.join(lemon_grove_demand_folder,"debug_demand_profile_lemon_grove_with_beta.csv")
-            #
-            #         create_user_profile(total_demand_file, demand_profile_beta_file,debug_demand_profile_beta_file)
-            #     else:
-            #         print("study_area", study_area, "debug_mode", debug_mode)
-            #         modify_ind_parameter(study_area, debug_mode, bt_c_0_m=bt_c_0_m, bt_c_ivt_m=bt_c_ivt_m,
-            #                              bt_c_gas_m=bt_c_gas_m, bt_t_0_m=bt_t_0_m, bt_t_wk_m=bt_t_wk_m,
-            #                              bt_m_wt_m=bt_m_wt_m,bt_f_wt_m=bt_f_wt_m,
-            #                              bt_m_ivt_m=bt_m_ivt_m,
-            #                              bt_f_ivt_m=bt_f_ivt_m, bt_f_trfer_m=bt_f_trfer_m, bt_t_fr_m=bt_t_fr_m)
             #
             #

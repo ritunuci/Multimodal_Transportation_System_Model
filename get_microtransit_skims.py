@@ -33,10 +33,6 @@ def get_node_ct(study_area):
     census_tract_node = OrderedDict()
     node_census_tract = OrderedDict()
     demand_nodes_fleetpy = []
-    if study_area == "downtown_sd":
-        mtsm.not_self_contained("study_area=downtown_sd")
-        # STALE: network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'
-
     if study_area == "lemon_grove":
         network_folder = mtsm.LG_TRANSIT_NETWORK_DIR
     pre_node_dir = os.path.join(network_folder, 'pre_nodes.csv')

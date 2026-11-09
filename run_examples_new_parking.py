@@ -163,11 +163,7 @@ if __name__ == "__main__":
     # microtransit_dist_based_rate = 0.00123 #microtransit fare: 0.00123 dollar per meter, 1.97 dollar per mile
     # microtransit_start_fare=1.0
 
-    # test_area = ["downtown_sd","lemon_grove"]
-    # test_area = ["downtown_sd"]
-    dt_sd_full_trnst_ntwk=True
     # TRPartA=True
-    # test_area = ["downtown_sd"]
     # test_area = ["lemon_grove"]
     # TRPartA_test_scenario_list = [0, 1,2,3, 4, 5, 6, 7, 8, 9]
     # TRPartA_test_scenario_list=[0,1,4,5,6,7,8,9]
@@ -242,12 +238,12 @@ if __name__ == "__main__":
             else:
                 # operating_periods_scenarios = [operating_period_1,operating_period_2]  # just for testing [operating_period_1,operating_period_2]
                 # virtual_stop_scenarios = [75,100] #[75,100]
-                # headway_scenarios = [15,30] #[30,60] # Downtown SD is every 15 minutes
+                # headway_scenarios = [15,30] #[30,60]
                 # # headway_scenarios = [20,30, 60]
                 # fleet_size_scenarios = [10,15,20] #[10,20]
                 operating_periods_scenarios = [operating_period_2]  # just for testing [operating_period_1,operating_period_2]
                 virtual_stop_scenarios = [75]  # [75,100]
-                headway_scenarios = [headway]  # [30,60] # Downtown SD is every 15 minutes  #Ritun
+                headway_scenarios = [headway]  # [30,60]  #Ritun
                 # headway_scenarios = [20,30, 60]
                 # [2,3,4,5,6]
                 # fleet_size_scenarios = [4]  # [5,10,15,20,30]
@@ -257,16 +253,16 @@ if __name__ == "__main__":
                 #######
                 #05/14:Comment for now
                 ####################
-                demand_folder,initial_network_folder,final_network_folder,fleetpy_demand_folder,output_folder=fld_dir.determine_dolders(study_area,dt_sd_full_trnst_ntwk,zonal_partition,TRPartA,BayesianOptimization)
+                demand_folder,initial_network_folder,final_network_folder,fleetpy_demand_folder,output_folder=fld_dir.determine_dolders(study_area,zonal_partition,TRPartA,BayesianOptimization)
                 new_fleetpy_demand = os.path.join(fleetpy_demand_folder,"%s_debug_%s_fleetpy_demand.csv" % (str(study_area), str(debug_mode)))
                 #############
                 ## transit information
                 ##########
-                transit_line_dist_list = output_metrics.get_transit_line_dist(study_area,dt_sd_full_trnst_ntwk)
+                transit_line_dist_list = output_metrics.get_transit_line_dist(study_area)
                 #################
                 #################
                 ###0514: comment for now
-                transit_line_duration=output_metrics.get_transit_line_duration(study_area,dt_sd_full_trnst_ntwk,transit_line_dist_list)
+                transit_line_duration=output_metrics.get_transit_line_duration(study_area,transit_line_dist_list)
 
                 print("study_area",study_area,"transit_line_duration (route_id,duration (h))",transit_line_duration)
                 scenario_count = 0
@@ -294,17 +290,8 @@ if __name__ == "__main__":
             #1108: read the initial network information
             #############################################
                 MicroTransitNodes=OrderedDict()
-                if study_area == "downtown_sd":
-                    if dt_sd_full_trnst_ntwk==True:
-                        for i in range(732):
-                            MicroTransitNodes[872 + i] = i  # downtown_sd SD: microtransit node 773 - corresponding to - walking node 0 (microtransit node 0 in fleetpy)
-                    else:
-                        for i in range(732):
-                            MicroTransitNodes[773 + i] = i #downtown_sd SD: microtransit node 773 - corresponding to - walking node 0 (microtransit node 0 in fleetpy)
-
-                else:
-                    for i in range(1099):
-                        MicroTransitNodes[1171 + i] = i #lemon_grove: microtransit node 1171 - corresponding to - walking node 0 (microtransit node 0 in fleetpy)
+                for i in range(1099):
+                    MicroTransitNodes[1171 + i] = i #lemon_grove: microtransit node 1171 - corresponding to - walking node 0 (microtransit node 0 in fleetpy)
                 ########
                 # headway_scenarios = [20,30,60]
                 microtransit_setup_scenarios = ["micro", "non_micro","micro_only"]
@@ -325,9 +312,9 @@ if __name__ == "__main__":
                 ###################################################
                 agent_list_ = n_a.read_request(demand_file)
                 tt_num_agents=len(agent_list_)
-                print("study_area:", study_area,"downtown_sd_full_transit_network:",dt_sd_full_trnst_ntwk,"total number of agents:",tt_num_agents,"\n")
+                print("study_area:", study_area,"total number of agents:",tt_num_agents,"\n")
 
-                transit_link_list=output_metrics.get_transit_link_info(study_area,dt_sd_full_trnst_ntwk)
+                transit_link_list=output_metrics.get_transit_link_info(study_area)
                 transit_link_vmt,transit_link_pax,off_micro_transit_link_pax,off_micro_transit_link_vmt=output_metrics.vmt_and_link_dict_creation(time_periods,transit_link_list)
 
 
@@ -379,7 +366,7 @@ if __name__ == "__main__":
                             num_headway_scen = 0
                             for headway in headway_scenarios: #put bus design parameter in the most outer loop
                                 p_n.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
-                                tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,debug_mode,dt_sd_full_trnst_ntwk,test_scenario,TRPartA,BayesianOptimization)
+                                tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,debug_mode,test_scenario,TRPartA,BayesianOptimization)
                                 num_headway_scen+=1
                                 num_virstop_scen = 0
                                 for virstop in virtual_stop_scenarios: #virtual stops - not necessarily influence the cost, but will influence the mobility
@@ -694,7 +681,7 @@ if __name__ == "__main__":
                                                                         # *****don't calculate it along the way - only*********
                                                                         # calculate generalized cost shortest path for agent on Auto network
                                                                         if ((num_headway_scen == 1) and (num_virstop_scen == 1) and (num_fleet_size_scen == 1) and (num_operating_periods_scen == 1) and (iteration==0) and (TRPartA==False)) or ((TRPartA==True) and (test_scenario== TRPartA_test_scenario_list[0])):
-                                                                            parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,transit_fare,microtransit_start_fare,microtransit_dist_based_rate,dt_sd_full_trnst_ntwk,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario=0, mode="C", verbose=False, iteration=iteration)
+                                                                            parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,transit_fare,microtransit_start_fare,microtransit_dist_based_rate,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario=0, mode="C", verbose=False, iteration=iteration)
                                                                             auto_time_path_all_ = n_a.getTrajectory_O_to_D(origin, dest,auto_time_path,auto_visited_temp)
                                                                             agent_auto_visited_temp[rq_id] = auto_visited_temp
                                                                             agent_auto_time_visited_temp[rq_id] = auto_time_visited_temp
@@ -716,7 +703,7 @@ if __name__ == "__main__":
                                                                         # if :
                                                                         # calculate generalized cost shortest path for agent on W_F network
                                                                         if ((num_virstop_scen==1) and (num_fleet_size_scen==1) and (num_operating_periods_scen==1) and (iteration==0) and (TRPartA==False)) or ((TRPartA==True) and (test_scenario== TRPartA_test_scenario_list[0])):
-                                                                                visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,base_FRT_fare, microtransit_start_fare,microtransit_dist_based_rate,dt_sd_full_trnst_ntwk,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
+                                                                                visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,base_FRT_fare, microtransit_start_fare,microtransit_dist_based_rate,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
                                                                                 transit_time_path_all_F = n_a.getTrajectory_O_to_D(origin, dest,time_path_F,visited_temp_F)
                                                                                 transit_dist_path_all_F = n_a.getTrajectory_O_to_D(origin, dest,dist_path_F,dist_visited_temp_F)  # calculate fixed transit VMT
 
@@ -743,7 +730,7 @@ if __name__ == "__main__":
                                                                         if microtransit_run == "micro_only" and (time_period not in operating_periods):
                                                                             aaa=0
                                                                         else:
-                                                                            visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,transit_fare,microtransit_start_fare,microtransit_dist_based_rate,dt_sd_full_trnst_ntwk,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
+                                                                            visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,transit_fare,microtransit_start_fare,microtransit_dist_based_rate,PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
                                                                             transit_time_path_all_ = n_a.getTrajectory_O_to_D(origin, dest, time_path, visited_temp)
                                                                             transit_dist_path_all_ = n_a.getTrajectory_O_to_D(origin, dest, dist_path,dist_visited_temp) #calculate microtransit and fixed transit VMT
 
@@ -1302,10 +1289,10 @@ if __name__ == "__main__":
                                                                         F_oper_cost_base += F_gas_cost_base  # Ritun Jan 7, 2024: add base F gas cost calculation
 
                                                                         M_mode_operating_cost = M_operating_hrs * fleet_size * 130  # microtransit operating cost $130/veh-hour
-                                                                        output_metrics.write_fixed_transit_link_vmt(study_area,dt_sd_full_trnst_ntwk,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,TRPartA,BayesianOptimization,test_scenario,debug_mode,microtransit="micro")
-                                                                        output_metrics.write_fixed_transit_link_vmt(study_area,dt_sd_full_trnst_ntwk,fleet_size,M_operating_hrs,headway,virstop,off_micro_transit_link_vmt,off_micro_transit_link_pax,TRPartA,BayesianOptimization,test_scenario,debug_mode,microtransit="non_micro")
+                                                                        output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,TRPartA,BayesianOptimization,test_scenario,debug_mode,microtransit="micro")
+                                                                        output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,off_micro_transit_link_vmt,off_micro_transit_link_pax,TRPartA,BayesianOptimization,test_scenario,debug_mode,microtransit="non_micro")
 
-                                                                        avg_period_total_weighted_5_min,avg_period_total_weighted_10_min,avg_period_total_weighted_15_min = output_metrics.all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,debug_mode,dt_sd_full_trnst_ntwk,zonal_partition,TRPartA,BayesianOptimization,test_scenario) #1112 Siwei: comment to make the program run faster.
+                                                                        avg_period_total_weighted_5_min,avg_period_total_weighted_10_min,avg_period_total_weighted_15_min = output_metrics.all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,debug_mode,zonal_partition,TRPartA,BayesianOptimization,test_scenario) #1112 Siwei: comment to make the program run faster.
 
 
                                                                         print("The program is converged.")
@@ -1892,7 +1879,7 @@ if __name__ == "__main__":
                                                                 all_scenario_assert_dict = {0: {"number users": 88}}
                                                                 fleetpy.check_assertions(list_results, all_scenario_assert_dict, LOG_F)
                                                                 print("FleetPy finishes. Now update the microtransit part in super-network.....","iteration:",iteration)
-                                                                wait_times = update.update_network_files(repositioning,microtransit_run,headway,virstop,M_operating_hrs,fleet_size,study_area,dt_sd_full_trnst_ntwk,zonal_partition,iteration,
+                                                                wait_times = update.update_network_files(repositioning,microtransit_run,headway,virstop,M_operating_hrs,fleet_size,study_area,zonal_partition,iteration,
                                                                                             iteration_debug,aggregation,TRPartA,BayesianOptimization)
 
                                                                 # Ritun added: Feb 14

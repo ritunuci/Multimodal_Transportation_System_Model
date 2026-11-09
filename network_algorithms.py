@@ -595,7 +595,7 @@ def get_link_type_from_O_to_D(origin, destination, path):
 #############################################################
 #Multi-modal generalized cost shortest path algorithm
 ############################################################
-def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,microtransit_start_fare,microtransit_dist_based_rate,dt_sd_full_trnst_ntwk, PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode,verbose=False, total_rejection_penalty=0, iteration=0):  # mode="T" or mode="C"
+def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,microtransit_start_fare,microtransit_dist_based_rate, PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode,verbose=False, total_rejection_penalty=0, iteration=0):  # mode="T" or mode="C"
 
     # Define a class Node to store the values
 
@@ -638,9 +638,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     parking_dur = agent.parking_dur
     # transit_pass = agent.transit_pass
 
-    if study_area=="downtown_sd":
-        low_acc_thrshd=34986
-        high_acc_thrshd = 43787
     if study_area == "lemon_grove":
         low_acc_thrshd= 562
         high_acc_thrshd = 2297
@@ -805,23 +802,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     # num_transit_links += 1
                     generalized_link_travel_time = bt_f_ivt * link_travel_time / 60
                 if link_type_ == 2:  # fixed route transit waiting link
-                    if study_area == "downtown_sd":
-                        if dt_sd_full_trnst_ntwk == True:
-                            if min_node <= 731 and 732 <= edge <= 871:
-                                if link_type_pre != 2:
-                                    transit_fare = transit_fare_set
-                                else:
-                                    aaa=0
-                            else:
-                                transit_fare = 0
-                        else:
-                            if min_node <= 731 and 732 <= edge <= 772:
-                                if link_type_pre != 2:
-                                    transit_fare = transit_fare_set
-                                else:
-                                    aaa=0
-                            else:
-                                transit_fare = 0
                     if study_area == "lemon_grove":
                         if min_node <= 1098 and 1099 <= edge <= 1170:
                             if link_type_pre != 2:
@@ -863,12 +843,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                 if link_type_ == 5:  # microtransit waiting link
                     if test_scenario==5: #Scenario 5: microtransit flat fare, same as fixed transit
 
-                        if study_area == "downtown_sd":
-                            if dt_sd_full_trnst_ntwk == True:
-                                if min_node <= 731 and 872 <= edge <= 1603:
-                                    micro_fare = transit_fare_set
-                                else:
-                                    micro_fare = 0
                         if study_area == "lemon_grove":
                             if min_node <= 1098 and 1171 <= edge <= 2269:
                                 micro_fare = transit_fare_set
@@ -879,17 +853,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                         # micro_fare=0 ##10/15/2024 Siwei
                         aaa=0
                     elif (test_scenario==6 or test_scenario==7 or test_scenario==10):
-                        if study_area == "downtown_sd":
-                            if dt_sd_full_trnst_ntwk == True:
-                                if min_node <= 731 and 872 <= edge <= 1603:
-                                    if test_scenario==10:
-                                        micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun
-                                    elif test_scenario==7 :
-                                        micro_fare = microtransit_start_fare * 0.5
-                                    else:
-                                        micro_fare = microtransit_start_fare
-                                else:
-                                    micro_fare = 0
                         if study_area == "lemon_grove":
                             if min_node <= 1098 and 1171 <= edge <= 2269:
                                 if test_scenario == 10:
@@ -979,7 +942,6 @@ if __name__ == '__main__':
     print("start time:",start_time)
     mtsm.not_self_contained("network_algorithms.py standalone test")
     # STALE: new_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Latest network 2"
-    # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/demand_folder"
     for headway in [20]:  # [20,30,60]
         for percentage in [50]:  # [50,75,100]
             final_super_network_edges = os.path.join(new_network_folder, "super_network_%s_virstop_%s_hw_edges.csv" % (str(percentage), str(headway)))

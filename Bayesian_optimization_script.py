@@ -275,12 +275,6 @@ def update_csv_with_train_x(values):
 
 
 def collect_output(iteration_type: str, values):
-    # output_csv_path = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/output_folder" \
-    #                   "/downtown_sd_debug_evaluation_zonal_partition_False.csv"
-
-    # indv_res_csv_path = f"D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/output_folder/" \
-    #                     f"debug_individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv"
-
     output_csv_path, indv_res_csv_path = model_output_files(values)
 
     output_csv_df = pd.read_csv(output_csv_path)
@@ -314,7 +308,7 @@ def collect_output(iteration_type: str, values):
         # subsidy_FRT_micro = F_oper_cost + M_oper_cost - 4 * F_revenue - 4 * M_revenue
         #
         # value_11 = -(subsidy_FRT_micro - subsidy_base)      # Subsidy delta
-        # value_21 = 4 * (y1 - y2)    # mobility logsum delta   # Make it 5 for Downtown SD
+        # value_21 = 4 * (y1 - y2)    # mobility logsum delta
 
         # USE THIS PART WHEN THERE IS NO MICRO UPSCALING HAPPENING
         value_11 = -(float(x1) - float(x2))        # Subsidy delta

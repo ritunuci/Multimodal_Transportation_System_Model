@@ -905,18 +905,6 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
         copy_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
     else:
         mtsm.not_self_contained("study_area=%s" % study_area)
-        # STALE: initial_net_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/downtown_sd/initial_network_folder/initial_full_transit_network"
-        # STALE: base_initial_net_file_micro = os.path.join(initial_net_folder,
-        # STALE:                                            "base_super_network_downtown_sd_micro_hw_10_virstop_75.csv")
-        # STALE: updated_initial_net_file_micro = os.path.join(initial_net_folder,
-        # STALE:                                               f"initial_super_network_micro_hw_{headway}_virstop_75.csv")
-        # STALE:
-        # STALE: base_initial_net_file_non_micro = os.path.join(initial_net_folder,
-        # STALE:                                                "base_super_network_downtown_sd_non_micro_hw_10.csv")
-        # STALE: updated_initial_net_file_non_micro = os.path.join(initial_net_folder,
-        # STALE:                                                   f"initial_super_network_non_micro_hw_{headway}.csv")
-        # STALE:
-        # STALE: copy_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/initial_full_transit_network"
 
     with open(updated_initial_net_file_micro, 'w+', newline='') as updated_file_1:
         fieldnames_1 = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]
