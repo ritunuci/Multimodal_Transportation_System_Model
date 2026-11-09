@@ -31,8 +31,9 @@ Paths are relative to the codebase root.
 | I-07 | `docs/progress.md` plan table is out of date | Low | Closed (2026-11-07) | 2026-11-07 |
 | I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Closed (2026-11-07) | 2026-10-23 |
 | I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | In progress | 2026-11-07 |
-| I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | In progress | 2026-11-07 |
+| I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | Closed (2026-11-08) | 2026-11-07 |
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Open | 2026-11-07 |
+| I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
 
 ---
 
@@ -119,31 +120,47 @@ Paths are relative to the codebase root.
   two files go back to upstream. Only the vehicle-type name changes in FleetPy's intermediate files, so the reference
   is updated for those; the 9 reported output files must stay byte-identical.
 
+### I-11: Old, unused MTSM files inside `fleetpy/`
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-07 (comparison with upstream FleetPy).
+- **What:** files added for MTSM that the current run does not read (updated 2026-11-08, after the downtown San
+  Diego files were deleted): 69 old files in
+  `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`, 9 Lemon Grove plots in
+  `fleetpy/data/demand/example_demand/matched/example_network/`, and 13 old scenario configs of unknown study area
+  (`example_ir_only_N_veh.csv`, `debug_example_ir_only*.csv`). Full list: `fleetpy/LOCAL_CHANGES.md`.
+- **Impact:** none on results; `fleetpy/` is not yet only FleetPy.
+- **Fix:** decided not to do it in the FleetPy separation (D4). Later: move them to an archive (or delete them; they
+  stay in the git history), after checking that no script still needs them.
+
+### I-12: FleetPy's example a) serves 90 users; its check expects 88
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 1).
+- **What:** `python run_examples.py` in `fleetpy/` runs example a) (`constant_config_ir.csv`, `example_ir_only.csv`)
+  on the restored upstream data (Munich, 7,617 nodes, 5 vehicles). It serves 90 of 100 users; the check, unchanged
+  since FleetPy's first release (2021-12-07), expects 88. The run otherwise completes normally.
+- **Not the cause:** the vehicle capacity (the same 90 with upstream's capacity 4) and the example data (restored
+  byte for byte).
+- **Likely cause, not verified:** the environment. Upstream FleetPy was written for numpy 1.19 / pandas 1.2; the
+  model's environment has numpy 2.2 / pandas 2.2, and four pandas-2 fixes in `src/`.
+- **Impact:** none on the Lemon Grove results. It means FleetPy's own example cannot be used as a pass/fail check
+  of FleetPy here.
+- **Fix:** run upstream `7019960` unchanged in an environment with its original requirements: 88 there confirms
+  the environment as the cause, and 90 can then be recorded as the expected value in this environment.
+
+---
+
+## Closed
+
 ### I-10: FleetPy's example data was overwritten with downtown San Diego data
-- **Status:** In progress (FleetPy separation, step 4). **Severity:** Low. **Found:** 2026-11-07 (comparison with
+- **Status:** Closed (2026-11-08). **Severity:** Low. **Found:** 2026-11-07 (comparison with
   upstream FleetPy).
 - **What:** the downtown San Diego configs use FleetPy's `example_network` and `example_demand`, so FleetPy's example
   network (Munich), demand, vehicle distribution, depots, charging stations, zone mapping and example configs were
   overwritten. The list is in `fleetpy/LOCAL_CHANGES.md`.
 - **Impact:** FleetPy's own examples (`fleetpy/run_examples.py`) cannot be run as upstream intends, so FleetPy cannot
   be tested on its own. The Lemon Grove run reads none of these files.
-- **Fix (decided, D6):** restore the upstream files and move the downtown San Diego versions to an archive under
-  `mtsm_data/` (downtown San Diego is blocked by the startup guard anyway); then run FleetPy's own example a), which checks
-  `number users = 88`.
-
-### I-11: Old, unused MTSM files inside `fleetpy/`
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-07 (comparison with upstream FleetPy).
-- **What:** files added for MTSM that the current run does not read: 69 old files in
-  `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`, 292 in
-  `fleetpy/data/demand/example_demand/matched/example_network/`, `sd_*`/`0719_*`/old network files in
-  `fleetpy/data/networks/example_network/`, and the 29 `downtown_sd_*` configs. Full list: `fleetpy/LOCAL_CHANGES.md`.
-- **Impact:** none on results; `fleetpy/` is not yet only FleetPy.
-- **Fix:** decided not to do it in the FleetPy separation (D4). Later: move them to an archive (or delete them; they
-  stay in the git history), after checking that no script still needs them.
-
----
-
-## Closed
+- **Resolution:** done as part of removing downtown San Diego (`docs/progress.md`), which replaced D6: the 14
+  files were restored from upstream `7019960` byte for byte, and the downtown versions were deleted instead of
+  archived (tag `last-with-downtown-sd` marks the last commit with them). FleetPy's example a) runs on the restored
+  data (see I-12). The Lemon Grove run still reproduces the reference.
 
 ### I-08: FleetPy's `README.md` still installs from `requirements.txt`
 - **Status:** Closed (2026-11-07). **Severity:** Low. **Found:** 2026-10-23 (Phase 2b, step 2).

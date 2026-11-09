@@ -8,10 +8,10 @@ demand_name,example_demand
 rq_file,
 random_seed,0
 start_time,0
-end_time,86400
+end_time,7200
 time_step,60
-route_output_flag,TRUE
-replay_flag,TRUE
+route_output_flag,True
+replay_flag,True
 nr_mod_operators,1
 op_module,
 op_fleet_composition,
@@ -19,7 +19,7 @@ rq_type,BasicRequest
 user_max_decision_time,0
 ##2,FleetControl
 op_min_wait_time,0
-op_max_wait_time,900
+op_max_wait_time,300
 op_max_wait_time_2,
 op_max_detour_time_factor,40
 op_offer_time_window,

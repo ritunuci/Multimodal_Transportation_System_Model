@@ -25,6 +25,7 @@ earlier entries; commits before that date use the old names.
 | 1c | Optimizer (`Bayesian_optimization_script.py`) reads and writes `mtsm_data/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-2 done 2026-11-07 |
+| 2d | Remove downtown San Diego: code (also commented), inputs and outputs | In progress: steps 0-1 done 2026-11-08 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -555,6 +556,43 @@ file was renamed, so the code still builds the same file names. The folder const
   reference results (they contain no `mtsm/` path) are unchanged.
 - Verification (2026-11-07): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`; nothing read or written under `mtsm/`.
+
+---
+
+## Removing downtown San Diego
+
+### Plan (2026-11-08, decisions by the user)
+- Goal: remove all downtown San Diego code (also commented code) and its input and output files; the model is
+  Lemon Grove only. The Lemon Grove reference run must still reproduce after each step.
+- Steps: 0) mark the last commit with downtown; 1) FleetPy data; 2) code in the run; 3) docs.
+- Decisions: tag the last commit with downtown (D1); `standalone_scripts/` is not touched, since nothing runs it
+  (D2); other dead branches (`TRPartA=False`, `BayesianOptimization=False`, debug mode) are left for later (D3); git
+  history is kept, so the files can be recovered (D4). Step 1 replaces step 4 of the FleetPy separation (D6 there):
+  the downtown files are deleted instead of archived.
+
+### Step 0: marker (2026-11-08)
+- Annotated tag `last-with-downtown-sd` on `4329154`, the last commit with downtown San Diego code and data. It is
+  local until pushed (`git push origin last-with-downtown-sd`).
+
+### Step 1: FleetPy data (2026-11-08)
+- Every file in `fleetpy/data/` and `fleetpy/studies/` was compared with upstream `7019960`. The downtown files had
+  FleetPy's example names (`example_network`, `example_demand`), so they were identified by node IDs: the downtown
+  network has nodes 0-731, FRT stops 732-871 and microtransit nodes from 872 (FleetPy's Munich network: 7,617 nodes;
+  Lemon Grove: 0-2269).
+- Restored from upstream, byte for byte: the 14 overwritten example files (I-10, closed).
+- Deleted (`git rm`): 283 downtown demand files and plots, 7 downtown network files, 33 downtown scenario configs
+  (`downtown_sd_*`, and `example_pool_1000_rq_*`, whose demand `example_1000.csv` has only downtown node IDs), and
+  10 files that only existed because the originals had been overwritten (FleetPy's moved-aside Munich demand and
+  two backups).
+- Kept: 13 old scenario configs whose study area could not be determined (I-11), the Lemon Grove leftovers (I-11)
+  and FleetPy's vehicle files (vehicle-type step, I-09).
+- After this step, `fleetpy/` differs from upstream only by the code changes in `fleetpy/LOCAL_CHANGES.md`, the
+  vehicle files and the files listed under I-11.
+- FleetPy's own example a) runs on the restored data, but serves 90 users where its check expects 88, also with
+  upstream's vehicle capacity (I-12).
+- Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`; FleetPy read no example or
+  downtown file (only the copied Lemon Grove inputs and the vehicle types).
 
 ---
 

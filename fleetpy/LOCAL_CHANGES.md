@@ -49,36 +49,35 @@ Removed on 2026-11-07 (they were commented-out debug prints, no effect): extra l
 
 `README.md` has one added line at the end (a command to run `src/evaluation/temporal.py`).
 
+FleetPy's own example a) (`python run_examples.py` in this folder) runs, but serves 90 users where its check
+expects 88 (I-12).
+
 FleetPy's original `requirements.txt` (numpy 1.19.5, pandas 1.2.0, ...) is not in this folder. The repository root's
 `requirements.txt` points to `env/`, the model's locked environment; the original list is in the git history
 (commit `6d311ee`).
 
 ## Local changes to data
 
-These are open; see `docs/open_issues.md`.
+See `docs/open_issues.md`.
 
 - **`data/vehicles/default_vehtype.csv` and `low_range_vehtype.csv`:** `maximum_passengers` changed from 4 to 8. The
   Lemon Grove run uses `default_vehtype`, so the microtransit vehicle capacity of the model (8) is stored in FleetPy's
   file.
-- **FleetPy's example data was overwritten with the downtown San Diego study area** (the downtown configs use
-  `network_name=example_network`, `demand_name=example_demand`):
-  - `data/networks/example_network/base/nodes.csv`, `edges.csv` (upstream: Munich, 7,617 nodes; here: 732 nodes,
-    San Diego coordinates);
-  - `data/demand/example_demand/matched/example_network/example_100.csv`, `example_200.csv`, `example_400.csv`;
-  - `data/fleetctrl/initial_vehicle_distribution/example_network/imbalanced.csv`;
-  - `data/infra/example_infra/example_network/depots.csv`, `public_charging_stations.csv`;
-  - `data/zones/example_zones/example_network/node_zone_info.csv`;
-  - `studies/example_study/scenarios/`: `constant_config_ir.csv`, `constant_config_ir_repo.csv`,
-    `constant_config_pool.csv` (end time, wait time, zone system, `True` → `TRUE`), `example_ir_only.csv`,
-    `example_ir_heuristics_repositioning.csv` (demand file, fleet size, operator module).
-- **Added files** (not in upstream; none of them is read by the Lemon Grove run):
-  - `data/demand/example_demand/matched/example_network/`: 292 files (downtown San Diego demand and old
-    `F_transit_demand_*` files);
-  - `data/demand/example_demand_Munich/`: 8 files, FleetPy's original Munich example demand, moved aside;
+- **Added files still here** (not in upstream; none of them is read by the Lemon Grove run; I-11):
   - `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`: 69 old files;
-  - `data/networks/example_network/`: 7 files (`sd_*`, `0719_*`, `0104_edges.csv`, `edges_old.csv`, `base.zip`, ...);
-  - `data/zones/example_zones/example_network/node_zone_info_backup.csv`;
-  - `studies/example_study/scenarios/`: 29 `downtown_sd_*` configs.
+  - `data/demand/example_demand/matched/example_network/`: 9 `lemon_grove_zonal_partition's effect on ...` plots;
+  - `studies/example_study/scenarios/`: 13 old scenario configs whose study area is unknown,
+    `example_ir_only_{5,10,15,20,30,40,50}_veh.csv` and `debug_example_ir_only*.csv` (6). They use
+    `rq_file=fleetpy_demand.csv`, a name that existed in both the downtown and the Lemon Grove demand folder, and no
+    code names them.
+- **Downtown San Diego removed (2026-11-08):** the downtown configs had used FleetPy's `example_network` and
+  `example_demand`, so FleetPy's example data had been overwritten. The 14 overwritten files (example network,
+  demand `example_100/200/400`, initial vehicle distribution, depots, charging stations, zone mapping, 5 example
+  configs) were restored from upstream `7019960`, byte for byte. Deleted: 283 downtown demand files (and plots),
+  7 downtown network files, 33 downtown scenario configs (`downtown_sd_*` and `example_pool_1000_rq_*`), and 10
+  files that only existed because the originals had been overwritten (`data/demand/example_demand_Munich/`,
+  `node_zone_info_backup.csv`, `example_ir_heuristics_repositioning_origin.csv`). The last commit that has them is
+  tagged `last-with-downtown-sd`.
 - **Moved out of this folder (2026-11-07):** the Lemon Grove network (`data/networks/lemon_grove_example_network/`),
   its initial vehicle distribution and the 28 `lemon_grove_*` scenario configs, to
   `mtsm_data/lemon_grove/fleetpy_inputs/`.
