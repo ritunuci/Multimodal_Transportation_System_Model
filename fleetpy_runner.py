@@ -235,7 +235,7 @@ def check_assertions(list_eval_df, all_scenario_assertion_dict, log_file):
     return list_result_tuples
 
 
-def create_config_files(sc,study_area,repositioning,debug_mode,fleet_size):
+def create_config_files(sc,study_area,repositioning,fleet_size):
 
     with open(sc, 'w+', newline='') as csvfile_config:
         if repositioning == True:
@@ -247,7 +247,7 @@ def create_config_files(sc,study_area,repositioning,debug_mode,fleet_size):
         if repositioning == True:
             op_module="PoolingIRSOnly"
             scenario_name="example_pool_repo_AM_sc_1"
-            rq_file="%s_debug_%s_fleetpy_demand.csv" % (str(study_area),str(debug_mode))
+            rq_file="%s_debug_False_fleetpy_demand.csv" % str(study_area)
             op_fleet_composition="lemon_grove_vehtype:"+str(fleet_size)
             op_max_VR_con=int(3)
             forecast_f=" "
@@ -260,7 +260,7 @@ def create_config_files(sc,study_area,repositioning,debug_mode,fleet_size):
         else:
             op_module = "PoolingIRSOnly"
             scenario_name = "example_pool_irsonly_sc_1"
-            rq_file = "%s_debug_%s_fleetpy_demand.csv" % (str(study_area), str(debug_mode))
+            rq_file = "%s_debug_False_fleetpy_demand.csv" % str(study_area)
             op_fleet_composition = "lemon_grove_vehtype:" + str(fleet_size)
             writer_config.writerow({"op_module": op_module, "scenario_name": scenario_name, "rq_file": rq_file,
                                     "op_fleet_composition": op_fleet_composition})

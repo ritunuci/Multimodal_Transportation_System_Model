@@ -36,6 +36,7 @@ Paths are relative to the codebase root.
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
+| I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Open | 2026-11-08 |
 
 ---
 
@@ -159,6 +160,20 @@ Paths are relative to the codebase root.
   `__main__`, with a note that the preprocessing has not been re-run since; the original stays at tag
   `last-with-downtown-sd`. Alternatively, bring the source data into the repository first, so that the
   preprocessing can be re-run and checked.
+
+### I-15: Unused columns in `input_parameter.csv`; the optimizer writes it by column position
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing the TRPartA / BayesianOptimization /
+  debug_mode branches).
+- **What:** the code no longer branches on `BayesianOptimization`, `TRPartA` or `debug_mode_list` (only the values
+  TRUE, TRUE, FALSE are supported; the startup check refuses others). The three columns are still in
+  `mtsm_data/input_parameter/input_parameter.csv`, because `Bayesian_optimization_script.py` writes the candidate's
+  values by column position (`rows[1][5]` to `rows[1][13]`: fares, fleet size, peak factor, Micro2FixedFactor,
+  headway). Removing columns 1-2 or 4 would shift those positions.
+- **Impact:** none on results; the columns are misleading (they look like options but have only one valid value).
+- **Fix (later, user's intention):** remove the three columns from the input file and make the optimizer write by
+  column name instead of position; then remove them from the startup check. `input_parameter.csv` is a frozen
+  input, so `MANIFEST.csv` must be regenerated and the change recorded in `docs/progress.md`. The optimizer change
+  needs a test run of the optimizer (I-03).
 
 ---
 

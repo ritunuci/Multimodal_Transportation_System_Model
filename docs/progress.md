@@ -26,6 +26,7 @@ earlier entries; commits before that date use the old names.
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | Done 2026-11-08 (open: I-11, I-12) |
 | 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
+| 2e | Remove the `TRPartA`, `BayesianOptimization` and `debug_mode` branches (columns kept in the input file) | Done 2026-11-09 (open: I-15) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -674,6 +675,34 @@ file was renamed, so the code still builds the same file names. The folder const
 - Removing downtown San Diego is done.
 - Checks: compiles; pyflakes reports no new warnings; CRLF kept.
 - Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.
+
+---
+
+## Removing the TRPartA, BayesianOptimization and debug_mode branches (2026-11-09)
+
+- Decision by the user: simplify the code to the one configuration it runs (`TRPartA=TRUE`,
+  `BayesianOptimization=TRUE`, `debug_mode_list=FALSE`), but keep the three columns in `input_parameter.csv`, because
+  the optimizer writes its parameters by column position. Removing the columns and changing the optimizer is a later
+  step (I-15).
+- What the flags did: `BayesianOptimization` only chose folders (`FALSE` = old `TR_PartA/Data` folders, already
+  refused). `TRPartA` also chose folders, and its `FALSE` branches were an older evaluation mode: other evaluation
+  file name, other individual-results columns, FRT-only base case computed per scenario combination instead of
+  once in the first test scenario. `debug_mode` chose `debug_*` input and config files and smaller scenario lists.
+  All three were always TRUE / TRUE / FALSE (input file, startup check; the optimizer never changes them).
+- Code: every `if TRPartA == True` / `if BayesianOptimization == True` block replaced by its `TRUE` branch, every
+  `if debug_mode == True` block by its `else` branch (`run_examples_new_parking.py`, `output_performance_metrics.py`,
+  `update_network_files.py`, `folder_directory.py`); the four combined conditions
+  `(... and TRPartA==False) or (TRPartA==True and test_scenario==TRPartA_test_scenario_list[0])` became
+  `test_scenario == TRPartA_test_scenario_list[0]`; the loop `for debug_mode in debug_mode_list:` removed (its body
+  un-indented by 4 spaces); the flags removed from 9 function signatures and their calls, including
+  `fleetpy_runner.create_config_files`. File names keep the text `debug_False` (it was `debug_%s` with
+  `debug_mode=False`), so every output name is unchanged.
+- Kept: reading the three columns and the startup check, which still refuses other values (message now "not
+  supported"). The `__main__` test harnesses of `output_performance_metrics.py` and `update_network_files.py` keep
+  their own local `debug_mode` variable (debug tools, not the run's flag).
+- Checks: compiles; pyflakes reports no new warnings; CRLF kept; reviewed with `git diff -w`.
+- Verification (2026-11-09): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.
 
 ---

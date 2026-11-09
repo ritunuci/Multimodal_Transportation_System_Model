@@ -15,7 +15,7 @@ def copy_csv(filename,iteration):
     df.to_csv(output_file_dic,index=False)
 
 
-def update_network_files(repositioning,microtransit,headway,virstop,M_operating_hrs,fleet_size,study_area,zonal_partition,iteration=False,iteration_debug=False,aggregation="census_track",TRPartA=False,BayesianOptimization=False):
+def update_network_files(repositioning,microtransit,headway,virstop,M_operating_hrs,fleet_size,study_area,zonal_partition,iteration=False,iteration_debug=False,aggregation="census_track"):
     # path_all_
 
     from itertools import islice
@@ -285,57 +285,27 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     #     output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
     ###############################################################
 
-    if TRPartA == True:
 
-        if BayesianOptimization== True:
-            #output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
-            # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
-            if study_area == "lemon_grove":
-                # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
-                if zonal_partition == True:
-                    mtsm.not_self_contained("zonal_partition=True")
-                    # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_network_4_zones" % str(
-                    # STALE:     study_area)
-                else:
-                    initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
-                    # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
-            if study_area == "lemon_grove":
-                final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
-            else:
-                mtsm.not_self_contained("study_area=%s" % study_area)
-                # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
-            # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
-            # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\output_folder
+    #output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
+    # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
+    if study_area == "lemon_grove":
+        # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
+        if zonal_partition == True:
+            mtsm.not_self_contained("zonal_partition=True")
+            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_network_4_zones" % str(
+            # STALE:     study_area)
         else:
-            mtsm.not_self_contained("BayesianOptimization=False")
-
-            # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/demand_data/%s" % str(study_area)
-            # STALE: if study_area == "lemon_grove":
-            # STALE:     fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
-            # STALE:     if zonal_partition == True:
-            # STALE:         initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/initial_network_folder/initial_network_4_zones" % str(
-            # STALE:             study_area)
-            # STALE:     else:
-            # STALE:         initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/initial_network_folder/initial_network" % str(
-            # STALE:             study_area)
+            initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
             # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
-            # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/final_network_folder" % str(study_area)
-            # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/output_folder" % str(study_area)
-            # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\output_folder
-
-
+    if study_area == "lemon_grove":
+        final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
     else:
-        mtsm.not_self_contained("TRPartA=False")
-        # STALE: if study_area == "lemon_grove":
-        # STALE:
-        # STALE:     demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/demand_folder"
-        # STALE:     if zonal_partition == False:
-        # STALE:         initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
-        # STALE:     else:
-        # STALE:         initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network_4_zones"
-        # STALE:     final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/final_network"
-        # STALE:     fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
-        # STALE:     output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
+        mtsm.not_self_contained("study_area=%s" % study_area)
+        # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
+    # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
+    # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\output_folder
+
+
 
     headway_scenarios = [20, 30, 60]
     # microtransit_scenarios = ["micro", "non_micro"]

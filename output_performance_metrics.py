@@ -358,43 +358,20 @@ def acc_dijsktra_source_to_all_heap(graph, initial, verbose=False):
     #         print("number of nodes:",num_nodes)
     return visited_temp, path
 
-def accessibility_calculation(zonal_partition,headway,virstop,microtransit,time_period,all_node_emp,MGRA_node_dict,M_operating_hrs=False,fleet_size=False,study_area=False,TRPartA=False,BayesianOptimization=False,test_scen=False,debug_mode=False,debug=False):
+def accessibility_calculation(zonal_partition,headway,virstop,microtransit,time_period,all_node_emp,MGRA_node_dict,M_operating_hrs=False,fleet_size=False,study_area=False,test_scen=False,debug=False):
 
     if study_area == "lemon_grove":
-        if TRPartA == True:
-            if BayesianOptimization == True:
-                # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
-                if zonal_partition == True:
-                    mtsm.not_self_contained("zonal_partition=True")
-                    # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network_4_zones" % str(study_area)
-                else:
-                    # read below only for microtransit="non_micro", which the run does not pass to this function
-                    # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network" % str(study_area)
-                    initial_network_folder = None
-                final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
-                # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
-                output_folder = mtsm.LG_OUTPUT_DIR
-            else:
-                mtsm.not_self_contained("BayesianOptimization=False")
-                # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/demand_data/%s" % str(study_area)
-                # STALE: if zonal_partition == True:
-                # STALE:     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/initial_network_folder/initial_full_transit_network_4_zones" % str(study_area)
-                # STALE: else:
-                # STALE:     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/initial_network_folder/initial_full_transit_network" % str(study_area)
-                # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/final_network_folder" % str(study_area)
-                # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
-                # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/output_folder" % str(study_area)
+        # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
+        if zonal_partition == True:
+            mtsm.not_self_contained("zonal_partition=True")
+            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network_4_zones" % str(study_area)
         else:
-            mtsm.not_self_contained("TRPartA=False")
-            # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/demand_folder"
-            # STALE: if zonal_partition == False:
-            # STALE:     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
-            # STALE: else:
-            # STALE:     initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network_4_zones"
-            # initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
-            # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/final_network"
-            # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/example_network"
-            # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
+            # read below only for microtransit="non_micro", which the run does not pass to this function
+            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network" % str(study_area)
+            initial_network_folder = None
+        final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
+        # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
+        output_folder = mtsm.LG_OUTPUT_DIR
 
     minutes_set = [5, 10,15]
     minute_acc_emp = OrderedDict()
@@ -442,9 +419,9 @@ def accessibility_calculation(zonal_partition,headway,virstop,microtransit,time_
         #         if visited_temp[visited_node]<=time_limits:
         #             minute_acc_emp[initial][minutes] += all_node_emp[visited_node]
     if microtransit=="micro":
-        output_acc_dir=os.path.join(output_folder,"debug_%s_acc_super_network_%s_fsize_%s_ophr_%s_%s_hw_%s_virstop_%s_scen_%s.csv" % (str(debug_mode),str(microtransit),str(fleet_size),str(M_operating_hrs),str(time_period), str(headway),str(virstop),str(test_scen)))
+        output_acc_dir=os.path.join(output_folder,"debug_False_acc_super_network_%s_fsize_%s_ophr_%s_%s_hw_%s_virstop_%s_scen_%s.csv" % (str(microtransit),str(fleet_size),str(M_operating_hrs),str(time_period), str(headway),str(virstop),str(test_scen)))
     elif microtransit =="micro_only":
-        output_acc_dir = os.path.join(output_folder,"debug_%s_acc_super_network_%s_fsize_%s_ophr_%s_%s_virstop_%s_scen_%s.csv" % (str(debug_mode), str(microtransit), str(fleet_size), str(M_operating_hrs),str(time_period), str(virstop),str(test_scen)))
+        output_acc_dir = os.path.join(output_folder,"debug_False_acc_super_network_%s_fsize_%s_ophr_%s_%s_virstop_%s_scen_%s.csv" % (str(microtransit), str(fleet_size), str(M_operating_hrs),str(time_period), str(virstop),str(test_scen)))
 
     else:
         output_acc_dir = os.path.join(output_folder, "acc_super_network_%s_%s.csv" % (str(headway), str(microtransit)))
@@ -535,7 +512,7 @@ def accessibility_calculation(zonal_partition,headway,virstop,microtransit,time_
     return tot_weighted_5_min,tot_weighted_10_min,tot_weighted_15_min
 
 
-def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,debug_mode,zonal_partition,TRPartA,BayesianOptimization,test_scen):
+def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,zonal_partition,test_scen):
     all_node_emp, MGRA_node_dict = create_nodes_emp_dict(study_area)
     # microtransit == "micro"
     avg_period_total_weighted_5_min = 0
@@ -553,7 +530,7 @@ def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_opera
     # for microtransit in microtransit_setup_scenarios:
     #     if microtransit != "non_micro":
     for time_period in time_periods:
-        tot_weighted_5_min,tot_weighted_10_min, tot_weighted_15_min= accessibility_calculation(zonal_partition,headway, virstop, microtransit_run, time_period, all_node_emp, MGRA_node_dict, M_operating_hrs,fleet_size,study_area,TRPartA,BayesianOptimization,test_scen,debug_mode,debug=False)
+        tot_weighted_5_min,tot_weighted_10_min, tot_weighted_15_min= accessibility_calculation(zonal_partition,headway, virstop, microtransit_run, time_period, all_node_emp, MGRA_node_dict, M_operating_hrs,fleet_size,study_area,test_scen,debug=False)
         avg_period_total_weighted_5_min += tot_weighted_5_min
         avg_period_total_weighted_10_min += tot_weighted_10_min
         avg_period_total_weighted_15_min += tot_weighted_15_min
@@ -566,7 +543,7 @@ def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_opera
     return avg_period_total_weighted_5_min,avg_period_total_weighted_10_min,avg_period_total_weighted_15_min
 
 
-def all_scenario_fixed_acc_calculation(headway,study_area,debug_mode,test_scenario,TRPartA,BayesianOptimization,zonal_partition=False,debug=False):
+def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,zonal_partition=False,debug=False):
     all_node_emp, MGRA_node_dict = create_nodes_emp_dict(study_area)
     # microtransit == "micro"
     # for microtransit in microtransit_scenarios:
@@ -590,15 +567,7 @@ def all_scenario_fixed_acc_calculation(headway,study_area,debug_mode,test_scenar
         # initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
         # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/final_network"
         # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/example_network"
-        if TRPartA==True:
-            if BayesianOptimization==True:
-                output_folder = mtsm.LG_OUTPUT_DIR
-            else:
-                mtsm.not_self_contained("BayesianOptimization=False")
-                # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/output_folder" % str(study_area)
-        else:
-            mtsm.not_self_contained("TRPartA=False")
-            # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
+        output_folder = mtsm.LG_OUTPUT_DIR
 
     T_network_dir = os.path.join(initial_network_folder,"initial_super_network_%s_hw_%s.csv" % (str(microtransit), str(headway)))
     # final_super_network_dir = os.path.join(final_network_folder,"final_super_network_%s_ophr_%s_%s_hw_%s_virstop_%s.csv" % (str(microtransit),str(M_operating_hrs),str(time_period), str(headway),str(virstop)))
@@ -635,7 +604,7 @@ def all_scenario_fixed_acc_calculation(headway,study_area,debug_mode,test_scenar
         #         if visited_temp[visited_node] <= time_limits:
         #             minute_acc_emp[initial][minutes] += all_node_emp[visited_node]
 
-    output_acc_dir = os.path.join(output_folder, "debug_%s_acc_super_network_%s_%s.csv" % (str(debug_mode),str(microtransit),str(headway)))
+    output_acc_dir = os.path.join(output_folder, "debug_False_acc_super_network_%s_%s.csv" % (str(microtransit),str(headway)))
     minute_acc_MGRA_avg_emp = OrderedDict()
 
     for MGRA in MGRA_node_dict:
@@ -851,25 +820,15 @@ def vmt_and_link_dict_creation(time_periods,transit_link_list):
 
     return transit_link_vmt,transit_link_pax,off_micro_transit_link_pax,off_micro_transit_link_vmt
 
-def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,TRPartA,BayesianOptimization,test_scenario,debug_mode,microtransit):
+def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,test_scenario,microtransit):
     if study_area == "lemon_grove":
         network_folder = mtsm.LG_TRANSIT_DIR
         new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
         # output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
         # transit_link_vmt_output = os.path.join(output_folder, "debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders.csv" % (str(debug_mode),str(study_area),str(microtransit),str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
-        if TRPartA == True:
-            if BayesianOptimization==True:
-                output_folder = mtsm.LG_OUTPUT_DIR
-                transit_link_vmt_output = os.path.join(output_folder,"debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders_scen_%s.csv" % (str(debug_mode), str(study_area), str(microtransit),str(fleet_size), str(M_operating_hrs), str(headway),str(virstop), str(test_scenario)))
+        output_folder = mtsm.LG_OUTPUT_DIR
+        transit_link_vmt_output = os.path.join(output_folder,"debug_False_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders_scen_%s.csv" % (str(study_area), str(microtransit),str(fleet_size), str(M_operating_hrs), str(headway),str(virstop), str(test_scenario)))
 
-            else:
-                mtsm.not_self_contained("BayesianOptimization=False")
-                # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/TR_PartA/Data/%s/output_folder" % str(study_area)
-                # STALE: transit_link_vmt_output = os.path.join(output_folder,"debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders_scen_%s.csv" % (str(debug_mode), str(study_area), str(microtransit), str(fleet_size),str(M_operating_hrs), str(headway), str(virstop),str(test_scenario)))
-        else:
-            mtsm.not_self_contained("TRPartA=False")
-            # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
-            # STALE: transit_link_vmt_output = os.path.join(output_folder, "debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders.csv" % (str(debug_mode), str(study_area), str(microtransit), str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
 
     transit_link_list = []
     with open(transit_link_vmt_output, 'w+', newline='') as csvfile:
