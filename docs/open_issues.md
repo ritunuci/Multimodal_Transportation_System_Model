@@ -39,6 +39,7 @@ Paths are relative to the codebase root.
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Open | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Open | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
+| I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Open | 2026-11-09 |
 
 ---
 
@@ -213,6 +214,19 @@ Paths are relative to the codebase root.
 - **To decide / fix:** if each leg should be resubmitted, keep a list of legs per traveler (`pre_iter_M_info[rq_id]`
   as a list) and write all of them. This changes the FleetPy demand and the results, so it needs a new reference.
   First count how often it happens in the reference run.
+
+### I-18: In later fare scenarios, every traveler gets the parking values of one traveler
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 5).
+- **What:** the car path is computed only in the first fare scenario (`test_scenario ==
+  TRPartA_test_scenario_list[0]`) and cached for the others (`paths.PathCache`). The same call also returns the
+  traveler's parking duration and gas cost coefficient (`parking_dur`, `bt_c_gas`), which are not cached. In the
+  other fare scenarios, every traveler's parking charge is therefore computed with the values of the last traveler of
+  the first fare scenario.
+- **Impact:** none on the current runs: `input_parameter.csv` has one row, so there is one fare scenario. A file with
+  several rows (several fare scenarios in one run) would give wrong car costs, and so wrong mode choices, in all but
+  the first scenario.
+- **Fix:** cache `parking_dur` and `bt_c_gas` with the car path (two fields of `paths.AutoPath`). This does not change
+  the reference (one fare scenario); test it with a two-row parameter file.
 
 ---
 

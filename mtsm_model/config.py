@@ -39,6 +39,15 @@ MODE_CHANGE_THRESHOLD = 0.05
 # "whole_region" = one average per time period; "census_track" = per census tract, with a rejection penalty.
 AGGREGATION = "whole_region"
 
+# ---- time periods: a trip departing at t (s) is AM if t <= AM_END, MD if t <= MD_END, PM if t <= PM_END, else EV ----
+AM_END = 10 * 3600
+MD_END = 15 * 3600
+PM_END = 20 * 3600
+
+# ---- parking: share of the parking charge in the generalized cost of a car trip ----
+PARKING_FACTOR_PEAK = 1  # AM and PM
+PARKING_FACTOR_OFFPEAK = 0.5  # MD and EV
+
 # ---- gas cost ----
 F_GAS_PER_MILE = 0.350  # The fuel cost for the CNG buses averaged $0.35 per mile
 M_GAS_PER_MILE = 0.550  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile

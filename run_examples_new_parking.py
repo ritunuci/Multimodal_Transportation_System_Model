@@ -11,26 +11,24 @@ import time
 import datetime
 import csv
 import numpy as np
-import math
 # FleetPy (fleetpy/) is reached only through fleetpy_runner
 # ---------------------------------------------------------
 import fleetpy_runner as fleetpy
 
 import convergence_test as conv_test
 import network_algorithms as n_a
-import binary_choice as b_c
 import random
 import update_network_files as update
 import output_performance_metrics as output_metrics
 import folder_directory as fld_dir
 import testing_scenario_creation as tst_scen_create
-import pre_process.dictionary_initialization as dict_init
 import update_initial_network as init_net
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
 import mtsm_paths as mtsm
 from mtsm_model import config
 from mtsm_model.state import BaseCase, TravelerState, IterationTotals
 from mtsm_model import trip_legs
+from mtsm_model import paths, choice
 
 # global variables
 # ----------------
@@ -130,15 +128,8 @@ if __name__ == "__main__":
 
             for repositioning in config.REPOSITIONING_LIST:
 
-                ##########################
-                # store the auto shortest path result
-                ########################
-                agent_auto_visited_temp, agent_auto_time_visited_temp, agent_auto_dist_visited_temp, agent_auto_fare_visited_temp, agent_auto_path, agent_auto_time_path, agent_auto_time_path_all_ = dict_init.auto_sp_dict_init()
-
-                ##########################
-                # store the transit shortest path result
-                ########################
-                agent_visited_temp_F, agent_time_visited_temp_F, agent_dist_visited_temp_F, agent_fare_visited_temp_F, agent_path_F, agent_time_path_F, agent_transit_time_path_all_F, agent_transit_dist_path_all_F = dict_init.F_transit_sp_dict_init()
+                # the car and FRT-only paths of each traveler, computed in the first fare scenario (paths.py)
+                path_cache = paths.PathCache()
 
                 for test_scenario in cfg.TRPartA_test_scenario_list:
                     print("aggregation:",config.AGGREGATION,"; mode_change_threshold:",config.MODE_CHANGE_THRESHOLD,"; convergence_gap:",config.CONVERGENCE_GAP,"; maximum_iteration:",config.MAXIMUM_ITERATION,  "; F_gas_per_mile ($/mi):",config.F_GAS_PER_MILE,
@@ -318,182 +309,52 @@ if __name__ == "__main__":
                                                                 state.agent_transit_15min_acc[rq_id] = agent.transit_15min_acc
                                                                 state.agent_beta_fare[rq_id] = agent.bt_t_fr
 
-                                                                if rq_time <= (10 * 3600):
-                                                                    time_period = "AM"
-                                                                elif rq_time <= (15 * 3600):
-                                                                    time_period = "MD"
-                                                                elif rq_time <= (20 * 3600):
-                                                                    time_period = "PM"
-                                                                else:
-                                                                    time_period = "EV"
-
-
+                                                                time_period = choice.time_period_of(rq_time)
+                                                                in_operating_period = time_period in operating_periods
 
                                                                 state.agent_M_tot_travel_dist[rq_id] = 0
                                                                 state.agent_F_tot_travel_dist[rq_id] = 0
-                                                                #1108 Siwei: read the initial super-network according to "microtransit", "fixed route trasnit headway","virstop", and "time_period"
-                                                                T_F_network = \
-                                                                    initial_super_network["non_micro"][
-                                                                        config.BASE_FRT_HEADWAY]
-                                                                if iteration==0:
-                                                                    if microtransit_run == "micro":
-                                                                        if time_period in operating_periods:
-                                                                            T_micro_network = initial_super_network["micro"][headway][virstop][M_operating_hrs]
-                                                                        else:
-                                                                            T_micro_network = T_F_network
-                                                                    if microtransit_run == "micro_only":
-                                                                        if time_period in operating_periods:
-                                                                            T_micro_network = initial_super_network["micro_only"][virstop][M_operating_hrs]
-                                                                        else:
-                                                                            T_micro_network = auto_network
+                                                                T_F_network, T_micro_network = paths.networks_for_traveler(microtransit_run, iteration, time_period, operating_periods,
+                                                                                                                           initial_super_network, final_super_network, auto_network,
+                                                                                                                           headway, virstop, M_operating_hrs, fleet_size)
 
-                                                                else:
-                                                                    if microtransit_run == "micro":
-                                                                        if time_period in operating_periods:
-                                                                            T_micro_network = final_super_network["micro"][headway][virstop][M_operating_hrs][time_period][fleet_size]
-                                                                        else:
-                                                                            T_micro_network = T_F_network
-                                                                    if microtransit_run == "micro_only":
-                                                                        if time_period in operating_periods:
-                                                                            T_micro_network = final_super_network["micro_only"][virstop][M_operating_hrs][time_period][fleet_size]
-                                                                        else:
-                                                                            T_micro_network = auto_network
-
-                                                                # *****don't calculate it along the way - only*********
-                                                                # calculate generalized cost shortest path for agent on Auto network
+                                                                # least generalized cost paths: car and walk + FRT computed in the first fare scenario and reused in the others
                                                                 if test_scenario == cfg.TRPartA_test_scenario_list[0]:
-                                                                    parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario=0, mode="C", verbose=False, iteration=iteration)
-                                                                    auto_time_path_all_ = n_a.getTrajectory_O_to_D(origin, dest,auto_time_path,auto_visited_temp)
-                                                                    agent_auto_visited_temp[rq_id] = auto_visited_temp
-                                                                    agent_auto_time_visited_temp[rq_id] = auto_time_visited_temp
-                                                                    agent_auto_dist_visited_temp[rq_id] = auto_dist_visited_temp
-                                                                    agent_auto_fare_visited_temp[rq_id] = auto_fare_visited_temp
-                                                                    agent_auto_path[rq_id] = auto_path
-                                                                    agent_auto_time_path[rq_id] = auto_time_path
-                                                                    agent_auto_time_path_all_[rq_id] = auto_time_path_all_
+                                                                    parking_dur, bt_c_gas, auto = paths.auto_path(path_cache, study_area, auto_network, agent, cfg, iteration)
                                                                 else:
-                                                                    auto_visited_temp = agent_auto_visited_temp[rq_id]
-                                                                    auto_time_visited_temp = agent_auto_time_visited_temp[rq_id]
-                                                                    auto_dist_visited_temp = agent_auto_dist_visited_temp[rq_id]
-                                                                    auto_fare_visited_temp = agent_auto_fare_visited_temp[rq_id]
-                                                                    auto_path = agent_auto_path[rq_id]
-                                                                    auto_time_path = agent_auto_time_path[rq_id]
-                                                                    auto_time_path_all_ = agent_auto_time_path_all_[rq_id]
-
-                                                                # calculate generalized cost shortest path for agent on W_F network
+                                                                    # parking_dur and bt_c_gas are not cached: they keep the values of the last traveler of the first fare
+                                                                    # scenario (docs/open_issues.md, I-18)
+                                                                    auto = path_cache.auto[rq_id]
                                                                 if test_scenario == cfg.TRPartA_test_scenario_list[0]:
-                                                                        visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,config.BASE_FRT_FARE, cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
-                                                                        transit_time_path_all_F = n_a.getTrajectory_O_to_D(origin, dest,time_path_F,visited_temp_F)
-                                                                        transit_dist_path_all_F = n_a.getTrajectory_O_to_D(origin, dest,dist_path_F,dist_visited_temp_F)  # calculate fixed transit VMT
-
-                                                                        agent_visited_temp_F[rq_id] = visited_temp_F
-                                                                        agent_time_visited_temp_F[rq_id] = time_visited_temp_F
-                                                                        agent_dist_visited_temp_F[rq_id] = dist_visited_temp_F
-                                                                        agent_fare_visited_temp_F[rq_id] = fare_visited_temp_F
-                                                                        agent_path_F[rq_id] = path_F
-                                                                        agent_time_path_F[rq_id] = time_path_F
-                                                                        agent_transit_time_path_all_F[rq_id] = transit_time_path_all_F
-                                                                        agent_transit_dist_path_all_F[rq_id] = transit_dist_path_all_F
-
+                                                                    frt = paths.frt_path(path_cache, study_area, T_F_network, agent, cfg, test_scenario, total_rejection_penalty,
+                                                                                         iteration)
                                                                 else:
-                                                                    visited_temp_F = agent_visited_temp_F[rq_id]
-                                                                    time_visited_temp_F = agent_time_visited_temp_F[rq_id]
-                                                                    dist_visited_temp_F = agent_dist_visited_temp_F[rq_id]
-                                                                    fare_visited_temp_F = agent_fare_visited_temp_F[rq_id]
-                                                                    path_F = agent_path_F[rq_id]
-                                                                    time_path_F = agent_time_path_F[rq_id]
-                                                                    transit_time_path_all_F = agent_transit_time_path_all_F[rq_id]
-                                                                    transit_dist_path_all_F = agent_transit_dist_path_all_F[rq_id]
-
-                                                                #calculate generalized cost shortest path for agent on W_M_F network
-                                                                if microtransit_run == "micro_only" and (time_period not in operating_periods):
-                                                                    aaa=0
+                                                                    frt = path_cache.frt[rq_id]
+                                                                # walk + microtransit + FRT; no path for "micro_only" outside the operating periods (only transit costs 0 are
+                                                                # read then)
+                                                                if microtransit_run == "micro_only" and not in_operating_period:
+                                                                    micro = None
                                                                 else:
-                                                                    visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
-                                                                    transit_time_path_all_ = n_a.getTrajectory_O_to_D(origin, dest, time_path, visited_temp)
-                                                                    transit_dist_path_all_ = n_a.getTrajectory_O_to_D(origin, dest, dist_path,dist_visited_temp) #calculate microtransit and fixed transit VMT
+                                                                    micro = paths.micro_path(study_area, T_micro_network, agent, cfg, test_scenario, total_rejection_penalty,
+                                                                                             iteration)
 
-                                                                if microtransit_run == "micro_only":
-                                                                    aaa=0
-                                                                    gen_cost_F = 0
-                                                                    travel_time_F = 0
-                                                                    travel_dist_F = 0
-                                                                    agent_op_cost_F = 0
-                                                                    if (time_period not in operating_periods):
-                                                                        # calculate generalized cost
-                                                                        gen_cost_T = 0
-                                                                        # calculate travel time and distance
-                                                                        travel_time_T = 0
-                                                                        travel_dist_T = 0
-                                                                        # calculate oout of pocket cost
-                                                                        agent_op_cost_T = 0
-
-                                                                        agent_F_fare = 0
-                                                                        agent_M_fare = 0
-
-                                                                    else:
-                                                                        gen_cost_T = visited_temp[dest]
-                                                                        travel_time_T = time_visited_temp[dest]
-                                                                        travel_dist_T = dist_visited_temp[dest]
-                                                                        agent_op_cost_T = fare_visited_temp[dest]
-
-                                                                        agent_F_fare = 0
-                                                                        agent_M_fare = M_fare_visited_temp[dest]
-                                                                else:
-                                                                    # calculate generalized cost
-                                                                    gen_cost_T = visited_temp[dest]
-                                                                    gen_cost_F = visited_temp_F[dest]  # 1107 Siwei: add the generalized cost for without microtransit scenario
-                                                                    # calculate travel time and distance
-                                                                    travel_time_T = time_visited_temp[dest]
-                                                                    travel_time_F = time_visited_temp_F[dest]
-                                                                    travel_dist_T = dist_visited_temp[dest]
-                                                                    travel_dist_F = dist_visited_temp_F[dest]
-
-                                                                    # calculate out of pocket cost
-                                                                    agent_op_cost_T = fare_visited_temp[dest]
-                                                                    agent_op_cost_F = fare_visited_temp_F[dest]
-
-                                                                    agent_F_fare = F_fare_visited_temp[dest]
-                                                                    agent_M_fare = M_fare_visited_temp[dest]
-                                                                parking_dur_trip = parking_dur / 2
-                                                                parking_dur_30_min_count = math.ceil(parking_dur_trip / 30)
-                                                                if time_period in ["AM","PM"]:  # Ritun added for parking fee
-                                                                    gen_cost_auto = auto_visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * 1
-                                                                else:
-                                                                    gen_cost_auto = auto_visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * 0.5
-
+                                                                costs = choice.trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_gas, frt, micro, dest,
+                                                                                          time_period)
                                                                 # calculate travel time savings by allowing microtransit
-                                                                travel_time_auto=auto_time_visited_temp[dest]
-                                                                state.travel_time_delta[rq_id] = travel_time_F - travel_time_T
-
-                                                                travel_dist_auto = auto_dist_visited_temp[dest]
-                                                                agent_op_cost_auto=auto_fare_visited_temp[dest]
-                                                                state.gen_cost_delta[rq_id] = gen_cost_F - gen_cost_T
-                                                                if microtransit_run == "micro_only" and (time_period not in operating_periods):
-                                                                    prob_Auto, prob_T = 1,0
-                                                                else:
-                                                                    prob_Auto, prob_T = b_c.binary_logit_model(gen_cost_auto, gen_cost_T)
+                                                                state.travel_time_delta[rq_id] = costs.travel_time_F - costs.travel_time_T
+                                                                state.gen_cost_delta[rq_id] = costs.gen_cost_F - costs.gen_cost_T
+                                                                prob_Auto, prob_T, prob_Auto_no_micro, prob_T_no_micro = choice.choice_probabilities(microtransit_run,
+                                                                                                                                                     in_operating_period, costs)
 
                                                                 if iteration>0:
-                                                                    diff_prob_T=abs(state.pre_iter_prob_T[rq_id]-prob_T)
-
-                                                                    if diff_prob_T <= config.MODE_CHANGE_THRESHOLD: # if probability does not change a lot, then we don't change agents' modes.
+                                                                    if choice.keeps_previous_mode(state.pre_iter_prob_T[rq_id], prob_T): # if probability does not change a lot, then we don't change agents' modes.
                                                                         change_mode=False
                                                                     else:
                                                                         change_mode = True #03/02/2026: Siwei added this line
                                                                         change_mode_ag_list.append(rq_id)
 
-
                                                                 state.pre_iter_prob_T[rq_id]=prob_T
-                                                                if microtransit_run == "micro_only":
-                                                                    prob_Auto_no_micro, prob_T_no_micro = 1,0
-                                                                else:
-                                                                    prob_Auto_no_micro, prob_T_no_micro = b_c.binary_logit_model(gen_cost_auto, gen_cost_F)
-
-                                                                # calculate the mobility logsum change (logsum delta)
-                                                                mob_logsum_micro = b_c.mobility_logsum(gen_cost_auto, gen_cost_T)
-                                                                mob_logsum_fixed = b_c.mobility_logsum(gen_cost_auto, gen_cost_F)
-                                                                state.mob_logsum_delta[rq_id] = (mob_logsum_micro - mob_logsum_fixed)/state.agent_beta_fare[rq_id]
+                                                                state.mob_logsum_delta[rq_id] = choice.mobility_logsum_delta(costs, state.agent_beta_fare[rq_id])
 
                                                                 base.off_micro_agent_choice_prob[rq_id]= [prob_Auto_no_micro, prob_T_no_micro]
                                                                 iter_agent_choice_prob[iteration][rq_id] = [prob_Auto, prob_T]
@@ -514,12 +375,12 @@ if __name__ == "__main__":
 
                                                                         base.off_micro_ag_mode[rq_id] = "T"
                                                                         base.off_micro_T_trips += 1
-                                                                        base.off_micro_ag_tot_tt[rq_id] = travel_time_F
-                                                                        base.off_micro_ag_tot_dist[rq_id] = travel_dist_F/config.MILE_METER
+                                                                        base.off_micro_ag_tot_tt[rq_id] = costs.travel_time_F
+                                                                        base.off_micro_ag_tot_dist[rq_id] = costs.travel_dist_F/config.MILE_METER
 
-                                                                        base.off_micro_agent_gen_cost[rq_id]=gen_cost_F
-                                                                        base.off_micro_agent_op_cost[rq_id] = agent_op_cost_F
-                                                                        legs_F = trip_legs.split_time_path(transit_time_path_all_F[1:-1], rq_time, iteration)
+                                                                        base.off_micro_agent_gen_cost[rq_id]=costs.gen_cost_F
+                                                                        base.off_micro_agent_op_cost[rq_id] = costs.agent_op_cost_F
+                                                                        legs_F = trip_legs.split_time_path(frt.time_path_all_[1:-1], rq_time, iteration)
                                                                         base.off_micro_F_trips += len(legs_F.F_legs)
                                                                         for F_wait_time in legs_F.F_wait:
                                                                             base.off_micro_agent_F_tot_wait_time[rq_id] += F_wait_time
@@ -529,7 +390,7 @@ if __name__ == "__main__":
                                                                             base.off_micro_W_trips += 1
 
                                                                         #calculate VMT for fixed transit and walking when microtransit turned off
-                                                                        dist_legs_F = trip_legs.split_dist_path(transit_dist_path_all_F[1:-1], transit_dist_path_all_[0])
+                                                                        dist_legs_F = trip_legs.split_dist_path(frt.dist_path_all_[1:-1], micro.dist_path_all_[0])
                                                                         for (pre_node, node, miles) in dist_legs_F.F_links:
                                                                             base.off_micro_VMT_F += miles
                                                                             off_micro_transit_link_vmt[time_period][(pre_node, node)] += miles
@@ -541,12 +402,12 @@ if __name__ == "__main__":
 
                                                                     else:  # agent choose the car mode
                                                                         base.off_micro_ag_mode[rq_id] = "C"
-                                                                        base.off_micro_ag_tot_tt[rq_id]= travel_time_auto
-                                                                        base.off_micro_ag_tot_dist[rq_id] = travel_dist_auto/config.MILE_METER
+                                                                        base.off_micro_ag_tot_tt[rq_id]= costs.travel_time_auto
+                                                                        base.off_micro_ag_tot_dist[rq_id] = costs.travel_dist_auto/config.MILE_METER
                                                                         base.off_micro_auto_trips+=1
-                                                                        base.off_micro_agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket
-                                                                        base.off_micro_VMT_auto += (travel_dist_auto/config.MILE_METER)
-                                                                        base.off_micro_agent_gen_cost[rq_id]=gen_cost_auto
+                                                                        base.off_micro_agent_op_cost[rq_id] = costs.agent_op_cost_auto  # agent_out-of-pocket
+                                                                        base.off_micro_VMT_auto += (costs.travel_dist_auto/config.MILE_METER)
+                                                                        base.off_micro_agent_gen_cost[rq_id]=costs.gen_cost_auto
 
 
 
@@ -581,28 +442,28 @@ if __name__ == "__main__":
 
 
 
-                                                                        state.agent_gen_cost[rq_id] = gen_cost_T
+                                                                        state.agent_gen_cost[rq_id] = costs.gen_cost_T
                                                                         if ran_num>=prob_T_no_micro:
                                                                             state.agent_switch_mode[rq_id]=1 #this means: if no microtransit, this agent will choose car, but with microtransit, this agent will choose transit mode
                                                                         # 1107 Siwei
                                                                         state.agent_M_tot_wait_time[rq_id] = 0
                                                                         state.agent_F_tot_wait_time[rq_id] = 0
                                                                         state.agent_tot_walk_time[rq_id] = 0
-                                                                        state.agent_travel_time[rq_id]=travel_time_T
-                                                                        state.agent_travel_dist[rq_id] =travel_dist_T
-                                                                        state.agent_op_cost[rq_id] = agent_op_cost_T  # agent_out-of-pocket cost
+                                                                        state.agent_travel_time[rq_id]=costs.travel_time_T
+                                                                        state.agent_travel_dist[rq_id] =costs.travel_dist_T
+                                                                        state.agent_op_cost[rq_id] = costs.agent_op_cost_T  # agent_out-of-pocket cost
 
-                                                                        state.agent_op_cost_Fix[rq_id] = agent_F_fare
-                                                                        state.agent_op_cost_Micro[rq_id] = agent_M_fare
+                                                                        state.agent_op_cost_Fix[rq_id] = costs.agent_F_fare
+                                                                        state.agent_op_cost_Micro[rq_id] = costs.agent_M_fare
 
-                                                                        legs = trip_legs.split_time_path(transit_time_path_all_[1:-1], rq_time, iteration)
+                                                                        legs = trip_legs.split_time_path(micro.time_path_all_[1:-1], rq_time, iteration)
                                                                         # microtransit legs: FleetPy requests
                                                                         for (request_time, M_origin_node, M_dest_node) in legs.M_legs:
                                                                             rq_id_fleetpy = trip_legs.free_request_id(rq_id, M_rq_id_list)
                                                                             try:
                                                                                 writer_M.writerow({'rq_time': request_time, 'start': MicroTransitNodes[M_origin_node],'end': MicroTransitNodes[M_dest_node], 'request_id': rq_id_fleetpy})
                                                                             except:
-                                                                                raise Exception("M_origin_node",M_origin_node,"M_dest_node",M_dest_node,"trimmed_transit_time_path",transit_time_path_all_[1:-1])
+                                                                                raise Exception("M_origin_node",M_origin_node,"M_dest_node",M_dest_node,"trimmed_transit_time_path",micro.time_path_all_[1:-1])
                                                                             M_rq_id_list.append(rq_id_fleetpy)
                                                                             #document the previous iteration microtransit information
                                                                             #rq_time, start, end, request_id
@@ -633,7 +494,7 @@ if __name__ == "__main__":
                                                                             state.ag_num_W_trips[rq_id]+=1
                                                                         trip_legs.count_transit_user(totals, state.ag_num_M_trips[rq_id], state.ag_num_F_trips[rq_id])
                                                                         # calculate VMT for fixed transit and walking when microtransit turned on
-                                                                        dist_legs = trip_legs.split_dist_path(transit_dist_path_all_[1:-1], transit_dist_path_all_[0])
+                                                                        dist_legs = trip_legs.split_dist_path(micro.dist_path_all_[1:-1], micro.dist_path_all_[0])
                                                                         ag_VMT_W_intermediate=0
                                                                         ag_VMT_M_intermediate=0
                                                                         ag_VMT_F_intermediate = 0
@@ -664,13 +525,13 @@ if __name__ == "__main__":
 
                                                                         state.pre_iter_mode[rq_id] = current_mode
                                                                         totals.num_car_trips += 1
-                                                                        state.agent_travel_time[rq_id] = travel_time_auto
-                                                                        state.agent_travel_dist[rq_id] = travel_dist_auto
-                                                                        state.agent_op_cost[rq_id] = agent_op_cost_auto  # agent_out-of-pocket cost
+                                                                        state.agent_travel_time[rq_id] = costs.travel_time_auto
+                                                                        state.agent_travel_dist[rq_id] = costs.travel_dist_auto
+                                                                        state.agent_op_cost[rq_id] = costs.agent_op_cost_auto  # agent_out-of-pocket cost
                                                                         state.agent_op_cost_Fix[rq_id] = 0
                                                                         state.agent_op_cost_Micro[rq_id] = 0
-                                                                        totals.VMT_auto+=(travel_dist_auto/config.MILE_METER)
-                                                                        state.agent_gen_cost[rq_id]=gen_cost_auto
+                                                                        totals.VMT_auto+=(costs.travel_dist_auto/config.MILE_METER)
+                                                                        state.agent_gen_cost[rq_id]=costs.gen_cost_auto
 
                                                                         state.ag_VMT_W[rq_id] = 0
                                                                         state.agent_F_tot_wait_time[rq_id] = 0
@@ -699,15 +560,11 @@ if __name__ == "__main__":
                                                                             M_rq_id_list.append(rq_id_fleetpy)
 
 
-                                                                            if pre_ier_rq_time <= (10 * 3600):                  # Ritun added: March 2nd, 2026
-                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["AM"] * state.ag_num_M_trips[rq_id]
-                                                                            elif pre_ier_rq_time <= (15 * 3600):
-                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["MD"] * state.ag_num_M_trips[rq_id]
-                                                                            elif pre_ier_rq_time <= (20 * 3600):
-                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["PM"] * state.ag_num_M_trips[rq_id]
-                                                                            else:
+                                                                            # Ritun added: March 2nd, 2026
+                                                                            pre_iter_period = choice.time_period_of(pre_ier_rq_time)
+                                                                            if pre_iter_period == "EV":
                                                                                 print("!!!! EVENING MICRO USER DETECTED !!!!")
-                                                                                state.agent_M_tot_wait_time[rq_id] = wait_times["EV"] * state.ag_num_M_trips[rq_id]
+                                                                            state.agent_M_tot_wait_time[rq_id] = wait_times[pre_iter_period] * state.ag_num_M_trips[rq_id]
 
                                                                         if rq_id in state.pre_iter_F_info:
                                                                             #(request_time,F_origin_node,F_dest_node,rq_id)
@@ -717,7 +574,7 @@ if __name__ == "__main__":
 
                                                                     else:
                                                                         totals.num_car_trips += 1
-                                                                        totals.VMT_auto += (travel_dist_auto / config.MILE_METER)
+                                                                        totals.VMT_auto += (costs.travel_dist_auto / config.MILE_METER)
 
 
 

@@ -1,6 +1,6 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 4 are done
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 5 are done
 (see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
@@ -169,7 +169,19 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      loop variables before);
    - found while reading the code, not changed: travelers who keep their transit choice resubmit only their last
      microtransit and FRT leg (`docs/open_issues.md`, I-17).
-5. **Paths and choice** → `paths.py`, `choice.py`.
+5. **Paths and choice** → `paths.py`, `choice.py`. **Done 2026-11-09** (`REPRODUCED`):
+   - `paths.py`: `networks_for_traveler()`, `auto_path()`, `frt_path()`, `micro_path()` (the calls of
+     `network_algorithms` unchanged) and `PathCache`, which replaces the 15 cache dicts of
+     `pre_process/dictionary_initialization.py` (the module stays: the standalone scripts import it);
+   - `choice.py`: `time_period_of()`, `trip_costs()` (with the parking charge), `choice_probabilities()`,
+     `keeps_previous_mode()`, `mobility_logsum_delta()`; new constants in `config.py`: `AM_END`, `MD_END`,
+     `PM_END`, `PARKING_FACTOR_PEAK`, `PARKING_FACTOR_OFFPEAK` (same values and types);
+   - the random draw stays in the iteration loop, at the same place;
+   - checked with `ast` first. One carried-over value: `parking_dur` and `bt_c_gas` are set only when the car path
+     is computed (first fare scenario); in the other fare scenarios every traveler gets the values of the last
+     traveler of the first one. Kept as it is, with a comment (`docs/open_issues.md`, I-18). The microtransit path
+     of the previous traveler was also kept for "micro_only" outside the operating periods, but never read there
+     (transit probability 0); it is now `None`.
 6. **One iteration** → `iteration.py`; the FleetPy step → `microtransit.py`, together with the kept block.
 7. **Results after convergence** → `results.py`.
 8. **Scenario loop and `run_model`** → `scenarios.py`, `model.py`. The entry script shrinks to about 50 lines.
