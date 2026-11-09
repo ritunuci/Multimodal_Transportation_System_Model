@@ -38,6 +38,7 @@ Paths are relative to the codebase root.
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Open | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Open | 2026-11-09 |
+| I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
 
 ---
 
@@ -197,6 +198,21 @@ Paths are relative to the codebase root.
 - **Fix (when it is needed):** compute the microtransit mode share per iteration (`M_share`, and `M_share_pre`
   from the previous iteration), restore the call, move the `maximum_iteration` stop out of the individual branch so
   that it applies to both tests, and set `converged = False` at the start of `convergence_test()`. Then test it.
+
+### I-17: Travelers who keep their transit choice resubmit only their last microtransit and FRT leg
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 4).
+- **What:** in an iteration, a traveler whose transit probability changed by at most `MODE_CHANGE_THRESHOLD` keeps
+  the previous choice (`change_mode == False`). If that choice was transit, `run_examples_new_parking.py` writes the
+  traveler's previous microtransit request to the FleetPy demand file and the previous FRT trip to the FRT demand
+  file again. But `state.pre_iter_M_info` and `state.pre_iter_F_info` hold one leg per traveler: each leg of the
+  path overwrites the previous one. A traveler with two microtransit legs therefore sends one request to FleetPy,
+  while `num_M_trips` still counts two trips (`ag_num_M_trips`), and the waiting time is the period average of the
+  last leg times the number of legs. The same holds for FRT legs.
+- **Impact:** unknown: it depends on how many travelers have more than one microtransit or FRT leg and keep their
+  choice. FleetPy then sees less demand than the model counts. Not checked in the reference run.
+- **To decide / fix:** if each leg should be resubmitted, keep a list of legs per traveler (`pre_iter_M_info[rq_id]`
+  as a list) and write all of them. This changes the FleetPy demand and the results, so it needs a new reference.
+  First count how often it happens in the reference run.
 
 ---
 

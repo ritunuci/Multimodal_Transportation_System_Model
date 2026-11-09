@@ -1,6 +1,6 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 3 are done
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 4 are done
 (see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
@@ -10,8 +10,9 @@ up to 18 levels deep. It is hard to read for four reasons:
 
 - **No functions.** Everything shares about 150 loose variables, among them about 70 per-scenario dictionaries
   (`agent_O`, `ag_VMT_F`, `off_micro_*`, ...).
-- **Repeated code.** The split of a path into walk / microtransit / fixed-route legs is written three times, and the
-  writing of the individual-results file twice.
+- **Repeated code.** The split of a path into walk / microtransit / fixed-route legs is written twice (base case and
+  with microtransit; each copy walks the time path and the distance path), the classification of transit users
+  twice, and the writing of the individual-results file twice. (Corrected in step 4; this said "three times".)
 - **Code that never runs.** Unused scenario types, debug switches, FleetPy's old example branch, and much
   commented-out code.
 - **Results exist only as file rows.** There is no data structure for them.
@@ -152,7 +153,22 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      the results (step 7);
    - `off_micro_c_tt_travel_time` and `off_micro_f_tt_travel_time` are created but never filled (their uses were
      commented out); kept as fields for now, marked "not filled".
-4. **Trip legs** → `trip_legs.py`, removing the three copies.
+4. **Trip legs** → `trip_legs.py`, removing the copies. **Done 2026-11-09** (`REPRODUCED`):
+   - `split_time_path()` and `split_dist_path()`: the loops of the microtransit case, unchanged, used for both
+     cases. They return the per-link values in path order; the callers add them to their totals one by one in the
+     same order as before, so the floating-point sums are identical. `count_transit_user()` and
+     `free_request_id()` replace two more duplicated pieces;
+   - the differences between the copies are parameters or caller code: the base case only uses the FRT and walk
+     values; both distance loops start with the first element of the microtransit path as "previous node"
+     (also in the base case; it only matters if a path starts with an FRT link, which it does not);
+   - checked with `ast` first: no variable set inside the loops is read outside them (only the three per-traveler
+     VMT sums right after the distance loop, now computed by the caller). One carry-over was possible in theory: an
+     FRT leg starting with a transfer link (type 3) would have reused the previous traveler's origin and request
+     time; it now raises an error. The networks have no transfer links, so this cannot happen;
+   - the error message for an unknown microtransit node now lists the leg's nodes and the path (it listed the
+     loop variables before);
+   - found while reading the code, not changed: travelers who keep their transit choice resubmit only their last
+     microtransit and FRT leg (`docs/open_issues.md`, I-17).
 5. **Paths and choice** → `paths.py`, `choice.py`.
 6. **One iteration** → `iteration.py`; the FleetPy step → `microtransit.py`, together with the kept block.
 7. **Results after convergence** → `results.py`.

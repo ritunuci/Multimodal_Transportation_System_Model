@@ -30,6 +30,7 @@ from pre_process.generate_demand_files import synthesize_requests_with_trend_tim
 import mtsm_paths as mtsm
 from mtsm_model import config
 from mtsm_model.state import BaseCase, TravelerState, IterationTotals
+from mtsm_model import trip_legs
 
 # global variables
 # ----------------
@@ -517,58 +518,25 @@ if __name__ == "__main__":
                                                                         base.off_micro_ag_tot_dist[rq_id] = travel_dist_F/config.MILE_METER
 
                                                                         base.off_micro_agent_gen_cost[rq_id]=gen_cost_F
-                                                                        trimmed_transit_time_path_F = transit_time_path_all_F[1:-1]
-                                                                        pre_link_type = None
-                                                                        sum_link_type_F = 0  # recorde the pure walking trips
-                                                                        # 11/07 Siwei: record the time of reaching the previous link
-                                                                        pre_time = 0
-
-
-
                                                                         base.off_micro_agent_op_cost[rq_id] = agent_op_cost_F
-                                                                        for (node, time, link_type,route) in trimmed_transit_time_path_F:
-                                                                            # calculate the number of fixed route transit trip legs
-                                                                            if (pre_link_type != 1 and pre_link_type != 3) and (link_type == 1):
-                                                                                F_origin_node = node
-                                                                                request_time = rq_time + int(time)
-                                                                            if (pre_link_type == 1) and (link_type != 1 and link_type != 3):
-                                                                                F_dest_node = pre_node
-                                                                                base.off_micro_F_trips += 1
-
-                                                                            # 11/07 Siwei: calculate the fixed route transit waiting time
-                                                                            if (pre_link_type != 2) and (link_type == 2):
-                                                                                F_wait_time = (time - pre_time)
-                                                                                base.off_micro_agent_F_tot_wait_time[rq_id] += F_wait_time
-                                                                            # 11/07 Siwei: calculate the walking time
-                                                                            if link_type == 0:
-                                                                                walk_time = (time - pre_time)
-                                                                                base.off_micro_agent_tot_walk_time[rq_id] += walk_time
-
-
-                                                                            pre_time = time
-                                                                            sum_link_type_F += link_type
-                                                                            pre_node = node
-                                                                            pre_link_type = link_type
-                                                                        if sum_link_type_F == 0:
+                                                                        legs_F = trip_legs.split_time_path(transit_time_path_all_F[1:-1], rq_time, iteration)
+                                                                        base.off_micro_F_trips += len(legs_F.F_legs)
+                                                                        for F_wait_time in legs_F.F_wait:
+                                                                            base.off_micro_agent_F_tot_wait_time[rq_id] += F_wait_time
+                                                                        for walk_time in legs_F.walk:
+                                                                            base.off_micro_agent_tot_walk_time[rq_id] += walk_time
+                                                                        if legs_F.walk_only:
                                                                             base.off_micro_W_trips += 1
 
                                                                         #calculate VMT for fixed transit and walking when microtransit turned off
-                                                                        trimmed_transit_dist_path_F=transit_dist_path_all_F[1:-1]
-                                                                        pre_dist = 0
-                                                                        pre_node = transit_dist_path_all_[0]
-                                                                        for (node, dist, link_type,route) in trimmed_transit_dist_path_F:
-                                                                            # calculate the number of fixed route transit trip legs
-                                                                            if link_type == 1:
-                                                                                distance_F = dist - pre_dist
-                                                                                base.off_micro_VMT_F+=(distance_F/config.MILE_METER)
-                                                                                off_micro_transit_link_vmt[time_period][(pre_node, node)] += (distance_F / config.MILE_METER)
-                                                                                off_micro_transit_link_pax[time_period][(pre_node, node)]+=1
-                                                                            if link_type==0:
-                                                                                distance_W = dist - pre_dist
-                                                                                base.off_micro_VMT_W += (distance_W / config.MILE_METER)
-                                                                                base.off_micro_ag_VMT_W[rq_id]+=(distance_W / config.MILE_METER)
-                                                                            pre_dist = dist
-                                                                            pre_node = node
+                                                                        dist_legs_F = trip_legs.split_dist_path(transit_dist_path_all_F[1:-1], transit_dist_path_all_[0])
+                                                                        for (pre_node, node, miles) in dist_legs_F.F_links:
+                                                                            base.off_micro_VMT_F += miles
+                                                                            off_micro_transit_link_vmt[time_period][(pre_node, node)] += miles
+                                                                            off_micro_transit_link_pax[time_period][(pre_node, node)] += 1
+                                                                        for miles in dist_legs_F.W_links:
+                                                                            base.off_micro_VMT_W += miles
+                                                                            base.off_micro_ag_VMT_W[rq_id] += miles
 
 
                                                                     else:  # agent choose the car mode
@@ -616,19 +584,9 @@ if __name__ == "__main__":
                                                                         state.agent_gen_cost[rq_id] = gen_cost_T
                                                                         if ran_num>=prob_T_no_micro:
                                                                             state.agent_switch_mode[rq_id]=1 #this means: if no microtransit, this agent will choose car, but with microtransit, this agent will choose transit mode
-                                                                        trimmed_transit_time_path = transit_time_path_all_[1:-1]
-                                                                        pre_link_type = None
-                                                                        sum_link_type = 0  # recorde the pure walking trips
-                                                                        # 11/07 Siwei: record the time of reaching the previous link
-                                                                        pre_time = 0
-                                                                        M_tot_wait_time = 0
-
                                                                         # 1107 Siwei
                                                                         state.agent_M_tot_wait_time[rq_id] = 0
                                                                         state.agent_F_tot_wait_time[rq_id] = 0
-
-
-
                                                                         state.agent_tot_walk_time[rq_id] = 0
                                                                         state.agent_travel_time[rq_id]=travel_time_T
                                                                         state.agent_travel_dist[rq_id] =travel_dist_T
@@ -637,117 +595,59 @@ if __name__ == "__main__":
                                                                         state.agent_op_cost_Fix[rq_id] = agent_F_fare
                                                                         state.agent_op_cost_Micro[rq_id] = agent_M_fare
 
-                                                                        for (node, time, link_type,route) in trimmed_transit_time_path:
-                                                                            # calculate the number of microtransit trip legs
-                                                                            if (pre_link_type != 4) and (link_type == 4): ##1228 testing!
-                                                                                M_origin_node = node
-                                                                                request_time = rq_time + round(time,0)
-                                                                            if (pre_link_type == 4) and (link_type != 4): ##1228 testing!
-                                                                                M_dest_node = pre_node
-                                                                                # MicroTransitNodes
-                                                                                rq_id_fleetpy = rq_id
-                                                                                while (rq_id_fleetpy in M_rq_id_list): #this condition is to deal with the situation where 1 person has more than 1 microtransit trips
-                                                                                    rq_id_fleetpy += 1
+                                                                        legs = trip_legs.split_time_path(transit_time_path_all_[1:-1], rq_time, iteration)
+                                                                        # microtransit legs: FleetPy requests
+                                                                        for (request_time, M_origin_node, M_dest_node) in legs.M_legs:
+                                                                            rq_id_fleetpy = trip_legs.free_request_id(rq_id, M_rq_id_list)
+                                                                            try:
+                                                                                writer_M.writerow({'rq_time': request_time, 'start': MicroTransitNodes[M_origin_node],'end': MicroTransitNodes[M_dest_node], 'request_id': rq_id_fleetpy})
+                                                                            except:
+                                                                                raise Exception("M_origin_node",M_origin_node,"M_dest_node",M_dest_node,"trimmed_transit_time_path",transit_time_path_all_[1:-1])
+                                                                            M_rq_id_list.append(rq_id_fleetpy)
+                                                                            #document the previous iteration microtransit information
+                                                                            #rq_time, start, end, request_id
+                                                                            state.pre_iter_M_info[rq_id]=(request_time,MicroTransitNodes[M_origin_node],MicroTransitNodes[M_dest_node],rq_id_fleetpy)
 
-                                                                                try:
-                                                                                    writer_M.writerow({'rq_time': request_time, 'start': MicroTransitNodes[M_origin_node],'end': MicroTransitNodes[M_dest_node], 'request_id': rq_id_fleetpy})
-                                                                                except:
-                                                                                    raise Exception("M_origin_node",M_origin_node,"M_dest_node",M_dest_node,"pre_link_type",pre_link_type,"link_type",link_type,"node",node,"pre_node",pre_node,"trimmed_transit_time_path",trimmed_transit_time_path)
-                                                                                M_rq_id_list.append(rq_id_fleetpy)
-                                                                                #document the previous iteration microtransit information
-                                                                                #rq_time, start, end, request_id
-                                                                                state.pre_iter_M_info[rq_id]=(request_time,MicroTransitNodes[M_origin_node],MicroTransitNodes[M_dest_node],rq_id_fleetpy)
-
-                                                                                totals.num_M_trips += 1
-                                                                                state.ag_num_M_trips[rq_id] +=1
-                                                                            # calculate the number of fixed route transit trip legs
-                                                                            if (pre_link_type != 1 and pre_link_type != 3) and (link_type == 1):
-                                                                                F_origin_node = node
-                                                                                request_time = rq_time + int(time)
-                                                                            if (pre_link_type == 1) and (link_type != 1 and link_type != 3):
-                                                                                F_dest_node = pre_node
-                                                                                totals.num_F_trips += 1
-                                                                                state.ag_num_F_trips[rq_id] +=1
-                                                                                writer_F.writerow({'depart_time':request_time , 'start': F_origin_node,'end': F_dest_node,'request_id': rq_id})
-                                                                                # document the previous iteration fixed route transit information
-                                                                                # rq_time, start, end, request_id
-                                                                                state.pre_iter_F_info[rq_id]=(request_time,F_origin_node,F_dest_node,rq_id)
-                                                                            # 11/07 Siwei: calculate the microtransit waiting time
-                                                                            if (pre_link_type != 5) and (link_type == 5):
-                                                                                M_wait_time = (time - pre_time)
-                                                                                if iteration>0 and M_wait_time == 180:
-                                                                                    print(f"MICRO WAIT TIME = {M_wait_time}")
-                                                                                state.agent_M_tot_wait_time[rq_id] += M_wait_time
-
-                                                                            # 11/07 Siwei: calculate the fixed route transit waiting time
-                                                                            if (pre_link_type != 2) and (link_type == 2):
-                                                                                F_wait_time = (time - pre_time)
-                                                                                state.agent_F_tot_wait_time[rq_id] += F_wait_time
-
-                                                                            # 11/07 Siwei: calculate the walking time
-                                                                            if link_type == 0:
-                                                                                walk_time = (time - pre_time)
-                                                                                state.agent_tot_walk_time[rq_id] += walk_time
-                                                                            # 12/22 Siwei: calculate the microtransit travel time
-                                                                            if link_type ==4:
-                                                                                M_travel_time = (time - pre_time)
-                                                                                #03/09/2026: Siwei add the following code for debug purpose
-                                                                                if iteration>0 and M_travel_time == 0:
-                                                                                    print(f"MICRO Link Travel Time = {M_travel_time}")
-
-                                                                                state.agent_M_tot_travel_time[rq_id] += M_travel_time
-
-                                                                            # 12/22 Siwei: calculate the fixed route transit travel time
-                                                                            if link_type == 1 or link_type ==3:
-                                                                                F_travel_time = (time - pre_time)
-                                                                                state.agent_F_tot_travel_time[rq_id] += F_travel_time
-
-                                                                            pre_time = time
-                                                                            sum_link_type += link_type
-                                                                            pre_node = node
-                                                                            pre_link_type = link_type
-                                                                        if sum_link_type == 0:
+                                                                            totals.num_M_trips += 1
+                                                                            state.ag_num_M_trips[rq_id] +=1
+                                                                        # fixed route transit legs
+                                                                        for (request_time, F_origin_node, F_dest_node) in legs.F_legs:
+                                                                            totals.num_F_trips += 1
+                                                                            state.ag_num_F_trips[rq_id] +=1
+                                                                            writer_F.writerow({'depart_time':request_time , 'start': F_origin_node,'end': F_dest_node,'request_id': rq_id})
+                                                                            # document the previous iteration fixed route transit information
+                                                                            # rq_time, start, end, request_id
+                                                                            state.pre_iter_F_info[rq_id]=(request_time,F_origin_node,F_dest_node,rq_id)
+                                                                        for M_wait_time in legs.M_wait:
+                                                                            state.agent_M_tot_wait_time[rq_id] += M_wait_time
+                                                                        for F_wait_time in legs.F_wait:
+                                                                            state.agent_F_tot_wait_time[rq_id] += F_wait_time
+                                                                        for walk_time in legs.walk:
+                                                                            state.agent_tot_walk_time[rq_id] += walk_time
+                                                                        for M_travel_time in legs.M_travel:
+                                                                            state.agent_M_tot_travel_time[rq_id] += M_travel_time
+                                                                        for F_travel_time in legs.F_travel:
+                                                                            state.agent_F_tot_travel_time[rq_id] += F_travel_time
+                                                                        if legs.walk_only:
                                                                             totals.num_W_trips += 1
                                                                             state.ag_num_W_trips[rq_id]+=1
-                                                                        #calculate pure microtransit users:
-                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] == 0:
-                                                                            totals.pure_M_user += 1
-                                                                        # calculate pure fixed route transit users:
-                                                                        if state.ag_num_M_trips[rq_id] == 0 and state.ag_num_F_trips[rq_id] != 0:
-                                                                            totals.pure_F_user += 1
-                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] != 0:
-                                                                            totals.M_F_user += 1
+                                                                        trip_legs.count_transit_user(totals, state.ag_num_M_trips[rq_id], state.ag_num_F_trips[rq_id])
                                                                         # calculate VMT for fixed transit and walking when microtransit turned on
-
-
-                                                                        trimmed_transit_dist_path = transit_dist_path_all_[1:-1]
-                                                                        pre_dist = 0
-                                                                        pre_node = transit_dist_path_all_[0]
+                                                                        dist_legs = trip_legs.split_dist_path(transit_dist_path_all_[1:-1], transit_dist_path_all_[0])
                                                                         ag_VMT_W_intermediate=0
                                                                         ag_VMT_M_intermediate=0
                                                                         ag_VMT_F_intermediate = 0
-                                                                        for (node, dist, link_type,route) in trimmed_transit_dist_path:
-                                                                            # calculate the number of fixed route transit trip legs
-                                                                            if link_type == 1:
-                                                                                distance_F = dist - pre_dist
-                                                                                totals.VMT_F += (distance_F / config.MILE_METER)
-                                                                                ag_VMT_F_intermediate += (distance_F / config.MILE_METER)
-                                                                                transit_link_vmt[time_period][(pre_node, node)]+=(distance_F / config.MILE_METER)
-                                                                                transit_link_pax[time_period][(pre_node, node)]+=1
-
-
-
-                                                                            if link_type == 0:
-                                                                                distance_W = dist - pre_dist
-                                                                                totals.VMT_W += (distance_W / config.MILE_METER)
-                                                                                ag_VMT_W_intermediate += (distance_W / config.MILE_METER)
-
-                                                                            if link_type == 4:
-                                                                                distance_M = dist - pre_dist
-                                                                                totals.VMT_M += (distance_M / config.MILE_METER)
-                                                                                ag_VMT_M_intermediate += (distance_M / config.MILE_METER)
-                                                                            pre_dist = dist
-                                                                            pre_node=node
+                                                                        for (pre_node, node, miles) in dist_legs.F_links:
+                                                                            totals.VMT_F += miles
+                                                                            ag_VMT_F_intermediate += miles
+                                                                            transit_link_vmt[time_period][(pre_node, node)]+=miles
+                                                                            transit_link_pax[time_period][(pre_node, node)]+=1
+                                                                        for miles in dist_legs.W_links:
+                                                                            totals.VMT_W += miles
+                                                                            ag_VMT_W_intermediate += miles
+                                                                        for miles in dist_legs.M_links:
+                                                                            totals.VMT_M += miles
+                                                                            ag_VMT_M_intermediate += miles
 
                                                                         state.ag_VMT_W[rq_id]=ag_VMT_W_intermediate
                                                                         state.ag_VMT_M[rq_id]=ag_VMT_M_intermediate
@@ -789,20 +689,12 @@ if __name__ == "__main__":
 
 
 
-                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] == 0:
-                                                                            totals.pure_M_user += 1
-                                                                        # calculate pure fixed route transit users:
-                                                                        if state.ag_num_M_trips[rq_id] == 0 and state.ag_num_F_trips[rq_id] != 0:
-                                                                            totals.pure_F_user += 1
-                                                                        if state.ag_num_M_trips[rq_id] != 0 and state.ag_num_F_trips[rq_id] != 0:
-                                                                            totals.M_F_user += 1
+                                                                        trip_legs.count_transit_user(totals, state.ag_num_M_trips[rq_id], state.ag_num_F_trips[rq_id])
 
                                                                         if rq_id in state.pre_iter_M_info:
                                                                             # rq_time, start, end, request_id
                                                                             (pre_ier_rq_time, pre_iter_start,pre_iter_end, pre_iter_request_id) = state.pre_iter_M_info[rq_id]
-                                                                            rq_id_fleetpy = pre_iter_request_id
-                                                                            while (rq_id_fleetpy in M_rq_id_list):  # this condition is to deal with the situation where 1 person has more than 1 microtransit trips
-                                                                                rq_id_fleetpy += 1
+                                                                            rq_id_fleetpy = trip_legs.free_request_id(pre_iter_request_id, M_rq_id_list)
                                                                             writer_M.writerow({'rq_time': pre_ier_rq_time,'start': pre_iter_start,'end': pre_iter_end,'request_id':rq_id_fleetpy})
                                                                             M_rq_id_list.append(rq_id_fleetpy)
 

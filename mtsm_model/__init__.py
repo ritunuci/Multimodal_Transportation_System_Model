@@ -3,4 +3,5 @@
 
 - config: the run's parameters (input_parameter.csv), the startup check, and the model's fixed settings and constants.
 - state: the model's state during a scenario (TravelerState, BaseCase, IterationTotals).
+- trip_legs: split a traveler's path into walk / microtransit / fixed-route legs.
 """
