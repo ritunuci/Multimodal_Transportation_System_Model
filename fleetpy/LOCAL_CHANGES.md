@@ -60,9 +60,10 @@ FleetPy's original `requirements.txt` (numpy 1.19.5, pandas 1.2.0, ...) is not i
 
 See `docs/open_issues.md`.
 
-- **`data/vehicles/default_vehtype.csv` and `low_range_vehtype.csv`:** `maximum_passengers` changed from 4 to 8. The
-  Lemon Grove run uses `default_vehtype`, so the microtransit vehicle capacity of the model (8) is stored in FleetPy's
-  file.
+- **Vehicle types restored (2026-11-08):** `data/vehicles/default_vehtype.csv` and `low_range_vehtype.csv` had
+  `maximum_passengers` changed from 4 to 8, because the Lemon Grove run used `default_vehtype`. Both are back to
+  upstream. The model now has its own vehicle type, `lemon_grove_vehtype` (capacity 8), in
+  `mtsm_data/lemon_grove/fleetpy_inputs/data/vehicles/`, copied into `data/vehicles/` before each run (I-09).
 - **Added files still here** (not in upstream; none of them is read by the Lemon Grove run; I-11):
   - `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`: 69 old files;
   - `data/demand/example_demand/matched/example_network/`: 9 `lemon_grove_zonal_partition's effect on ...` plots;

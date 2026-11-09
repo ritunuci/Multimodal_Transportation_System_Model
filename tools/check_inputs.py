@@ -36,6 +36,7 @@ INPUTS = {
     "lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info": "FleetPy network coordinate system",
     "lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv":
         "FleetPy initial vehicle distribution",
+    "lemon_grove/fleetpy_inputs/data/vehicles/lemon_grove_vehtype.csv": "FleetPy vehicle type (capacity 8)",
     "lemon_grove/fleetpy_inputs/studies/example_study/scenarios/lemon_grove_constant_config_ir_repo.csv": "FleetPy constant config",
     "lemon_grove/fleetpy_inputs/studies/example_study/scenarios/lemon_grove_example_ir_heuristics_repositioning_2_veh.csv":
         "FleetPy scenario config (fleet size 2)",

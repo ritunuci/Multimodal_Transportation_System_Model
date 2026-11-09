@@ -30,7 +30,7 @@ Paths are relative to the codebase root.
 | I-06 | Accessibility uses a hard-coded network for its node list | Medium | Open | 2026-10-23 |
 | I-07 | `docs/progress.md` plan table is out of date | Low | Closed (2026-11-07) | 2026-11-07 |
 | I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Closed (2026-11-07) | 2026-10-23 |
-| I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | In progress | 2026-11-07 |
+| I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | Closed (2026-11-08) | 2026-11-07 |
 | I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | Closed (2026-11-08) | 2026-11-07 |
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Open | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
@@ -111,18 +111,6 @@ Paths are relative to the codebase root.
 - **Fix:** take the node list from the network the scenario actually uses. If the node set is unchanged, the reference
   still reproduces; check with a full run and `compare_reference.py`.
 
-### I-09: The model's vehicle capacity is stored in FleetPy's vehicle file
-- **Status:** In progress (FleetPy separation, step 3). **Severity:** Medium. **Found:** 2026-11-07 (comparison with
-  upstream FleetPy).
-- **What:** `fleetpy/data/vehicles/default_vehtype.csv` has `maximum_passengers` 8; upstream FleetPy has 4. The Lemon
-  Grove run uses this vehicle type (`default_vehtype:2` in the scenario configs), so a model parameter lives in
-  FleetPy's data, unrecorded and unchecked. `low_range_vehtype.csv` has the same change (not used by the run).
-- **Impact:** a FleetPy update or a clean FleetPy copy would silently change the vehicle capacity from 8 to 4.
-- **Fix (decided, D5):** a vehicle type of the model's own (for example `lemon_grove_vehtype`, capacity 8) in
-  `mtsm_data/lemon_grove/fleetpy_inputs/`, copied in before each run and checksummed; the scenario configs use it; FleetPy's
-  two files go back to upstream. Only the vehicle-type name changes in FleetPy's intermediate files, so the reference
-  is updated for those; the 9 reported output files must stay byte-identical.
-
 ### I-11: Old, unused MTSM files inside `fleetpy/`
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-07 (comparison with upstream FleetPy).
 - **What:** files added for MTSM that the current run does not read (updated 2026-11-08, after the downtown San
@@ -175,6 +163,19 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-09: The model's vehicle capacity is stored in FleetPy's vehicle file
+- **Status:** Closed (2026-11-08). **Severity:** Medium. **Found:** 2026-11-07 (comparison with
+  upstream FleetPy).
+- **What:** `fleetpy/data/vehicles/default_vehtype.csv` has `maximum_passengers` 8; upstream FleetPy has 4. The Lemon
+  Grove run uses this vehicle type (`default_vehtype:2` in the scenario configs), so a model parameter lives in
+  FleetPy's data, unrecorded and unchecked. `low_range_vehtype.csv` has the same change (not used by the run).
+- **Impact:** a FleetPy update or a clean FleetPy copy would silently change the vehicle capacity from 8 to 4.
+- **Resolution:** the model has its own vehicle type, `lemon_grove_vehtype` (capacity 8, other values unchanged),
+  in `mtsm_data/lemon_grove/fleetpy_inputs/data/vehicles/`; it is a frozen input (`MANIFEST.csv`) and is copied into
+  `fleetpy/data/vehicles/` before each run. The 26 Lemon Grove scenario configs and `fleetpy_runner.create_config_files`
+  use it. FleetPy's two vehicle files are back to upstream (capacity 4). The reference changed only in the vehicle-type
+  name (4 FleetPy files, see `docs/reference_results/README.md`); the 9 reported results are byte-identical.
 
 ### I-10: FleetPy's example data was overwritten with downtown San Diego data
 - **Status:** Closed (2026-11-08). **Severity:** Low. **Found:** 2026-11-07 (comparison with

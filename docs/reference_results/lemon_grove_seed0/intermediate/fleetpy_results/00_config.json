@@ -19,7 +19,7 @@
         "temporal_resolution": 900,
         "op_module": "PoolingIRSOnly",
         "op_fleet_composition": {
-            "default_vehtype": 2
+            "lemon_grove_vehtype": 2
         },
         "op_init_veh_distribution": "imbalanced.csv",
         "op_min_wait_time": 0,
@@ -60,7 +60,7 @@
         {
             "op_module": "PoolingIRSOnly",
             "op_fleet_composition": {
-                "default_vehtype": 2
+                "lemon_grove_vehtype": 2
             },
             "op_init_veh_distribution": "imbalanced.csv",
             "op_min_wait_time": 0,

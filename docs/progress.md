@@ -24,7 +24,7 @@ earlier entries; commits before that date use the old names.
 | 1b | Self-contained codebase: frozen, checksummed inputs and all outputs under `mtsm_data/` (former step 2.3); reference results; guard for unsupported configurations | Done, verified 2026-10-23 |
 | 1c | Optimizer (`Bayesian_optimization_script.py`) reads and writes `mtsm_data/` instead of outside folders | Done 2026-10-23 (compiled, not run) |
 | 2 | Freeze code (git: two-step commit, then GitHub repo) and environment (conda export, lock files) | Done 2026-10-23 and pushed (`65861ec`): git (Phase 2a); stale paths, env lock, rebuild test passed (Phase 2b). No `v2` tag (user's decision) |
-| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-2 done 2026-11-07 |
+| 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | In progress: steps 1-4 done (2026-11-07/08); step 5 (docs) to do |
 | 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
@@ -488,7 +488,7 @@ file was renamed, so the code still builds the same file names. The folder const
 - Steps:
   1. Compare with upstream FleetPy.
   2. Move FleetPy, add the runner and the copied inputs, remove the debug-only edits.
-  3. Give the model its own vehicle type (capacity 8), with a checked reference update (I-09).
+  3. Give the model its own vehicle type (capacity 8), with a checked reference update (I-09). Done 2026-11-08.
   4. Restore FleetPy's example data, archive the downtown San Diego data, run FleetPy's own example (I-10).
      Done 2026-11-08 as step 1 of "Removing downtown San Diego" (downtown data deleted instead of archived).
   5. Docs.
@@ -557,6 +557,25 @@ file was renamed, so the code still builds the same file names. The folder const
   reference results (they contain no `mtsm/` path) are unchanged.
 - Verification (2026-11-07): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`; nothing read or written under `mtsm/`.
+
+### Step 3: the model's own vehicle type (2026-11-08)
+- New frozen input `mtsm_data/lemon_grove/fleetpy_inputs/data/vehicles/lemon_grove_vehtype.csv`: FleetPy's
+  `default_vehtype.csv` as it was here (capacity 8, daily cost 2500 cent, 25 cent/km, 50 kWh, 10000 km), with only the
+  name changed. `fleetpy_runner.stage_inputs` copies it into `fleetpy/data/vehicles/` (git-ignored).
+- The 26 Lemon Grove scenario configs in `mtsm_data/` and `fleetpy_runner.create_config_files` use
+  `lemon_grove_vehtype:N` instead of `default_vehtype:N`.
+- `fleetpy/data/vehicles/default_vehtype.csv` and `low_range_vehtype.csv` restored from upstream `7019960`, byte
+  for byte (capacity 4).
+- `tools/check_inputs.py` and `mtsm_data/MANIFEST.csv`: the vehicle file added (21 frozen inputs); the checksum of
+  `lemon_grove_example_ir_heuristics_repositioning_2_veh.csv` updated (only the type name changed). Before
+  `--write`, `check_inputs.py` reported exactly that one config as changed.
+- Verification (2026-11-08): full seed-0 run under the I/O tracer. `compare_reference.py`: 28 identical, 4 differing,
+  exactly the 4 FleetPy files that contain the vehicle-type name (`00_config.json`, `2-0_op-stats.csv`,
+  `2_vehicle_types.csv`, `standard_mod-0_veh_eval.csv`; 280 occurrences). Each was byte-identical to the run after
+  replacing the old name with the new one, so the reference was updated by that replacement (documented in
+  `docs/reference_results/README.md`). Then **32 identical, `REPRODUCED`**; `check_inputs.py` passes; no generated
+  files in `git status`. The 9 reported results never differed. The trace shows FleetPy reading the copied
+  `lemon_grove_vehtype.csv`.
 
 ---
 

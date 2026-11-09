@@ -15,6 +15,7 @@ fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_netwo
 fleetpy/data/networks/lemon_grove_example_network/
 fleetpy/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/
 fleetpy/studies/example_study/scenarios/lemon_grove_*
+fleetpy/data/vehicles/lemon_grove_vehtype.csv
 # mtsm_data/: outputs and per-run networks (the frozen inputs stay tracked, see mtsm_data/MANIFEST.csv)
 mtsm_data/lemon_grove/output/*
 mtsm_data/lemon_grove/final_network/*

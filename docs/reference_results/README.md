@@ -12,7 +12,7 @@ model's behavior, and that is a mistake unless it was intended (and then it need
 4. Compare: `python tools/compare_reference.py`. It must end with `REPRODUCED`.
 
 `compare_reference.py` compares every file below with the file the run just wrote, byte for byte. One
-exception: FleetPy writes the codebase's absolute location into `00_config.json`, so in that file the code root is
+exception: FleetPy writes its absolute location into `00_config.json`, so in that file FleetPy's root folder is
 replaced by a placeholder before comparing.
 
 ## `lemon_grove_seed0/`
@@ -27,7 +27,7 @@ Input parameters (`input_parameter.csv`):
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | lemon_grove | TRUE | TRUE | 10 | FALSE | 3.615388 | 5 | 2.3811314 | 2 | 2.3703918 | 1 | 1 | 0 | 10 | 20 | 3 | 0 |
 
-Other inputs: the 14 frozen files in `mtsm_data/`, with checksums in `mtsm_data/MANIFEST.csv`.
+Other inputs: the frozen files in `mtsm_data/` (21 since 2026-11-08), with checksums in `mtsm_data/MANIFEST.csv`.
 
 | Folder | Contents | Written by the run to |
 |---|---|---|
@@ -45,3 +45,13 @@ change in behavior starts. Not kept, because they differ on every run: `00_simul
 
 Key values (evaluation file, row 3 = microtransit scenario): `tot_sub ($)` 7781.654254,
 `tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22.
+
+### Changes to this reference
+
+- **2026-11-08, vehicle-type name** (FleetPy separation, step 3; `docs/progress.md`): the model's microtransit
+  vehicle type was renamed from FleetPy's `default_vehtype` to its own `lemon_grove_vehtype` (same values, capacity
+  8). The name appears in 4 FleetPy files under `intermediate/fleetpy_results/`: `00_config.json` (2 times),
+  `2-0_op-stats.csv` (274), `2_vehicle_types.csv` (2), `standard_mod-0_veh_eval.csv` (2). A full run after the
+  change differed from the reference only in these 4 files, and each was byte-identical to the new run after
+  replacing `default_vehtype` with `lemon_grove_vehtype`. The 4 reference files were updated by that same
+  replacement. All other files, including the 9 reported results, did not change.

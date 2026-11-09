@@ -37,6 +37,7 @@ LG_STAGED_INPUTS = [
     "data/networks/lemon_grove_example_network/base/edges.csv",
     "data/networks/lemon_grove_example_network/base/crs.info",
     "data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv",
+    "data/vehicles/lemon_grove_vehtype.csv",
 ]
 
 
@@ -247,7 +248,7 @@ def create_config_files(sc,study_area,repositioning,debug_mode,fleet_size):
             op_module="PoolingIRSOnly"
             scenario_name="example_pool_repo_AM_sc_1"
             rq_file="%s_debug_%s_fleetpy_demand.csv" % (str(study_area),str(debug_mode))
-            op_fleet_composition="default_vehtype:"+str(fleet_size)
+            op_fleet_composition="lemon_grove_vehtype:"+str(fleet_size)
             op_max_VR_con=int(3)
             forecast_f=" "
             op_repo_method="AlonsoMoraRepositioning"
@@ -260,7 +261,7 @@ def create_config_files(sc,study_area,repositioning,debug_mode,fleet_size):
             op_module = "PoolingIRSOnly"
             scenario_name = "example_pool_irsonly_sc_1"
             rq_file = "%s_debug_%s_fleetpy_demand.csv" % (str(study_area), str(debug_mode))
-            op_fleet_composition = "default_vehtype:" + str(fleet_size)
+            op_fleet_composition = "lemon_grove_vehtype:" + str(fleet_size)
             writer_config.writerow({"op_module": op_module, "scenario_name": scenario_name, "rq_file": rq_file,
                                     "op_fleet_composition": op_fleet_composition})
     csvfile_config.close()
