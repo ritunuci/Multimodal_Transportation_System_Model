@@ -66,7 +66,7 @@ and the increase in travelers' mobility logsum due to microtransit. For each can
 | Path | Content |
 |---|---|
 | `run_examples_new_parking.py` | Entry script: fixes the hash seed, reads `input_parameter.csv`, sets the random seeds, and calls `mtsm_model.model.run_model()` |
-| `mtsm_model/` | The model, being moved out of the entry script step by step ([plan](docs/entry_script_refactor_plan.md)). `config.py`: the run's parameters from `input_parameter.csv`, the startup check, and the model's constants; `state.py`: the per-traveler state, the fixed-route-only base case and the iteration totals; `trip_legs.py`: split a path into walk / microtransit / fixed-route legs; `paths.py`: a traveler's networks and least-cost paths; `choice.py`: trip costs and mode choice; `networks.py`: read an iteration's super-networks; `iteration.py`: one iteration of the choice model; `microtransit.py`: run FleetPy and update the networks; `results.py`: the results of a converged scenario; `scenarios.py`: the study area's data and the scenario loops; `model.py`: `run_model()` and `run_scenario()` (the iteration loop above) |
+| `mtsm_model/` | The model (see [Code map](#code-map)) |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
 | `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
 | `get_microtransit_skims.py`, `get_walk_transit_skims.py`, `get_auto_skims.py`, `network_algorithms.py` | Super-networks and least generalized cost paths |
@@ -79,6 +79,45 @@ and the increase in travelers' mobility logsum due to microtransit. For each can
 | `tools/` | `check_inputs.py`, `compare_reference.py`, `export_env.py` |
 | `docs/` | Progress log, open issues, reference results |
 | `standalone_scripts/` | Analysis and plotting scripts that the model run does not use |
+
+## Code map
+
+`run_examples_new_parking.py` fixes the hash seed, reads the parameters and calls `run_model()`. A run then goes
+through the modules of `mtsm_model/` like this (the numbers are the steps of [How the model works](#how-the-model-works)):
+
+```
+run_examples_new_parking.py   config.read_run_config(), config.check_run_config(), random seeds
+└─ model.run_model()
+   └─ for each study area: scenarios.load_study_area()           folders, networks, travelers
+      └─ for each scenario: scenarios.scenarios()                 fare, headway, fleet size, ...
+         └─ model.run_scenario(): until converged
+            ├─ networks.read_iteration_networks()               3: the super-networks of this iteration
+            ├─ iteration.run_iteration(): for each traveler
+            │  ├─ paths.*                                        4: car, walk + FRT, walk + microtransit + FRT paths
+            │  ├─ choice.*                                       5: costs, logit probabilities, random draw
+            │  └─ trip_legs.*                                    legs of the chosen path -> FleetPy / FRT demand files
+            ├─ convergence test (convergence_test.py)          6
+            ├─ converged:     results.write_converged_results()  evaluation file, individual results
+            └─ not converged: microtransit.run_fleetpy_and_update_networks()   2-3: FleetPy, network update
+```
+
+| Module | Content |
+|---|---|
+| `config.py` | `RunConfig` (the parameters in `input_parameter.csv`), the startup check, and the model's constants (iterations, convergence, gas costs, time periods, parking, scenario lists) |
+| `scenarios.py` | `StudyArea` (a study area's data) and the scenario loops (`Scenario`) |
+| `model.py` | `run_model()` and `run_scenario()`, the iteration loop |
+| `state.py` | `TravelerState` (per-traveler values across iterations), `BaseCase` (the fixed-route-only base case), `IterationTotals` |
+| `networks.py` | Reading an iteration's super-networks |
+| `iteration.py` | One iteration of the choice model for all travelers |
+| `paths.py` | A traveler's networks and least generalized cost paths, and the path cache |
+| `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
+| `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
+| `microtransit.py` | Running FleetPy (through `fleetpy_runner.py`) and updating the super-networks with its results |
+| `results.py` | The results of a converged scenario: costs, subsidies, accessibility, individual results, evaluation rows |
+
+The modules at the repository root (`network_algorithms.py`, `binary_choice.py`, `update_network_files.py`,
+`output_performance_metrics.py`, ...) are the helpers these modules call. How the code got this structure, and what
+was checked to keep the results identical, is in [`docs/entry_script_refactor_plan.md`](docs/entry_script_refactor_plan.md).
 
 ## Documentation
 

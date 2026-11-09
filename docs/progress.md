@@ -27,7 +27,7 @@ earlier entries; commits before that date use the old names.
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | Done 2026-11-08 (open: I-11, I-12) |
 | 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
 | 2e | Remove the `TRPartA`, `BayesianOptimization` and `debug_mode` branches (columns kept in the input file) | Done 2026-11-09 (open: I-15) |
-| 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | In progress: decisions and steps 1-8 of 9 done 2026-11-09 (open: I-16, I-17, I-18) |
+| 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | Done 2026-11-09 (open: I-16, I-17, I-18) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -705,6 +705,27 @@ file was renamed, so the code still builds the same file names. The folder const
 - Checks: compiles; pyflakes reports no new warnings; CRLF kept; reviewed with `git diff -w`.
 - Verification (2026-11-09): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.
+
+## Restructuring the entry script (2026-11-09)
+
+- Plan, decisions and the details of each step: `docs/entry_script_refactor_plan.md`.
+- Result: `run_examples_new_parking.py` went from 1,921 lines (one `__main__` block, nested up to 18 levels) to 43
+  lines; the model is in the package `mtsm_model/` (code map: `README.md`). The entry script keeps its name, so the
+  optimizer is unchanged.
+- Decisions by the user: remove `test_repositioning`, `iteration_debug`, `zonal_partition` and the commented-out
+  code; keep the aggregate convergence test (commented, unfinished: I-16), `micro_only` and `non_micro`, the
+  ability to run several scenarios, and the commented-out "Ritun added" demand-upscaling block with its `syn_rq`
+  import (now in `mtsm_model/microtransit.py`).
+- Method: 9 small steps, each only moving code into functions. Before each move, the variables the code reads and
+  sets were listed with Python's `ast` module, to find values carried over from an earlier traveler, iteration or
+  scenario; the order of the random draws, of dict insertions and of floating-point sums was kept.
+- Found and recorded, not changed: I-16 (aggregate convergence test unfinished), I-17 (travelers who keep their
+  transit choice resubmit only their last leg), I-18 (in later fare scenarios, the parking values of one traveler
+  are used for all); the location of the duplicate base-case row (I-04).
+- Commits: `1e38609` (plan), `e94e2f4`, `65e975c`, `f7a13f3`, `8d92eb0`, `e95d484`, `4045d72`, `171d243`, `6cbc0eb`
+  (steps 1-8), step 9 (docs).
+- Verification: after each of steps 1-8 a full seed-0 run under the I/O tracer: `compare_reference.py` **32
+  identical, `REPRODUCED`**; `check_inputs.py` passes; no new pyflakes warnings. Step 9 is docs only.
 
 ---
 

@@ -1,7 +1,7 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 8 are done
-(see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
+Status: **done (2026-11-09).** The user's decisions are recorded under "Decisions" (2026-11-09); every step is done
+(see "Steps"). Summary: `docs/progress.md`, "Restructuring the entry script"; code map: `README.md`. The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
 
@@ -228,7 +228,7 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
      (checked equal to the old list);
    - removed two variables that were set and never read (`iter_agent_selected_mode`, `running_avg_rejection_rate`)
      and an unused `import time`.
-9. **Docs:** `progress.md`, the README layout table, a short code map in the README.
+9. **Docs:** `progress.md`, the README layout table, a short code map in the README. **Done 2026-11-09.**
 
 ## Decisions (2026-11-09)
 
