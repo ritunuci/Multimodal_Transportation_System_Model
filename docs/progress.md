@@ -617,6 +617,22 @@ file was renamed, so the code still builds the same file names. The folder const
 - Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.
 
+### Step 2b: decisions on what step 2 left (2026-11-08, decisions by the user)
+- Old mode-choice code deleted: `inte_sys_mode_choice.py` (a 3-mode multinomial / nested logit for downtown San
+  Diego, superseded by the binary logit in `binary_choice.py`), and `get_microtransit_skims()` and
+  `get_dmd_node_vir_stop()` in `get_microtransit_skims.py`. Nothing called them. Removed the imports that were then
+  unused (`mt`, `inte_sys_mode_choice`, `auto`, `wt` in the entry script; `auto`, `mt`, `wt` in `binary_choice.py`;
+  `math` in `get_microtransit_skims.py`). `get_auto_skims.py` and `get_walk_transit_skims.py` are kept but no run
+  code imports them now.
+- `pre_process/process_network.py` split: `update_initial_net_with_bayesian_headway`, the only function a run uses
+  (sets the FRT headway in the initial super-networks), moved unchanged (byte-identical) to the new root module
+  `update_initial_network.py`; the entry script imports it from there. `process_network.py` keeps the one-time
+  network preprocessing (and loses its now unused `shutil` import).
+- The `micro_only` branch with the downtown node limit is left as it is: I-13.
+- Checks: compiles; pyflakes reports no new warnings; CRLF kept.
+- Verification (2026-11-08): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes; no generated files in `git status`.
+
 ---
 
 ## Continuing work in a fresh clone

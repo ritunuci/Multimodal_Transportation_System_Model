@@ -34,6 +34,7 @@ Paths are relative to the codebase root.
 | I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | Closed (2026-11-08) | 2026-11-07 |
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Open | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
+| I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 
 ---
 
@@ -144,6 +145,16 @@ Paths are relative to the codebase root.
   of FleetPy here.
 - **Fix:** run upstream `7019960` unchanged in an environment with its original requirements: 88 there confirms
   the environment as the cause, and 90 can then be recorded as the expected value in this environment.
+
+### I-13: The `micro_only` scenario uses the downtown San Diego node limit
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).
+- **What:** in `update_network_files.update_network_files`, the `micro_only` branch sets the microtransit waiting
+  time only on waiting links with `from_node <= 731`, the last walk node of the downtown San Diego network, and
+  without a study-area check. The `micro` branch uses `from_node <= 1098` for Lemon Grove.
+- **Impact:** none on the current results: the run only uses `microtransit_running_scenarios = ["micro"]`. A
+  Lemon Grove `micro_only` run would leave the waiting time of walk nodes 732-1098 at their initial values.
+- **Fix:** decided to leave it for now (2026-11-08). If `micro_only` is needed: use the same Lemon Grove check as
+  the `micro` branch, then test it.
 
 ---
 

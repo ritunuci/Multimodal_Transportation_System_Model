@@ -23,9 +23,6 @@ import collections
 from itertools import islice
 
 
-import get_auto_skims as auto
-import get_microtransit_skims as mt
-import get_walk_transit_skims as wt
 import network_algorithms as n_a
 
 

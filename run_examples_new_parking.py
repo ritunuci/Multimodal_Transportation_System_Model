@@ -9,7 +9,6 @@ import multiprocessing as mp
 from collections import OrderedDict
 import time
 import datetime
-import get_microtransit_skims as mt
 import csv
 import numpy as np
 import math
@@ -17,11 +16,8 @@ import math
 # ---------------------------------------------------------
 import fleetpy_runner as fleetpy
 
-import inte_sys_mode_choice
 import convergence_test as conv_test
 import network_algorithms as n_a
-import get_auto_skims as auto
-import get_walk_transit_skims as wt
 import binary_choice as b_c
 import random
 import update_network_files as update
@@ -29,7 +25,7 @@ import output_performance_metrics as output_metrics
 import folder_directory as fld_dir
 import testing_scenario_creation as tst_scen_create
 import pre_process.dictionary_initialization as dict_init
-from pre_process import process_network as p_n
+import update_initial_network as init_net
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
 import mtsm_paths as mtsm
 from tools.check_inputs import check_inputs
@@ -365,7 +361,7 @@ if __name__ == "__main__":
 
                             num_headway_scen = 0
                             for headway in headway_scenarios: #put bus design parameter in the most outer loop
-                                p_n.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
+                                init_net.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
                                 tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,debug_mode,test_scenario,TRPartA,BayesianOptimization)
                                 num_headway_scen+=1
                                 num_virstop_scen = 0

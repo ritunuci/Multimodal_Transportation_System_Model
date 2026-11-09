@@ -68,8 +68,8 @@ and the increase in travelers' mobility logsum due to microtransit. For each can
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
 | `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
 | `get_microtransit_skims.py`, `get_walk_transit_skims.py`, `get_auto_skims.py`, `network_algorithms.py` | Super-networks and least generalized cost paths |
-| `binary_choice.py`, `inte_sys_mode_choice.py`, `convergence_test.py` | Mode choice and convergence |
-| `update_network_files.py`, `output_performance_metrics.py`, `testing_scenario_creation.py`, `folder_directory.py`, `pre_process/` | Network updates, output metrics, scenario and folder setup, preprocessing |
+| `binary_choice.py`, `convergence_test.py` | Mode choice and convergence |
+| `update_network_files.py`, `update_initial_network.py`, `output_performance_metrics.py`, `testing_scenario_creation.py`, `folder_directory.py`, `pre_process/` | Network updates, output metrics, scenario and folder setup, preprocessing |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`) |
 | `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`) and the outputs of a run |
 | `fleetpy/` | FleetPy, upstream version `7019960` with a few local changes listed in [`fleetpy/LOCAL_CHANGES.md`](fleetpy/LOCAL_CHANGES.md) |
