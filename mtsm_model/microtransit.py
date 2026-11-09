@@ -17,13 +17,15 @@ from mtsm_model import config
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
 
 
-def run_fleetpy_and_update_networks(*, cc, sc, log_level, log_f, cfg, repositioning, microtransit_run, headway,
-                                    virstop, M_operating_hrs, fleet_size, study_area, iteration, demand_file,
-                                    new_fleetpy_demand):
+def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, iteration):
     """Run FleetPy (cc, sc: its constant and scenario configs), write the final super-networks with its waiting and
     travel times (update_network_files), and read its rejection rate and waiting time.
     Returns wait_times (per period), rejection_rate, last_rejection_rate, last_fleetpy_wait_time.
-    demand_file and new_fleetpy_demand are used only by the commented-out "Ritun added" block."""
+    area: scenarios.StudyArea, scen: scenarios.Scenario; demand_file and new_fleetpy_demand are used only by the
+    commented-out "Ritun added" block."""
+    sc, repositioning, microtransit_run, headway = scen.sc, scen.repositioning, scen.microtransit_run, scen.headway
+    virstop, M_operating_hrs, fleet_size = scen.virstop, scen.M_operating_hrs, scen.fleet_size
+    study_area, demand_file, new_fleetpy_demand = area.study_area, area.demand_file, area.new_fleetpy_demand
     LOG_F = log_f
     print("running FleetPy....according to demand component result")
     print(f"{Fore.RED}Running Fleetpy from position 2 {Style.RESET_ALL}")

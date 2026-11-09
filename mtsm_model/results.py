@@ -13,17 +13,36 @@ import numpy as np
 import output_performance_metrics as output_metrics
 from mtsm_model import config
 
+# the columns of the evaluation file
+EVALUATION_FIELDNAMES = ["test_scen","dscrptn","study_area","repositioning","microtrasnit",'hdwy (min)', 'vir_stop (%)', 'flt_sz', 'op_periods',"tt_agents", "car_users", "car_mode_share (%)",
+                         "trsit_mode_users (W_M_F)","transit_mode_share (%)","pure_M_users","M_mode_share (%)","M_trips","pure_F_users","F_mode_share (%)","F_trips","pure_walk_users",
+                         "W_mode_share (%)","walk_users","M_pls_F_users","M_pls_F_mode_share (%)","F_oper_cost ($)", "M_oper_cost ($)", "F_revenue ($)","M_revenue ($)","Total_T_revenue ($)","tot_sub ($)",
+                         "sub_per_F_trip ($)","sub_per_F_rider ($)","sub_per_M_trip ($)","sub_per_M_rider ($)","sub_per_T_trip ($)","sub_per_T_rider ($)","sub_per_M_pax_mile ($/mi)","sub_per_F_pax_mile ($/mi)","sub_per_T_pax_mile ($/mi)",
+                         "sub_per_M_VMT ($/mi)","sub_per_F_VMT ($/mi)","sub_per_T_VMT ($/mi)",
+                         "tt_auto_gas_cost ($)","auto_gas_cost_per_mile ($/mi)",
+                         "avg_M_fare", "avg_F_fare", "avg_T_fare", "avg_auto_gas_cost",
+                         "tt_o_pckt_cost ($)","tt_mob_lgsm_inc_with_micro", "tt_gen_cost",
+                         "tt_mode_switch", "M_avg_wait_time (s)", "F_avg_wait_time (s)","avg_walk_time (s)","tt_walk_time (h)",
+                         "car_VMT (mi)","M_VMT (mi)","M_PMT (mi)","M_PMT/M_VMT","F_VMT (mi)","F_PMT (mi)","F_PMT/F_VMT","tt_VMT (mi)",
+                         "tt_walk_dist (mi)", "wghted_acc_emp_5_min","wghted_acc_emp_10_min","wghted_acc_emp_15_min", "M_util_rate (%)","M_veh_occ","M_avg_speed (mph)","cnvrg (iter, sm_sq_per_diff)", "fleetpy_wait", "rejection_rate"]
 
-def write_converged_results(*, writer, cfg, test_scenario, study_area, repositioning, microtransit_run, headway,
-                            virstop, fleet_size, M_operating_hrs, F_operating_hrs, operating_periods,
-                            num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen, tt_num_agents,
-                            output_folder, transit_line_dist_list, transit_line_duration, transit_link_vmt,
-                            transit_link_pax, off_micro_transit_link_vmt, off_micro_transit_link_pax,
-                            tot_weighted_5_min_F, tot_weighted_10_min_F, tot_weighted_15_min_F, state, base, totals,
-                            iter_sum_sq_per_diff, last_fleetpy_wait_time, last_rejection_rate):
-    """Compute and write the results of the converged scenario. writer: the DictWriter of the evaluation file.
+
+def write_converged_results(cfg, area, scen, writer, *, state, base, totals, iter_sum_sq_per_diff,
+                            last_fleetpy_wait_time, last_rejection_rate):
+    """Compute and write the results of the converged scenario (area: scenarios.StudyArea, scen:
+    scenarios.Scenario). writer: the DictWriter of the evaluation file.
     headway and microtransit_run are changed only inside this function (for the base case and "micro_only").
     The fare scenario's description is known for test_scenario 0-10."""
+    test_scenario, repositioning, microtransit_run, headway = scen.test_scenario, scen.repositioning, scen.microtransit_run, scen.headway
+    virstop, fleet_size, M_operating_hrs, F_operating_hrs = scen.virstop, scen.fleet_size, scen.M_operating_hrs, scen.F_operating_hrs
+    operating_periods = scen.operating_periods
+    num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
+    tot_weighted_5_min_F, tot_weighted_10_min_F, tot_weighted_15_min_F = scen.tot_weighted_5_min_F, scen.tot_weighted_10_min_F, scen.tot_weighted_15_min_F
+    study_area, tt_num_agents, output_folder = area.study_area, area.tt_num_agents, area.output_folder
+    transit_line_dist_list, transit_line_duration = area.transit_line_dist_list, area.transit_line_duration
+    transit_link_vmt, transit_link_pax = area.transit_link_vmt, area.transit_link_pax
+    off_micro_transit_link_vmt, off_micro_transit_link_pax = area.off_micro_transit_link_vmt, area.off_micro_transit_link_pax
+
     transit_tt_VMT = 0
     transit_tt_VMT_base = 0
     F_oper_cost = 0

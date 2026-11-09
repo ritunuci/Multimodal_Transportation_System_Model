@@ -1,6 +1,6 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 7 are done
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Steps 1 to 8 are done
 (see "Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
@@ -214,6 +214,20 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
    - kept as one function for now: its parts share many intermediate values (operating costs, revenues, the base
      case). Splitting it (costs / individual results / evaluation rows) is possible later, with the same checks.
 8. **Scenario loop and `run_model`** → `scenarios.py`, `model.py`. The entry script shrinks to about 50 lines.
+   **Done 2026-11-09** (`REPRODUCED`; the entry script has 43 lines):
+   - `scenarios.py`: `load_study_area()` -> `StudyArea` (folders, networks, travelers, link dicts) and the
+     generator `scenarios()`, which runs the seven nested loops and yields one `Scenario` per model run. Being a
+     generator, it does the outer loops' work (FRT headway in the initial networks, FRT-only accessibility,
+     FleetPy's scenario config, emptying FleetPy's log) at the same point as before. Written by hand, then every
+     code line compared with the entry script (the only differences: `area.` / `scen.`, the generator, and
+     the new constants `NUM_WALK_NODES` / `MICROTRANSIT_NODE_OFFSET`);
+   - `model.py`: `run_model()` (study areas, evaluation file, scenarios, run-time messages) and `run_scenario()`
+     (the iteration loop: networks -> `run_iteration` -> convergence test -> results or FleetPy);
+   - the four functions of steps 6-7 take `(cfg, area, scen, ...)` and unpack into the old local names at their
+     start, so their bodies are unchanged; the evaluation file's columns are `results.EVALUATION_FIELDNAMES`
+     (checked equal to the old list);
+   - removed two variables that were set and never read (`iter_agent_selected_mode`, `running_avg_rejection_rate`)
+     and an unused `import time`.
 9. **Docs:** `progress.md`, the README layout table, a short code map in the README.
 
 ## Decisions (2026-11-09)

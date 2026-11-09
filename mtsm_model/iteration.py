@@ -3,7 +3,7 @@
 For every traveler: networks, least-cost paths, costs, logit probabilities, one random draw, and the trip legs
 of the chosen mode, which go into FleetPy's demand file (microtransit legs) and the FRT demand file. Moved
 unchanged from run_examples_new_parking.py (the random draws happen in the same order); the arguments are the
-values the code read from the surrounding scenario loop. They will be bundled in a Scenario object (step 8).
+values the code read from the surrounding scenario loop, now taken from the StudyArea and Scenario objects.
 
 """
 import csv
@@ -13,17 +13,22 @@ from mtsm_model import config, paths, choice, trip_legs
 from mtsm_model.state import IterationTotals
 
 
-def run_iteration(*, iteration, cfg, test_scenario, study_area, microtransit_run, headway, virstop, fleet_size,
-                  M_operating_hrs, operating_periods, num_virstop_scen, num_fleet_size_scen,
-                  num_operating_periods_scen, agent_list_, tt_num_agents, auto_network, initial_super_network,
-                  final_super_network, MicroTransitNodes, path_cache, state, base, iter_choice_prob,
-                  total_rejection_penalty, wait_times, transit_link_vmt, transit_link_pax, off_micro_transit_link_vmt,
-                  off_micro_transit_link_pax, F_transit_trips, new_fleetpy_demand):
+def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, total_rejection_penalty, wait_times):
     """Run the choice model for all travelers; write the FRT demand file (F_transit_trips) and FleetPy's demand
     file (new_fleetpy_demand). Updates state, base (iteration 0 of the first virtual-stop / fleet / period
     scenario), path_cache, the link VMT dicts and iter_choice_prob (iter_agent_choice_prob[iteration]). wait_times:
     FleetPy's average waiting time per period from the previous iteration (None in iteration 0, where it is not
-    read). Returns the IterationTotals."""
+    read). area: scenarios.StudyArea, scen: scenarios.Scenario. Returns the IterationTotals."""
+    test_scenario, microtransit_run, headway, virstop = scen.test_scenario, scen.microtransit_run, scen.headway, scen.virstop
+    fleet_size, M_operating_hrs, operating_periods = scen.fleet_size, scen.M_operating_hrs, scen.operating_periods
+    num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
+    path_cache, F_transit_trips = scen.path_cache, scen.F_transit_trips
+    study_area, agent_list_, tt_num_agents, auto_network = area.study_area, area.agent_list_, area.tt_num_agents, area.auto_network
+    initial_super_network, final_super_network = area.initial_super_network, area.final_super_network
+    MicroTransitNodes, new_fleetpy_demand = area.MicroTransitNodes, area.new_fleetpy_demand
+    transit_link_vmt, transit_link_pax = area.transit_link_vmt, area.transit_link_pax
+    off_micro_transit_link_vmt, off_micro_transit_link_pax = area.off_micro_transit_link_vmt, area.off_micro_transit_link_pax
+
     totals = IterationTotals()
 
     change_mode_ag_list=[]

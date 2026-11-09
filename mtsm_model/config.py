@@ -48,6 +48,11 @@ PM_END = 20 * 3600
 PARKING_FACTOR_PEAK = 1  # AM and PM
 PARKING_FACTOR_OFFPEAK = 0.5  # MD and EV
 
+# ---- Lemon Grove super-network: walk node i (0..NUM_WALK_NODES-1) is microtransit node MICROTRANSIT_NODE_OFFSET + i,
+# and FleetPy node i ----
+NUM_WALK_NODES = 1099
+MICROTRANSIT_NODE_OFFSET = 1171
+
 # ---- gas cost ----
 F_GAS_PER_MILE = 0.350  # The fuel cost for the CNG buses averaged $0.35 per mile
 M_GAS_PER_MILE = 0.550  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile
