@@ -1,13 +1,13 @@
 import mtsm_paths as mtsm
 
 
-def determine_dolders(study_area,zonal_partition):
+def determine_dolders(study_area):
 
     # STALE: demand_folder="D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
     # STALE: final_network_folder="D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
     # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
     if study_area == "lemon_grove":
-        # self-contained data tree mtsm_data/ (docs/progress.md); zonal partition is not supported there
+        # self-contained data tree mtsm_data/ (docs/progress.md)
         demand_folder = mtsm.LG_DEMAND_DIR
         fleetpy_demand_folder = mtsm.LG_FLEETPY_DEMAND_DIR
         initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR

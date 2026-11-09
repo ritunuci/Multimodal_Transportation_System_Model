@@ -198,7 +198,7 @@ def get_fleetpy_demand_nodes():
     f.close()
     return demand_nodes_fleetpy
 
-def create_nodes_emp_dict(study_area,zonal_partition=False,debug=False):
+def create_nodes_emp_dict(study_area,debug=False):
 
 
     network_folder = mtsm.REGION_DIR
@@ -358,17 +358,13 @@ def acc_dijsktra_source_to_all_heap(graph, initial, verbose=False):
     #         print("number of nodes:",num_nodes)
     return visited_temp, path
 
-def accessibility_calculation(zonal_partition,headway,virstop,microtransit,time_period,all_node_emp,MGRA_node_dict,M_operating_hrs=False,fleet_size=False,study_area=False,test_scen=False,debug=False):
+def accessibility_calculation(headway,virstop,microtransit,time_period,all_node_emp,MGRA_node_dict,M_operating_hrs=False,fleet_size=False,study_area=False,test_scen=False,debug=False):
 
     if study_area == "lemon_grove":
         # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
-        if zonal_partition == True:
-            mtsm.not_self_contained("zonal_partition=True")
-            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network_4_zones" % str(study_area)
-        else:
-            # read below only for microtransit="non_micro", which the run does not pass to this function
-            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network" % str(study_area)
-            initial_network_folder = None
+        # read below only for microtransit="non_micro", which the run does not pass to this function
+        # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_full_transit_network" % str(study_area)
+        initial_network_folder = None
         final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
         # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
         output_folder = mtsm.LG_OUTPUT_DIR
@@ -512,7 +508,7 @@ def accessibility_calculation(zonal_partition,headway,virstop,microtransit,time_
     return tot_weighted_5_min,tot_weighted_10_min,tot_weighted_15_min
 
 
-def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,zonal_partition,test_scen):
+def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,test_scen):
     all_node_emp, MGRA_node_dict = create_nodes_emp_dict(study_area)
     # microtransit == "micro"
     avg_period_total_weighted_5_min = 0
@@ -530,7 +526,7 @@ def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_opera
     # for microtransit in microtransit_setup_scenarios:
     #     if microtransit != "non_micro":
     for time_period in time_periods:
-        tot_weighted_5_min,tot_weighted_10_min, tot_weighted_15_min= accessibility_calculation(zonal_partition,headway, virstop, microtransit_run, time_period, all_node_emp, MGRA_node_dict, M_operating_hrs,fleet_size,study_area,test_scen,debug=False)
+        tot_weighted_5_min,tot_weighted_10_min, tot_weighted_15_min= accessibility_calculation(headway, virstop, microtransit_run, time_period, all_node_emp, MGRA_node_dict, M_operating_hrs,fleet_size,study_area,test_scen,debug=False)
         avg_period_total_weighted_5_min += tot_weighted_5_min
         avg_period_total_weighted_10_min += tot_weighted_10_min
         avg_period_total_weighted_15_min += tot_weighted_15_min
@@ -543,7 +539,7 @@ def all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_opera
     return avg_period_total_weighted_5_min,avg_period_total_weighted_10_min,avg_period_total_weighted_15_min
 
 
-def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,zonal_partition=False,debug=False):
+def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,debug=False):
     all_node_emp, MGRA_node_dict = create_nodes_emp_dict(study_area)
     # microtransit == "micro"
     # for microtransit in microtransit_scenarios:
@@ -559,11 +555,7 @@ def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,zonal_pa
     demand_nodes_fleetpy = get_fleetpy_demand_nodes()
     if study_area == "lemon_grove":
         # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/demand_folder"
-        if zonal_partition == False:
-            initial_network_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
-        else:
-            mtsm.not_self_contained("zonal_partition=True")
-            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network_4_zones"
+        initial_network_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
         # initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
         # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/final_network"
         # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/example_network"

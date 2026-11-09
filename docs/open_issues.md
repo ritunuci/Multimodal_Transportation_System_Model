@@ -37,6 +37,7 @@ Paths are relative to the codebase root.
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Open | 2026-11-08 |
+| I-16 | The aggregate convergence test is unfinished | Low | Open | 2026-11-09 |
 
 ---
 
@@ -83,7 +84,12 @@ Paths are relative to the codebase root.
   are identical `FRT_only_scen` / `non_micro` rows (the fixed-route-only baseline). Row 3 is the microtransit scenario.
 - **Impact:** none on the optimizer objectives, which come from row 3. The optimizer also reads values from row 2
   (`rows[2][...]`), so if the duplicate is a mistake, it matters which of the two rows is meant to be there.
-- **To decide:** is the duplicate intended? If not, find where the rows are written in `run_examples_new_parking.py`.
+- **Where (found 2026-11-09):** `run_examples_new_parking.py` writes the `FRT_only_scen` row twice in the same
+  pass, both under `if test_scenario == TRPartA_test_scenario_list[0]`: once inside the block that writes the
+  fixed-route-only individual results (line 1380), and once more right after that block (line 1427). The two
+  `writerow` calls are not identical in their source, but give identical rows here (line numbers as of
+  restructuring step 1, `docs/entry_script_refactor_plan.md`).
+- **To decide:** is the duplicate intended? If not, remove one of the two `writerow` calls.
   Any change to the file's rows also changes the optimizer's row indices and the reference results, so it needs a new
   reference.
 
@@ -145,7 +151,8 @@ Paths are relative to the codebase root.
 - **Impact:** none on the current results: the run only uses `microtransit_running_scenarios = ["micro"]`. A
   Lemon Grove `micro_only` run would leave the waiting time of walk nodes 732-1098 at their initial values.
 - **Fix:** decided to leave it for now (2026-11-08). If `micro_only` is needed: use the same Lemon Grove check as
-  the `micro` branch, then test it.
+  the `micro` branch, then test it. The user decided on 2026-11-09 to keep `micro_only` and `non_micro` as
+  options in the restructuring (`docs/entry_script_refactor_plan.md`).
 
 ### I-14: The preprocessing code still contains downtown San Diego
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
@@ -174,6 +181,22 @@ Paths are relative to the codebase root.
   column name instead of position; then remove them from the startup check. `input_parameter.csv` is a frozen
   input, so `MANIFEST.csv` must be regenerated and the change recorded in `docs/progress.md`. The optimizer change
   needs a test run of the optimizer (I-03).
+
+### I-16: The aggregate convergence test is unfinished
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).
+- **What:** `run_examples_new_parking.py` has two convergence tests, chosen by `indiv_converg_test`. The run uses
+  the individual-level test (`True`). The aggregate-level test (`False`, `convergence_test.convergence_test`)
+  would compare only the microtransit mode share with the previous iteration. The user wants to keep it for
+  later (2026-11-09), so it was kept and commented, not removed. It does not work as it is:
+  - its call is commented out, and nothing computes `M_share` / `M_share_pre`, so `converged` never becomes True;
+  - the stop at `maximum_iteration` is only in the individual-level branch, so the iteration loop would never end;
+  - `convergence_test()` sets `converged` only when the test passes; when the share changed by more than 1% the
+    `return` raises `UnboundLocalError`.
+- **Impact:** none on results; `indiv_converg_test = True` is fixed in the code. Setting it to `False` would make
+  the model loop forever.
+- **Fix (when it is needed):** compute the microtransit mode share per iteration (`M_share`, and `M_share_pre`
+  from the previous iteration), restore the call, move the `maximum_iteration` stop out of the individual branch so
+  that it applies to both tests, and set `converged = False` at the start of `convergence_test()`. Then test it.
 
 ---
 

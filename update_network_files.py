@@ -15,7 +15,7 @@ def copy_csv(filename,iteration):
     df.to_csv(output_file_dic,index=False)
 
 
-def update_network_files(repositioning,microtransit,headway,virstop,M_operating_hrs,fleet_size,study_area,zonal_partition,iteration=False,iteration_debug=False,aggregation="census_track"):
+def update_network_files(repositioning,microtransit,headway,virstop,M_operating_hrs,fleet_size,study_area,iteration=False,aggregation="census_track"):
     # path_all_
 
     from itertools import islice
@@ -50,8 +50,6 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     print("census_tract_node", len(census_tract_node))
     print("node_census_tract", len(node_census_tract))
 
-    if iteration_debug==True:
-        num_of_nodes_walking_network=len(node_census_tract)
 
     for time_period in ["AM", "MD", "PM", "EV"]:
         census_tract_tt_wait_time[time_period] = OrderedDict()
@@ -290,13 +288,8 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
     if study_area == "lemon_grove":
         # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
-        if zonal_partition == True:
-            mtsm.not_self_contained("zonal_partition=True")
-            # STALE: initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/initial_network_folder/initial_network_4_zones" % str(
-            # STALE:     study_area)
-        else:
-            initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
-            # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
+        initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
+        # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
     if study_area == "lemon_grove":
         final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
     else:
@@ -320,40 +313,6 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
             initial_super_network_dir = os.path.join(initial_network_folder,"initial_super_network_%s_hw_%s_virstop_%s.csv" % (str(microtransit), str(headway), str(virstop)))# initial_super_network[microtransit][headway][virstop][time_period]=n_a.read_super_network(initial_super_network_dir)
             #os.path.join(initial_network_folder,"initial_super_network_%s_hw_%s_virstop_%s.csv" % (str(microtransit), str(headway), str(virstop)))  # initial_super_network[microtransit][headway][virstop][time_period]=n_a.read_super_network(initial_super_network_dir)
 
-            if iteration_debug==True:
-                debug_final_super_network_dir = os.path.join(final_network_folder,"debug_iter_%s_final_super_network_%s_fsize_%s_ophr_%s_%s_hw_%s_virstop_%s.csv" % (str(iteration),str(microtransit),str(fleet_size),str(M_operating_hrs),str(time_period), str(headway),str(virstop)))
-                with open(debug_final_super_network_dir, 'w+', newline='') as csvfile_debug:
-                    fieldnames = ["from_node", "to_node", "distance", "travel_time", "link_type","route"]
-                    writer = csv.DictWriter(csvfile_debug, fieldnames=fieldnames)
-                    writer.writeheader()
-
-                    with open(initial_super_network_dir) as f_W:
-                        csvreader = csv.DictReader(f_W)
-                        # depart_time	start	end	trip_id
-
-                        for data in csvreader:
-                            #             print(data)
-                            link_type = int(data["link_type"])
-                            from_node = int(data["from_node"])
-                            to_node = int(data["to_node"])
-                            distance = float(data["distance"])
-                            travel_time = float(data["travel_time"])
-                            route = int(data["route"])
-
-                            if link_type == 5:  # adjust the microtransit waiting time according to fleetpy results
-                                if study_area == "lemon_grove":
-                                    if from_node <= 1098:
-                                        census_tract = node_census_tract[from_node]
-                                        travel_time = census_tract_avg_wait_time[time_period][census_tract]  # update the connector link travel time as the waiting time
-
-                            if link_type == 4:
-                                travel_time = travel_time * time_detour_ratio[time_period]
-
-                            writer.writerow({'from_node': from_node, 'to_node': to_node, 'distance': distance,
-                                             'travel_time': travel_time, "link_type": link_type,"route":route})
-
-                        f_W.close()
-                csvfile_debug.close()
 
 
             with open(final_super_network_dir, 'w+', newline='') as csvfile:
@@ -396,44 +355,6 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
 
             initial_super_network_dir = os.path.join(initial_network_folder, "initial_super_network_%s_virstop_%s.csv" % (str(microtransit), str(virstop)))  # initial_super_network[microtransit][headway][virstop][time_period]=n_a.read_super_network(initial_super_network_dir)
 
-            if iteration_debug == True:
-                debug_final_super_network_dir = os.path.join(final_network_folder,
-                                                             "debug_iter_%s_final_super_network_%s_fsize_%s_ophr_%s_%s_hw_%s_virstop_%s.csv" % (
-                                                             str(iteration), str(microtransit), str(fleet_size),
-                                                             str(M_operating_hrs), str(time_period), str(headway),
-                                                             str(virstop)))
-                with open(debug_final_super_network_dir, 'w+', newline='') as csvfile_debug:
-                    fieldnames = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]
-                    writer = csv.DictWriter(csvfile_debug, fieldnames=fieldnames)
-                    writer.writeheader()
-
-                    with open(initial_super_network_dir) as f_W:
-                        csvreader = csv.DictReader(f_W)
-                        # depart_time	start	end	trip_id
-
-                        for data in csvreader:
-                            #             print(data)
-                            link_type = int(data["link_type"])
-                            from_node = int(data["from_node"])
-                            to_node = int(data["to_node"])
-                            distance = float(data["distance"])
-                            travel_time = float(data["travel_time"])
-                            route = int(data["route"])
-
-                            if link_type == 5:  # adjust the microtransit waiting time according to fleetpy results
-                                if from_node <= 731:
-                                    census_tract = node_census_tract[from_node]
-                                    travel_time = census_tract_avg_wait_time[time_period][
-                                        census_tract]  # update the connector link travel time as the waiting time
-
-                            if link_type == 4:
-                                travel_time = travel_time * time_detour_ratio[time_period]
-
-                            writer.writerow({'from_node': from_node, 'to_node': to_node, 'distance': distance,
-                                             'travel_time': travel_time, "link_type": link_type, "route": route})
-
-                        f_W.close()
-                csvfile_debug.close()
 
             with open(final_super_network_dir, 'w+', newline='') as csvfile:
                 fieldnames = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]

@@ -1,7 +1,7 @@
 # Plan: restructure the entry script (`run_examples_new_parking.py`)
 
-Status: **proposed 2026-11-09, waiting for the user's decisions** (section "Decisions needed"). No code has been
-changed for this plan yet. The starting point is commit `92ae5fa`.
+Status: **in progress.** The user's decisions are recorded under "Decisions" (2026-11-09). Step 1 is done (see
+"Steps"). The starting point was commit `92ae5fa`; line numbers below refer to it unless stated otherwise.
 
 ## Why
 
@@ -113,7 +113,19 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
 30 minutes.
 
 1. **Remove code that never runs** (depends on decision 1), and the commented-out code, except the block under "Must
-   be kept". Git keeps the history.
+   be kept". Git keeps the history. **Done 2026-11-09** (`REPRODUCED`):
+   - removed `test_repositioning` with FleetPy's old example branch, `iteration_debug`, `zonal_partition` (also as
+     parameters of the helper functions; the evaluation file keeps the name `..._zonal_partition_False.csv`, which
+     the optimizer reads), and the commented-out code of the entry script, plus the commented-out
+     `indiv_convergence_test_binary_choice` in `convergence_test.py`;
+   - kept and commented the aggregate convergence test (`indiv_converg_test`, `convergence_test()`), which is
+     unfinished (`docs/open_issues.md`, I-16);
+   - kept `micro_only` and `non_micro`;
+   - kept the block under "Must be kept" and its import. It is now 4 spaces less indented, like the code
+     around it, because the `if test_repositioning==False:` around the whole run was removed (lines 1553-1579
+     after step 1);
+   - the helper modules' `__main__` test harnesses and their commented-out code were not changed; the
+     standalone scripts were not changed (they still call the old signatures; nothing runs them).
 2. **Config and constants** → `config.py`.
 3. **State dataclasses** → `state.py`. This is a mechanical rename of the dictionaries
    (`agent_O[rq_id]` → `state.agent_O[rq_id]`): the same objects, the same order.
@@ -124,7 +136,20 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
 8. **Scenario loop and `run_model`** → `scenarios.py`, `model.py`. The entry script shrinks to about 50 lines.
 9. **Docs:** `progress.md`, the README layout table, a short code map in the README.
 
-## Decisions needed
+## Decisions (2026-11-09)
+
+1. Remove `test_repositioning`, `iteration_debug`, the `zonal_partition` branches and the commented-out code (except
+   the block under "Must be kept"). **Keep the aggregate convergence test** (`indiv_converg_test == False`), with
+   enough comments to understand it later. **Keep `micro_only` and `non_micro` as options.**
+2. (a) Keep the ability to run several scenarios in one run.
+3. Keep the name `run_examples_new_parking.py` for now.
+4. Package name `mtsm_model/`.
+
+Correction to the question below: `non_micro` is not only a scenario type. `initial_super_network["non_micro"]`
+is the fixed-route-only network used for every traveler's "without microtransit" path, and the results switch to
+`"non_micro"` to write the fixed-route-only base case. It could not have been removed.
+
+## Decisions needed (as asked)
 
 1. **Which branches that never run are removed in step 1?**
    - **Recommended to remove:**
