@@ -1,32 +1,8 @@
-import random
-import math
-import os
-
-import pandas as pd
-import numpy as np
-import os
-import networkx as nx
-
 import networkx as nx
 import csv
-import math
-# from scipy.misc import derivative
-import scipy.integrate as integrate
-import numpy as np
-import random
 from collections import OrderedDict
-import matplotlib.pyplot as plt
-import scipy
-import random
 import collections
-from itertools import islice
-from math import radians, cos, sin, asin, sqrt
 import heapq
-import datetime
-import mtsm_paths as mtsm
-
-from setuptools import setup
-from Cython.Build import cythonize
 
 class Link(object):
 
@@ -65,35 +41,10 @@ class Link(object):
         self.link_type=link_type
 
 
-class Node(object):
-    """
-    Class for handling node object in Transportation Networks
-
-    Parameters
-    ----------
-    node_id:    int
-                identifier of a node
-
-    """
-
-    def __init__(self, node_id=0, node_XCOORD=0, node_YCOORD=0, is_stop_only=False, census_tract=0, node_in_fleetpy=0,
-                 is_demand_node=0):
-
-        self.node_id = node_id
-        self.node_XCOORD = node_XCOORD
-        self.node_YCOORD = node_YCOORD
-        self.is_stop_only = is_stop_only
-        self.census_tract = census_tract
-        self.node_in_fleetpy = node_in_fleetpy
-        self.is_demand_node = is_demand_node
-
 class Agent(object):
 
     def __init__(self, rq_id=0, rq_O=0, rq_D=0, rq_time=0, bt_c_0=0, bt_c_ivt=0,bt_c_gas=0,bt_t_0=0, bt_t_wk=0, bt_m_wt=0,bt_f_wt=0,bt_m_ivt=0,
                  bt_f_ivt=0,bt_f_trfer=0,bt_t_fr=0,income=0,transit_15min_acc=0,transit_pass=0,parking_dur=0):
-    # def __init__(self, rq_id=0, rq_O=0, rq_D=0, rq_time=0, bt_c_0=0, bt_c_ivt=0, bt_c_gas=0, bt_t_0=0, bt_t_wk=0,
-    #              bt_m_wt=0, bt_f_wt=0, bt_m_ivt=0,
-    #              bt_f_ivt=0, bt_f_trfer=0, bt_t_fr=0, income=0, transit_15min_acc=0, transit_pass=0):
 
         # ['rq_time', 'start','end','request_id', "bt_c_0","bt_c_ivt","bt_c_gas","bt_t_0","bt_t_wk","bt_t_wt","bt_m_ivt","bt_f_ivt","bt_f_trfer","bt_t_fr"]
         #trip related attributes
@@ -108,7 +59,6 @@ class Agent(object):
         #transit mode attributes
         self.bt_t_0 = bt_t_0
         self.bt_t_wk = bt_t_wk
-        # self.bt_t_wt = bt_t_wt
         self.bt_m_wt = bt_m_wt
         self.bt_f_wt = bt_f_wt
         self.bt_m_ivt = bt_m_ivt
@@ -143,7 +93,6 @@ def read_request(request_file):
             #read transit mode attributes
             bt_t_0 = float(data["bt_t_0"])
             bt_t_wk = float(data["bt_t_wk"])
-            # bt_t_wt = float(data["bt_t_wt"])
             bt_m_wt = float(data["bt_m_wt"])
             bt_f_wt = float(data["bt_f_wt"])
 
@@ -161,11 +110,6 @@ def read_request(request_file):
                            bt_c_gas=bt_c_gas,bt_t_0=bt_t_0, bt_t_wk=bt_t_wk, bt_m_wt=bt_m_wt,bt_f_wt=bt_f_wt,bt_m_ivt=bt_m_ivt,
                           bt_f_ivt=bt_f_ivt,bt_f_trfer=bt_f_trfer, bt_t_fr=bt_t_fr,income=income,
                            transit_15min_acc=transit_15min_acc,transit_pass=transit_pass,parking_dur=parking_dur)
-            # agent_ = Agent(rq_id=request_id, rq_O=start, rq_D=end, rq_time=rq_time, bt_c_0=bt_c_0, bt_c_ivt=bt_c_ivt,
-            #                bt_c_gas=bt_c_gas, bt_t_0=bt_t_0, bt_t_wk=bt_t_wk, bt_m_wt=bt_m_wt, bt_f_wt=bt_f_wt,
-            #                bt_m_ivt=bt_m_ivt,
-            #                bt_f_ivt=bt_f_ivt, bt_f_trfer=bt_f_trfer, bt_t_fr=bt_t_fr, income=income,
-            #                transit_15min_acc=transit_15min_acc, transit_pass=transit_pass)
             agent_list.append(agent_)
 
     return agent_list
@@ -199,9 +143,7 @@ def read_network(Network_file):
 def read_super_network(Network_file):
     with open(Network_file) as f:
         csvreader = csv.DictReader(f)
-        nodes = {}
         links = []
-        node_list = []
 
         for data in csvreader:
             origin_node = int(data["from_node"])
@@ -279,28 +221,6 @@ def read_network_dist(Network_file):
 
     return graph
 
-
-def distance(lat1, lat2, lon1, lon2):
-    # The math module contains a function named
-    # radians which converts from degrees to radians.
-    lon1 = radians(lon1)
-    lon2 = radians(lon2)
-    lat1 = radians(lat1)
-    lat2 = radians(lat2)
-
-    # Haversine formula
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-
-    c = 2 * asin(sqrt(a))
-
-    # Radius of earth in kilometers. Use 3956 for miles
-    r = 6371
-
-    # calculate the result in meters
-    return (c * r) * 1000
-
 def dijsktra_source_to_all(graph, initial,verbose=False):
     visited_temp = {initial: 0}  # dictionary: {node: the weights from source to a visited node}
     path = {}
@@ -359,99 +279,6 @@ def dijsktra_source_to_all(graph, initial,verbose=False):
     return visited_temp,path
 
 
-def generalized_dijsktra_source_to_all(graph, agent, verbose=False):
-    initial = agent.rq_O
-    ag_bt_0 = agent.bt_0
-    ag_bt_wk = agent.bt_wk  #
-    ag_bt_wt = agent.bt_wt  #
-    ag_bt_m_ivt = agent.bt_m_ivt  #
-    ag_bt_f_ivt = agent.bt_f_ivt  #
-    ag_bt_f_trfer = agent.bt_f_trfer  #
-    ag_bt_fare = agent.bt_fare
-
-    # agent(rq_id=request_id, rq_O=start, rq_D=end, rq_time=rq_time, bt_0=bt_0,
-    # bt_wk=bt_wk,bt_wt=bt_wt,bt_m_ivt=bt_m_ivt, bt_f_ivt=bt_f_ivt, bt_f_trfer=bt_f_trfer,bt_fare=bt_fr)
-
-    visited_temp = {initial: 0}  # dictionary: {node: the weights from source to a visited node}
-    path = {}
-    try:
-        (nodes, edges) = (set(graph.nodes), graph.edges)
-        costs = graph.costs
-    except:  # for NetworkX
-        (nodes, edges) = (set(graph.nodes()), graph)  # Siwei: set - sort the graph.nodes
-        costs = []
-    #     num_nodes=0
-    #     if verbose == True:
-    #         print("----------------nodes------------------",nodes)
-    while nodes:
-        if verbose == True:
-            print("----------------------------------")
-        min_node = None
-        # find node with minimum distance value, and close this node
-        for node in nodes:  # nodes is the list of unexplored nodes
-            if node in visited_temp:  # if node is in the list of unexplored nodes and is visited (dist to that "node" is calculated)
-                if verbose == True:
-                    print("---------------minimum-nodes------------------", min_node, node)
-                if min_node is None:
-                    min_node = node
-
-                    if verbose == True:
-                        print("---------------minimum-nodes------------------", min_node)
-
-                    if verbose == True:
-                        print("Selected:", min_node, visited_temp[node])
-                elif visited_temp[node] < visited_temp[min_node]:
-                    min_node = node
-                    if verbose == True:
-                        print("Selected:", min_node, visited_temp[node])
-
-        if min_node is None:
-            break
-
-        #         if min_node=='289':
-        #             verbose=False
-
-        nodes.remove(min_node)  # find the min_node to close, remove the recent close node from the open node list
-        permanent = visited_temp[min_node]
-        if min_node in edges:
-            for edge in edges[min_node]:
-                # pre_route=..
-                link_travel_time = graph.get_edge_data(min_node, edge)[
-                    "object"].free_flow_time  # Siwei: get link travel time
-                link_type_ = graph.get_edge_data(min_node, edge)["object"].link_type  # Siwei: get link travel time
-                if link_type_ == 0:  # walking link
-                    generalized_link_travel_time = ag_bt_wk * link_travel_time
-                if link_type_ == 1:  # transit link
-                    generalized_link_travel_time = ag_bt_f_ivt * link_travel_time
-                if link_type_ == 2:  # fixed route transit waiting link
-                    generalized_link_travel_time = ag_bt_wt * link_travel_time
-                if link_type_ == 3:  # transfer link
-                    generalized_link_travel_time = ag_bt_f_trfer * link_travel_time
-                if link_type_ == 4:  # microtransit in-vehicle-travel time link
-                    generalized_link_travel_time = ag_bt_m_ivt * link_travel_time
-                if link_type_ == 5:  # microtransit waiting link
-                    generalized_link_travel_time = ag_bt_wt * link_travel_time
-
-                # temp = permanent + link_travel_time #Siwei: temp -> the criteria used for closing a node: travel time for UE
-
-                temp = permanent + generalized_link_travel_time  # Siwei: temp -> the criteria used for closing a node: travel time for UE
-
-                #                 print("temp",temp)
-                if edge not in visited_temp or temp < visited_temp[edge]:
-                    visited_temp[edge] = temp
-                    path[edge] = (min_node, link_travel_time)
-
-                if verbose == True:
-                    try:
-                        print("Permanent:", permanent, "i:", min_node, "j:", edge, "Link cost:", link_travel_time,
-                              "Temp Cost:", visited_temp[edge])
-                    except:
-                        aaa = 0
-    #                 num_nodes+=1
-    #         print("number of nodes:",num_nodes)
-    return visited_temp, path
-
-
 def dijsktra_all_to_all(graph, verbose=False):
     visited_temp_all = OrderedDict()  # dictionary: {node: source to all shortest path }
     path_all = OrderedDict()
@@ -497,31 +324,14 @@ def dijsktra_all_to_all(graph, verbose=False):
 
 
 def getTrajectory_O_to_D(origin, destination, path, t_visited, currenttime=0, timeinterval=5.0):
-    # try:
-    #     j=(destination, (t_visited[destination])/timeinterval,t_visited[destination])  # This line goes wrong.
-    # except:
-    #     pass
-    ###############
-    ##Danny's version
-    #################
-    #     j=(destination)
-    #     rtrajectory = [j]
-    #     prenode = j[0]
 
     rtrajectory = []
     prenode = destination
     rtrajectory.append(prenode)
-    #     if origin=='172' and destination =='45242':
-    #         print("path",path,"\n","\n")
-    #         print("t_visited",t_visited)
 
-    # 0317 Siwei
-    # path[edge] = (min_node,ts_at_node, link_travel_time, link_travel_marginal_time) # (close node, close time, link cost, link marginal cost)
+    # path[node] = (previous node, cost / time / distance at node, link type, route)
     for k in range(0, len(path)):
 
-        #         if origin=='172' and destination =='289':
-        #             print("prenode",prenode,"\n")
-        #             print("rtrajectory",rtrajectory)
 
         if prenode != origin:
             try:
@@ -530,7 +340,6 @@ def getTrajectory_O_to_D(origin, destination, path, t_visited, currenttime=0, ti
                 print("prenode", prenode, "path", path, "origin", origin, "destination", destination, "t_visited",
                       t_visited)
                 raise e
-            #             nextnode=path[prenode][0]
             if nextnode == origin:
                 rtrajectory.append(path[prenode])
                 break
@@ -547,7 +356,6 @@ def getTrajectory_O_to_D(origin, destination, path, t_visited, currenttime=0, ti
     rtrajectory_.append(origin)
     rtrajectory_.reverse()
     rtrajectory_.append(destination)
-    # rtrajectory[-1]=(destination, rtrajectory[0][1]+visited[destination])
     return rtrajectory_
 
 
@@ -568,7 +376,6 @@ def get_link_type_from_O_to_D(origin, destination, path):
             except Exception as e:
                 print("origin",origin,"prenode", prenode, "path", path,"len(path)",len(path), "origin", origin, "destination", destination)
                 raise e
-            #             nextnode=path[prenode][0]
             if nextnode == origin:
                 rtrajectory.append(path[prenode])
                 break
@@ -597,9 +404,8 @@ def get_link_type_from_O_to_D(origin, destination, path):
 ############################################################
 def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,microtransit_start_fare,microtransit_dist_based_rate, PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,mode,verbose=False, total_rejection_penalty=0, iteration=0):  # mode="T" or mode="C"
 
-    # Define a class Node to store the values
+    # heap entry: a node and its generalized cost so far
 
-    ##microtransit_dist_based_rate =0.00123
     class Heap_Node:
         def __init__(self, v, temp):
             self.node_id = v
@@ -612,8 +418,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     # agent attributes
     initial = agent.rq_O
     dest = agent.rq_D
-    #     print("initial",initial,"dest",dest)
-    rq_id = agent.rq_id
     rq_time = agent.rq_time
     # agent attributes
     # car mode attributes
@@ -623,7 +427,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     # transit mode attributes
     bt_t_0 = agent.bt_t_0  #
     bt_t_wk = agent.bt_t_wk  #
-    # bt_t_wt = agent.bt_t_wt  #
 
     bt_m_wt = agent.bt_m_wt
     bt_f_wt = agent.bt_f_wt
@@ -634,7 +437,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     bt_t_fr = agent.bt_t_fr
 
     parking_dur = agent.parking_dur
-    # transit_pass = agent.transit_pass
 
     ########################################
     # Peak and off-peak factor of the microtransit fares. The model has one fare structure, the former fare
@@ -658,11 +460,9 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     if mode == "T":  # transit mode initial travel cost
         visited_temp = {initial: bt_t_0}  # dictionary: {node: the weights from source to a visited node}
         heapq.heappush(heap_q, Heap_Node(initial, bt_t_0))
-    #         transit_visited_temp={initial: 0} #document the microtransit travel time
     if mode == "C":  # car mode initial travel cost
         visited_temp = {initial: bt_c_0}  # dictionary: {node: the weights from source to a visited node}
         heapq.heappush(heap_q, Heap_Node(initial, bt_t_0))
-    #         auto_visited_temp = {initial: 0} #document the auto vehicle travel time
     time_visited_temp = {initial: 0}  # document the travel time
     dist_visited_temp = {initial: 0}  # document the travel distance
     fare_visited_temp = {initial: 0}  # document the travel fare
@@ -683,23 +483,10 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
         (nodes, edges) = (set(graph.nodes()), graph)  # Siwei: set - sort the graph.nodes
         costs = []
 
-    num_transit_links = 0
-    # node_path_link_type_list=OrderedDict()
-    # node_path_link_type_list[initial]=[]
     while heap_q:  # while there exist an element in the heap
         # 11/02: Heap
-        if verbose == True:
-            print("----------------------------------")
-        #         min_node = None
-
-        #             break
-
-        #         nodes.remove(min_node)  # find the min_node to close, remove the recent close node from the open node list
         smallest_node = heapq.heappop(heap_q)  # 11/02: Heap: get the smallest value item from the heap
-        #         print("smallest_node",smallest_node)
         min_node = smallest_node.node_id
-        #         print("HEAP: min_node",min_node)
-        # node_path_link_type_list[min_node]=[]
         permanent = visited_temp[min_node] #generalized cost at generalized cost minimum node
         time_permanent = time_visited_temp[min_node] # cumulative travel time at generalized cost minimum node
         dist_permanent = dist_visited_temp[min_node] # cumulative distance at generalized cost minimum node
@@ -717,7 +504,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
             else:
                 IsMicroLink, IsFixedLink=False,False
             for edge in edges[min_node]:
-                # pre_route=..
                 link_travel_time = graph.get_edge_data(min_node, edge)["object"].free_flow_time  # Siwei: get link travel time
                 link_type_ = graph.get_edge_data(min_node, edge)["object"].link_type  # Siwei: get link type
                 link_length = graph.get_edge_data(min_node, edge)["object"].length  # Siwei: get link length (meters)
@@ -730,23 +516,18 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                 if link_type_ == 0:  # walking link
                     generalized_link_travel_time = bt_t_wk * link_travel_time / 60  # time parameter transfer from sec to min
                 if link_type_ == 1:  # transit link
-                    # num_transit_links += 1
                     generalized_link_travel_time = bt_f_ivt * link_travel_time / 60
                 if link_type_ == 2:  # fixed route transit waiting link
                     if study_area == "lemon_grove":
                         if min_node <= 1098 and 1099 <= edge <= 1170:
                             if link_type_pre != 2:
                                 transit_fare = transit_fare_set
-                            else:
-                                aaa=0
                         else:
                             transit_fare = 0
-                    # transit_fare = transit_fare * 1
 
                     if IsMicroLink==True:  # transfer discount after a microtransit trip leg
                         transit_fare = transit_fare_set* Micro2FixedFactor
                     generalized_link_travel_time = bt_f_wt * link_travel_time / 60 + bt_t_fr * transit_fare
-                    # transit_fare=0 ##10/15/2024 Siwei
                 if link_type_ == 3:  # transfer link
                     generalized_link_travel_time = bt_f_trfer * link_travel_time / 60
                 if link_type_ == 4:  # microtransit in-vehicle-travel time link
@@ -754,7 +535,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     if IsFixedLink == True:  # transfer discount after a fixed-route trip leg
                         micro_fare = micro_fare * Fixed2MicroFactor
                     generalized_link_travel_time = bt_m_ivt * link_travel_time / 60 + bt_t_fr * micro_fare
-                    # micro_fare=0 ##10/15/2024 Siwei
                 else:
                     micro_fare = 0
                 if link_type_ == 5:  # microtransit waiting link
@@ -784,8 +564,6 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     F_fare_temp = F_fare_permanent + transit_fare
                     M_fare_temp = M_fare_permanent + micro_fare
 
-                    # if transit_fare>0:
-                    #     print("ageng_rq_id", rq_id,"mode",mode,"min_node",min_node,"edge",edge,"link_type",link_type_,"link_type_pre",link_type_pre, "cumulative", fare_temp,"T_cost",transit_fare,"M_cost",micro_fare)
                     transit_fare = 0
                     auto_gas_temp = 0
                 else:
@@ -796,12 +574,9 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     M_fare_temp = 0
 
 
-                #                 print("temp",temp)
                 if edge not in visited_temp or temp < visited_temp[edge]:
                     visited_temp[edge] = temp
                     path[edge] = (min_node, temp, link_type_,route)
-                    # node_path_link_type_list[edge]=node_path_link_type_list[min_node]
-                    # node_path_link_type_list[edge].append(link_type_)
                     heapq.heappush(heap_q,Heap_Node(edge, temp))  # 11/02: Heap: push the new calculated nodes into heap
 
                     time_visited_temp[edge] = time_temp
@@ -814,45 +589,8 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     time_path[edge] = (min_node, time_temp, link_type_,route)
                     dist_path[edge] = (min_node, dist_temp, link_type_,route)
 
-                if verbose == True:
-                    try:
-                        print("Permanent:", permanent, "i:", min_node, "j:", edge, "Link cost:",
-                              generalized_link_travel_time, "Temp Cost:", visited_temp[edge])
-                    except:
-                        aaa = 0
-    if mode =="T":
-        aaa=1
 
     if mode == "C":
         return parking_dur, bt_c_gas, visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path, dist_path
     else:
         return visited_temp, time_visited_temp, dist_visited_temp, fare_visited_temp, F_fare_visited_temp, M_fare_visited_temp, path, time_path, dist_path
-
-    # return visited_temp, time_visited_temp, dist_visited_temp, fare_visited_temp, F_fare_visited_temp, M_fare_visited_temp, path, time_path, dist_path
-
-#############################################################
-#Multi-modal generalized cost shortest path algorithm
-############################################################
-
-if __name__ == '__main__':
-    start_time = datetime.datetime.now()
-    print("start time:",start_time)
-    mtsm.not_self_contained("network_algorithms.py standalone test")
-    # STALE: new_network_folder = "D:/Ritun/Siwei_Micro_Transit/Ritun/Latest network 2"
-    for headway in [20]:  # [20,30,60]
-        for percentage in [50]:  # [50,75,100]
-            final_super_network_edges = os.path.join(new_network_folder, "super_network_%s_virstop_%s_hw_edges.csv" % (str(percentage), str(headway)))
-
-    super_network=read_super_network(final_super_network_edges)
-    demand_file = os.path.join(demand_folder, "debug_trips_nodes_study_area_with_beta.csv")
-    agent_list=read_request(demand_file)
-    # agent=agent_list[0]
-    mode="T"
-
-    for agent in agent_list:
-        visited_temp, time_visited_temp, dist_visited_temp, fare_visited_temp, path, time_path=generalized_cost_dijsktra_OD_heap(super_network, agent, mode, verbose=False)
-    # generalized_cost_dijsktra_OD_heap()
-
-    timeatfinished = datetime.datetime.now()
-    processingtime = timeatfinished - start_time
-    print("integrated system model run finished....... end time is:", timeatfinished, "run time is: ", processingtime)

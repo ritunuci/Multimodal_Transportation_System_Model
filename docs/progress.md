@@ -29,6 +29,7 @@ earlier entries; commits before that date use the old names.
 | 2e | Remove the `TRPartA`, `BayesianOptimization` and `debug_mode` branches (columns kept in the input file) | Done 2026-11-09 (open: I-15) |
 | 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | Done 2026-11-09 (open: I-16, I-17) |
 | 2g | Only fare scenario 10: drop fare scenarios 0-9, the fare-scenario loop and the path cache (column kept) | Done 2026-11-09 (open: I-15, I-19) |
+| 2h | Remove unused code from `network_algorithms.py` (skim functions left untouched) | Done 2026-11-09 (open: I-20) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -751,6 +752,25 @@ file was renamed, so the code still builds the same file names. The folder const
 - Verification (2026-11-09): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes; no new pyflakes warnings; `network_algorithms.py` reviewed with
   `git diff -w`.
+
+## Unused code removed from `network_algorithms.py` (2026-11-09)
+
+- Which parts a run uses was found from the import graph of the entry script and the attributes each importer
+  uses: `read_request` (+ `Agent`), `read_super_network` (+ `Link`), `getTrajectory_O_to_D`,
+  `generalized_cost_dijsktra_OD_heap` (+ `get_link_type_from_O_to_D`).
+- Removed: class `Node`, `distance()` and `generalized_dijsktra_source_to_all()` (used nowhere, also not by the
+  standalone scripts); the `__main__` test harness (it stopped at once and used an old signature); 22 of 27 import
+  statements (duplicates and unused: pandas, numpy, scipy, matplotlib, setuptools, Cython, ...; the environment is
+  unchanged); in the functions the run uses: the `verbose` print blocks (every caller passes `verbose=False`; the
+  parameter stays), no-op `aaa = ...` lines, two unused locals (`rq_id`, `num_transit_links`) and two in
+  `read_super_network`, and commented-out code. 858 -> 596 lines.
+- Not changed (user's decision): the five functions only the skim modules use, and class `Link` (I-20).
+- Checks: the five skim functions and `Link` are byte-identical to before; `Agent`, `read_request` and the two
+  trajectory functions are identical in code (comments only removed); in `read_super_network` and
+  `generalized_cost_dijsktra_OD_heap` the only code differences are the removed lines listed above;
+  `get_auto_skims` and `get_walk_transit_skims` still import; CRLF kept.
+- Verification (2026-11-09): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes.
 
 ---
 
