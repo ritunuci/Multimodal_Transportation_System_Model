@@ -51,7 +51,7 @@ for vehicle repositioning).
 
        python run_examples_new_parking.py
 
-   A run takes about 30 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
+   A run takes about 7–10 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
    `lemon_grove_evaluation_zonal_partition_False.csv`.
 5. **Check reproducibility (optional).** With the reference parameters and seed listed in
    [`docs/reference_results/README.md`](docs/reference_results/README.md), `python tools/compare_reference.py` must

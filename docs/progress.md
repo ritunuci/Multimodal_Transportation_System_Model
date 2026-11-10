@@ -30,6 +30,7 @@ earlier entries; commits before that date use the old names.
 | 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | Done 2026-11-09 (open: I-16, I-17) |
 | 2g | Only fare scenario 10: drop fare scenarios 0-9, the fare-scenario loop and the path cache (column kept) | Done 2026-11-09 (open: I-15, I-19) |
 | 2h | Remove unused code from `network_algorithms.py` (skim functions left untouched) | Done 2026-11-09 (open: I-20) |
+| 2i | Faster least-cost path search (`docs/path_search_speedup_plan.md`): run 18 -> 7 min | Done 2026-11-10 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -772,6 +773,22 @@ file was renamed, so the code still builds the same file names. The folder const
 - Verification (2026-11-09): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes.
 
+## Faster least-cost path search (2026-11-10)
+
+- Why: a timed run showed that `network_algorithms.generalized_cost_dijsktra_OD_heap` takes 86% of the run time
+  (926 of 1,077 s; 67,356 calls). Plan, measurements and the user's decisions: `docs/path_search_speedup_plan.md`.
+- Code (only this function; same signature and return values): the two path flags for the transfer discounts
+  (`IsMicroLink`, `IsFixedLink`) are carried along the path instead of walking back to the origin for every node
+  (`get_link_type_from_O_to_D` removed); outdated heap entries of settled nodes are skipped; each network's links
+  are read once into lists (`out_links`, kept on the graph); the unused set of all nodes is no longer built;
+  `Heap_Node` is at module level with `__slots__`, its comparison unchanged (ties come out as before). New guard:
+  a negative generalized link cost stops the run with a `ValueError` (the search relies on costs >= 0).
+- Console only: the debug line `WAITING LINK = 180` can appear fewer times (outdated entries are not processed
+  again); the reference run prints it 0 times.
+- Verification (2026-11-10): passed. Equivalence test against the old function: 3,742 travelers × 14 cases, 52,388
+  calls, 0 differing (dicts also in key order). Full seed-0 run under the I/O tracer: **6 min 58 s** (before
+  17 min 53 s); `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
+
 ---
 
 ## Continuing work in a fresh clone
@@ -782,7 +799,7 @@ file was renamed, so the code still builds the same file names. The folder const
 3. Python: the `fleetpy` conda env (`C:\Users\Autonomicity\.conda\envs\fleetpy\python.exe`; in VS Code:
    *Python: Select Interpreter*). Gurobi with a valid license must be installed (used by repositioning).
 4. Check that everything is in place: `python tools/check_inputs.py` must report that all frozen inputs match.
-5. Optional full check (about 30 min): `python run_examples_new_parking.py`, then `python tools/compare_reference.py`, which must print
+5. Optional full check (about 7–10 min): `python run_examples_new_parking.py`, then `python tools/compare_reference.py`, which must print
    `REPRODUCED`.
 6. Working rules:
    - After **any** code change, do a full run with the reference inputs and seed; `compare_reference.py` must print `REPRODUCED`

@@ -359,61 +359,37 @@ def getTrajectory_O_to_D(origin, destination, path, t_visited, currenttime=0, ti
     return rtrajectory_
 
 
-def get_link_type_from_O_to_D(origin, destination, path):
+class Heap_Node:
+    """Heap entry of generalized_cost_dijsktra_OD_heap: a node and its generalized cost so far. Compared by the cost
+    only, so on equal costs the heap's internal order decides, as before."""
+    __slots__ = ("node_id", "temp")
 
-    rtrajectory = []
-    prenode = destination
-    rtrajectory.append(prenode)
+    def __init__(self, v, temp):
+        self.node_id = v
+        self.temp = temp
 
-    IsMicroLink=False
-    IsFixedLink=False
-    for k in range(0, len(path)):
+    # define a comparator method to compare distance of two nodes
+    def __lt__(self, other):
+        return self.temp < other.temp
 
-        if prenode != origin:
 
-            try:
-                nextnode = path[prenode][0]
-            except Exception as e:
-                print("origin",origin,"prenode", prenode, "path", path,"len(path)",len(path), "origin", origin, "destination", destination)
-                raise e
-            if nextnode == origin:
-                rtrajectory.append(path[prenode])
-                break
-            rtrajectory.append(path[prenode])
-            prenode = nextnode
+def out_links(graph):
+    """The outgoing links of each node: [(to_node, travel time (s), link type, length (m), route)], in the graph's
+    order. Built at the first call for a network and kept on the graph (a network is not changed after reading)."""
+    links = graph.graph.get("out_links")
+    if links is None:
+        links = {}
+        for node, nbrs in graph.adjacency():
+            links[node] = [(to_node, d["object"].free_flow_time, d["object"].link_type, d["object"].length, d["object"].route)
+                           for to_node, d in nbrs.items()]
+        graph.graph["out_links"] = links
+    return links
 
-    destination_ = rtrajectory[0]
-    rtrajectory_ = []
-    pre_node = destination_
-    for node, time, link_type,route in rtrajectory[1:]:
-        rtrajectory_.append((pre_node, time, link_type,route))
-        pre_node = node
-        if link_type==4:
-            IsMicroLink=True
-        if link_type==1:
-            IsFixedLink = True
-
-    rtrajectory_.append(origin)
-    rtrajectory_.reverse()
-    rtrajectory_.append(destination)
-
-    return IsMicroLink, IsFixedLink, rtrajectory_
 
 #############################################################
 #Multi-modal generalized cost shortest path algorithm
 ############################################################
 def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,microtransit_start_fare,microtransit_dist_based_rate, PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,mode,verbose=False, total_rejection_penalty=0, iteration=0):  # mode="T" or mode="C"
-
-    # heap entry: a node and its generalized cost so far
-
-    class Heap_Node:
-        def __init__(self, v, temp):
-            self.node_id = v
-            self.temp = temp
-
-        # define a comparator method to compare distance of two nodes
-        def __lt__(self, other):
-            return self.temp < other.temp
 
     # agent attributes
     initial = agent.rq_O
@@ -476,17 +452,19 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     transit_fare=0
     micro_fare=0
     gas_cost=0
-    try:
-        (nodes, edges) = (set(graph.nodes), graph.edges)
-        costs = graph.costs
-    except:  # for NetworkX
-        (nodes, edges) = (set(graph.nodes()), graph)  # Siwei: set - sort the graph.nodes
-        costs = []
+    links = out_links(graph)
+    # has the path to a node used a microtransit link (type 4) / an FRT link (type 1)? (for the transfer discounts)
+    micro_on_path = {initial: False}
+    fixed_on_path = {initial: False}
+    settled = set()  # nodes taken from the heap: their least cost and path are final (link costs >= 0)
 
     while heap_q:  # while there exist an element in the heap
         # 11/02: Heap
         smallest_node = heapq.heappop(heap_q)  # 11/02: Heap: get the smallest value item from the heap
         min_node = smallest_node.node_id
+        if min_node in settled:  # an outdated heap entry of a settled node
+            continue
+        settled.add(min_node)
         permanent = visited_temp[min_node] #generalized cost at generalized cost minimum node
         time_permanent = time_visited_temp[min_node] # cumulative travel time at generalized cost minimum node
         dist_permanent = dist_visited_temp[min_node] # cumulative distance at generalized cost minimum node
@@ -498,16 +476,9 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
         if min_node == dest:  # OD shortest path
             break
 
-        if min_node in edges:
-            if min_node!=initial:
-                IsMicroLink, IsFixedLink,rtrajectory_ = get_link_type_from_O_to_D(initial, min_node, path)
-            else:
-                IsMicroLink, IsFixedLink=False,False
-            for edge in edges[min_node]:
-                link_travel_time = graph.get_edge_data(min_node, edge)["object"].free_flow_time  # Siwei: get link travel time
-                link_type_ = graph.get_edge_data(min_node, edge)["object"].link_type  # Siwei: get link type
-                link_length = graph.get_edge_data(min_node, edge)["object"].length  # Siwei: get link length (meters)
-                route = graph.get_edge_data(min_node, edge)["object"].route  # Siwei: get link length (meters)
+        if min_node in links:
+            IsMicroLink, IsFixedLink = micro_on_path[min_node], fixed_on_path[min_node]
+            for edge, link_travel_time, link_type_, link_length, route in links[min_node]:  # link length in meters
 
                 if min_node!= initial:
                     (min_node_pre, temp_pre, link_type_pre,route_pre)=path[min_node]
@@ -555,6 +526,9 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                 else:
                     gas_cost=0
 
+                if generalized_link_travel_time < 0:  # the search needs link costs >= 0 (settled nodes are final)
+                    raise ValueError("negative generalized link cost %s on link %s -> %s (link type %s), traveler %s"
+                                     % (generalized_link_travel_time, min_node, edge, link_type_, agent.rq_id))
                 temp = permanent + generalized_link_travel_time  # Siwei: temp -> the criteria used for closing a node: travel time for UE
                 time_temp = time_permanent + link_travel_time
                 dist_temp = dist_permanent + link_length
@@ -577,6 +551,8 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                 if edge not in visited_temp or temp < visited_temp[edge]:
                     visited_temp[edge] = temp
                     path[edge] = (min_node, temp, link_type_,route)
+                    micro_on_path[edge] = IsMicroLink or link_type_ == 4
+                    fixed_on_path[edge] = IsFixedLink or link_type_ == 1
                     heapq.heappush(heap_q,Heap_Node(edge, temp))  # 11/02: Heap: push the new calculated nodes into heap
 
                     time_visited_temp[edge] = time_temp
