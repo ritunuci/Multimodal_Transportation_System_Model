@@ -13,4 +13,5 @@ model.run_model().
 - results: the results of a converged scenario (costs, subsidies, accessibility, individual results, evaluation rows).
 - scenarios: the study area's data (StudyArea) and the scenario loops (Scenario).
 - model: run_model() (study areas, scenarios) and run_scenario() (iterate until converged, then the results).
+- helpers/: the helper modules these call (network_algorithms, binary_choice, convergence_test, fleetpy_runner, ...).
 """

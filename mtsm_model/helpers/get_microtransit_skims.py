@@ -21,7 +21,7 @@ import collections
 from itertools import islice
 
 
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 import mtsm_paths as mtsm
 
 def get_node_ct(study_area):

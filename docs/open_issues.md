@@ -237,7 +237,7 @@ Paths are relative to the codebase root.
   `network_algorithms.py`).
 - **What:** `get_auto_skims.py` and `get_walk_transit_skims.py` (all-to-all shortest paths: skims) are not imported by
   a model run; only the standalone `run_examples_*` scripts in `standalone_scripts/New folder/` import them. Five
-  functions of `network_algorithms.py` exist only for them: `read_network`, `read_walking_network`,
+  functions of `network_algorithms.py` (since 2026-11-10 in `mtsm_model/helpers/`) exist only for them: `read_network`, `read_walking_network`,
   `read_network_dist`, `dijsktra_source_to_all`, `dijsktra_all_to_all`. They were left untouched in the cleanup of
   `network_algorithms.py` (user's decision), because the reference run does not execute them and could not check a
   change.

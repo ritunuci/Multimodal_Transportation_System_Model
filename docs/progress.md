@@ -32,6 +32,7 @@ earlier entries; commits before that date use the old names.
 | 2h | Remove unused code from `network_algorithms.py` (skim functions left untouched) | Done 2026-11-09 (open: I-20) |
 | 2i | Faster least-cost path search (`docs/path_search_speedup_plan.md`): run 18 -> 7 min | Done 2026-11-10 |
 | 2j | Reuse the car and FRT paths across iterations: run 7 -> 5 min | Done 2026-11-10 |
+| 2k | Move the helper modules from the root to `mtsm_model/helpers/` | Done 2026-11-10 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -812,6 +813,27 @@ file was renamed, so the code still builds the same file names. The folder const
 - Verification (2026-11-10): passed. Full seed-0 run (with stage timers): **5 min 08 s** (before 6 min 58 s); car and
   FRT searches 3,742 each (before 22,452); `compare_reference.py` **32 identical, `REPRODUCED`**;
   `check_inputs.py` passes; no pyflakes warnings in the three files.
+
+## Helper modules moved to `mtsm_model/helpers/` (2026-11-10)
+
+- Moved with `git mv` (history kept): the 10 helper modules a run uses, `network_algorithms`, `binary_choice`,
+  `convergence_test`, `folder_directory`, `fleetpy_runner`, `output_performance_metrics`,
+  `testing_scenario_creation`, `update_initial_network`, `update_network_files`, `get_microtransit_skims`; new
+  `mtsm_model/helpers/__init__.py`.
+- Kept at the root (user's decisions, as recommended): the entry script and `Bayesian_optimization_script.py`;
+  `mtsm_paths.py`, because it derives every folder from its own location (`CODE_ROOT`) and is also used by
+  `tools/`, `pre_process/` and the optimizer; `get_auto_skims.py` and `get_walk_transit_skims.py`, left for the I-20
+  decision.
+- Imports: every whole-line `import X as Y` of these modules became `from mtsm_model.helpers import X as Y` (aliases
+  kept, so no other code changed): 52 lines, in `mtsm_model/` (13), the moved modules (4), the two skim scripts (2)
+  and, by the user's decision, `standalone_scripts/` (33: the four `New folder/run_examples_new*.py` and
+  `test_integrated_sys.py`; only import lines). Commented-out imports were left as they were. None of the moved
+  modules depends on its own location (`__file__` is used only in `mtsm_paths.py` and `tools/`).
+- Docs: README layout table and code map (new helper table), `mtsm_model/__init__.py`, `standalone_scripts/README.md`,
+  I-20. Historical entries in this file keep the old paths.
+- Verification (2026-11-10): passed. All model and helper modules and the two skim scripts import; the edited
+  standalone scripts compile; no import of the old root names is left. Full seed-0 run under the I/O tracer:
+  4 min 43 s; `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

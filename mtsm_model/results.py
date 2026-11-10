@@ -10,7 +10,7 @@ import os
 
 import numpy as np
 
-import output_performance_metrics as output_metrics
+from mtsm_model.helpers import output_performance_metrics as output_metrics
 from mtsm_model import config
 
 # the columns of the evaluation file

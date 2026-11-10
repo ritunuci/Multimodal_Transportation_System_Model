@@ -7,7 +7,7 @@ choice stays in the iteration loop, so that the travelers draw in the same order
 import math
 from dataclasses import dataclass
 
-import binary_choice as b_c
+from mtsm_model.helpers import binary_choice as b_c
 from mtsm_model import config
 
 

@@ -23,7 +23,7 @@ import collections
 from itertools import islice
 
 
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 
 
 def binary_logit_model(gen_cost_auto, gen_cost_T):

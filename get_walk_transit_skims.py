@@ -20,7 +20,7 @@ import scipy
 import random
 import collections
 from itertools import islice
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 
 def get_walk_transit_skims(walk_transit_network):
 

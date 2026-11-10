@@ -10,9 +10,9 @@ import os
 import pandas as pd
 from colorama import Fore, Style
 
-import fleetpy_runner as fleetpy
+from mtsm_model.helpers import fleetpy_runner as fleetpy
 import mtsm_paths as mtsm
-import update_network_files as update
+from mtsm_model.helpers import update_network_files as update
 from mtsm_model import config
 from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
 

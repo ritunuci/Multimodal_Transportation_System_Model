@@ -1,5 +1,5 @@
 import inte_sys_mode_choice
-import get_microtransit_skims as mt
+from mtsm_model.helpers import get_microtransit_skims as mt
 import os
 
 network_folder = 'D:/Ritun/Siwei_Micro_Transit/Data/0719_input'

@@ -2,7 +2,7 @@ import os
 import csv
 from collections import OrderedDict
 import heapq
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 import pandas as pd
 import mtsm_paths as mtsm
 

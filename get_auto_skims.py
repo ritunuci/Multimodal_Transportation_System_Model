@@ -21,7 +21,7 @@ import random
 import collections
 from itertools import islice
 
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 
 def get_auto_time_skims(edges_dir):
     auto_network_graph = n_a.read_network(edges_dir)

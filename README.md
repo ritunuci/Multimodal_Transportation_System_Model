@@ -73,10 +73,9 @@ and the increase in travelers' mobility logsum due to microtransit. For each can
 | `run_examples_new_parking.py` | Entry script: fixes the hash seed, reads `input_parameter.csv`, sets the random seeds, and calls `mtsm_model.model.run_model()` |
 | `mtsm_model/` | The model (see [Code map](#code-map)) |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
-| `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
-| `get_microtransit_skims.py`, `get_walk_transit_skims.py`, `get_auto_skims.py`, `network_algorithms.py` | Super-networks and least generalized cost paths |
-| `binary_choice.py`, `convergence_test.py` | Mode choice and convergence |
-| `update_network_files.py`, `update_initial_network.py`, `output_performance_metrics.py`, `testing_scenario_creation.py`, `folder_directory.py`, `pre_process/` | Network updates, output metrics, scenario and folder setup, preprocessing |
+| `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
+| `get_walk_transit_skims.py`, `get_auto_skims.py` | Walk-transit and car skims; not used by a run (`docs/open_issues.md`, I-20) |
+| `pre_process/` | Preprocessing of networks and demand |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`) |
 | `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`) and the outputs of a run |
 | `fleetpy/` | FleetPy, upstream version `7019960` with a few local changes listed in [`fleetpy/LOCAL_CHANGES.md`](fleetpy/LOCAL_CHANGES.md) |
@@ -117,12 +116,23 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | `paths.py` | A traveler's networks and least generalized cost paths (car and FRT paths are reused across iterations) |
 | `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
 | `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
-| `microtransit.py` | Running FleetPy (through `fleetpy_runner.py`) and updating the super-networks with its results |
+| `microtransit.py` | Running FleetPy (through `helpers/fleetpy_runner.py`) and updating the super-networks with its results |
 | `results.py` | The results of a converged scenario: costs, subsidies, accessibility, individual results, evaluation rows |
 
-The modules at the repository root (`network_algorithms.py`, `binary_choice.py`, `update_network_files.py`,
-`output_performance_metrics.py`, ...) are the helpers these modules call. How the code got this structure, and what
-was checked to keep the results identical, is in [`docs/entry_script_refactor_plan.md`](docs/entry_script_refactor_plan.md).
+The helpers these modules call are in `mtsm_model/helpers/` (moved from the repository root on 2026-11-10; imported
+as `from mtsm_model.helpers import network_algorithms as n_a`, ...):
+
+| Helper | Content |
+|---|---|
+| `network_algorithms.py` | Reading the super-networks and travelers; the least generalized cost path search |
+| `binary_choice.py`, `convergence_test.py` | Mode choice and convergence |
+| `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
+| `update_network_files.py`, `get_microtransit_skims.py`, `update_initial_network.py` | Updating the super-networks with FleetPy's results; microtransit skims |
+| `output_performance_metrics.py`, `testing_scenario_creation.py`, `folder_directory.py` | Output metrics, scenario and folder setup |
+
+`mtsm_paths.py` (all folder locations) stays at the root: it derives them from its own location. How the code got
+this structure, and what was checked to keep the results identical, is in
+[`docs/entry_script_refactor_plan.md`](docs/entry_script_refactor_plan.md).
 
 ## Documentation
 

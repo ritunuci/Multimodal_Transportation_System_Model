@@ -9,7 +9,7 @@ import datetime
 import os
 from collections import OrderedDict
 
-import convergence_test as conv_test
+from mtsm_model.helpers import convergence_test as conv_test
 from mtsm_model import config
 from mtsm_model.state import BaseCase, TravelerState
 from mtsm_model.scenarios import load_study_area, scenarios

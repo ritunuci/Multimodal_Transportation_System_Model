@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import os
 import csv
-import get_microtransit_skims as mt
+from mtsm_model.helpers import get_microtransit_skims as mt
 
 from csv import reader, writer
 import io

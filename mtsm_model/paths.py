@@ -10,7 +10,7 @@ between iterations; iteration.run_iteration searches them in a scenario's first 
 from dataclasses import dataclass, replace
 from typing import Any
 
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 from mtsm_model import config
 
 

@@ -3,7 +3,7 @@
 Moved unchanged from run_examples_new_parking.py.
 
 """
-import network_algorithms as n_a
+from mtsm_model.helpers import network_algorithms as n_a
 from mtsm_model import config
 
 
