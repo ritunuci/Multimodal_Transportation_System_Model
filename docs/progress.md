@@ -813,6 +813,26 @@ file was renamed, so the code still builds the same file names. The folder const
   FRT searches 3,742 each (before 22,452); `compare_reference.py` **32 identical, `REPRODUCED`**;
   `check_inputs.py` passes; no pyflakes warnings in the three files.
 
+## Later option: compile the path search with Numba (held, 2026-11-10)
+
+The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
+about half of the 5-minute run (152 of 310 s); FleetPy, the mode choice and writing the results would not get faster.
+
+- Idea: compile `network_algorithms.generalized_cost_dijsktra_OD_heap` with Numba (machine code at the first call;
+  no C compiler needed). Cython was ruled out: it needs a C compiler (Microsoft Visual C++ Build Tools, not on this
+  machine) and a build step on every machine. Numba is not installed in the `fleetpy` env (it would also bring
+  `llvmlite`; `env/` and the env rebuild test would need updating).
+- Needed for byte-identical results: the networks as flat arrays (the compiled form of `out_links`); a copy of
+  Python's `heapq` algorithm comparing on cost only, as `Heap_Node` does (Numba's own `heapq` and tuples break ties
+  differently); every expression in the same order, without fast math; the returned dicts rebuilt in today's key
+  order by a small Python step; the `WAITING LINK` print, the `study_area` check and the negative-cost guard in a
+  Python wrapper.
+- Estimate (not measured): the function 4-8x faster with the dict rebuilding, the run from about 5 to about 3 min.
+- Cost: a second, compiled copy of the fare rules (every fare change must be made there too; harder to read and
+  debug), a new dependency, 5-10 s of compile time per run (unless cached), and several steps, each with an
+  equivalence test against the current function and a full run (`REPRODUCED`).
+- Most worth it if the model is run many times, for example inside the Bayesian optimizer.
+
 ---
 
 ## Continuing work in a fresh clone
