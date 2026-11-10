@@ -100,7 +100,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
             │  ├─ paths.*                                        4: car, walk + FRT, walk + microtransit + FRT paths
             │  ├─ choice.*                                       5: costs, logit probabilities, random draw
             │  └─ trip_legs.*                                    legs of the chosen path -> FleetPy / FRT demand files
-            ├─ convergence test (convergence_test.py)          6
+            ├─ convergence test (helpers/convergence_test.py)  6
             ├─ converged:     results.write_converged_results()  evaluation file, individual results
             └─ not converged: microtransit.run_fleetpy_and_update_networks()   2-3: FleetPy, network update
 ```
