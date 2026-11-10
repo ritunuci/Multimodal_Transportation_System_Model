@@ -57,6 +57,10 @@ MICROTRANSIT_NODE_OFFSET = 1171
 F_GAS_PER_MILE = 0.350  # The fuel cost for the CNG buses averaged $0.35 per mile
 M_GAS_PER_MILE = 0.550  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile
 
+# ---- fare structure: the former fare scenario 10, the only one left (docs/progress.md, "Only fare scenario 10").
+# The number stays in the output file names (..._scen_10) and the evaluation rows. ----
+FARE_SCENARIO = 10
+
 # ---- scenarios (each list has one element in the run) ----
 # Microtransit operating periods: AM = 5-10 h, MD = 10-15 h, PM = 15-20 h, EV = 20-24 h.
 OPERATING_PERIOD_1 = ["AM", "PM"]  # 10 hr
@@ -73,7 +77,7 @@ class RunConfig:
     """The parameters in input_parameter.csv. The lists hold one value per row of the file; the other fields hold
     the value of the last row (the file has one row)."""
     input_para_dir: str
-    TRPartA_test_scenario_list: List[int]  # fare scenario (test_scenario), 0-10
+    TRPartA_test_scenario_list: List[int]  # fare scenario, must be 10 (FARE_SCENARIO; I-15)
     debug_mode_list: List[bool]  # must be FALSE (I-15)
     test_area: List[str]  # study area, must be lemon_grove
     read_fleet_size: List[int]  # microtransit fleet size (vehicles)
@@ -166,8 +170,8 @@ def read_run_config(input_para_dir=os.path.join(mtsm.INPUT_PARAMETER_DIR, "input
 def check_run_config(cfg):
     """Stop on a configuration the code does not support; warn if the frozen inputs changed; create the output
     folders."""
-    # The code supports only Lemon Grove with TRPartA=TRUE, BayesianOptimization=TRUE and debug_mode_list=FALSE; the
-    # branches for the other values were removed (docs/progress.md). The three columns stay in input_parameter.csv
+    # The code supports only Lemon Grove with TRPartA=TRUE, BayesianOptimization=TRUE, debug_mode_list=FALSE and fare
+    # scenario 10; the branches for the other values were removed (docs/progress.md). The four columns stay in input_parameter.csv
     # because the optimizer writes its parameters by column position (docs/open_issues.md, I-15).
     unsupported = []
     if any(area != "lemon_grove" for area in cfg.test_area):
@@ -178,6 +182,8 @@ def check_run_config(cfg):
         unsupported.append("BayesianOptimization=False")
     if any(cfg.debug_mode_list):
         unsupported.append("debug_mode_list=True")
+    if any(s != FARE_SCENARIO for s in cfg.TRPartA_test_scenario_list):
+        unsupported.append(f"TRPartA_test_scenario_list={cfg.TRPartA_test_scenario_list} (only {FARE_SCENARIO})")
     if unsupported:
         sys.exit("ERROR: configuration in %s is not supported: %s"
                  % (cfg.input_para_dir, ", ".join(unsupported)))

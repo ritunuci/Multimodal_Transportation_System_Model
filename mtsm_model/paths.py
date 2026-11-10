@@ -4,11 +4,8 @@ Three paths per traveler and iteration: by car (auto network), by walk + fixed-r
 "without microtransit" base case) and by walk + microtransit + FRT (the super-network with microtransit). Moved from
 run_examples_new_parking.py; the calls of network_algorithms are unchanged.
 
-The car and FRT paths are computed in the first fare scenario (test_scenario == cfg.TRPartA_test_scenario_list[0]) and
-reused from PathCache in the other fare scenarios of the same repositioning setting.
 """
-from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import network_algorithms as n_a
@@ -50,17 +47,6 @@ class MicroPath:
     dist_path_all_: Any
 
 
-@dataclass
-class PathCache:
-    """The car and FRT paths of each traveler (keyed by rq_id), from the first fare scenario."""
-    auto: OrderedDict = field(default_factory=OrderedDict)
-    frt: OrderedDict = field(default_factory=OrderedDict)
-    # parking_dur and bt_c_gas of the last car path computed; the other fare scenarios use them for every traveler
-    # (docs/open_issues.md, I-18)
-    last_parking_dur: Any = None
-    last_bt_c_gas: Any = None
-
-
 def networks_for_traveler(microtransit_run, iteration, time_period, operating_periods, initial_super_network,
                           final_super_network, auto_network, headway, virstop, M_operating_hrs, fleet_size):
     """The FRT-only network (T_F_network) and the network with microtransit (T_micro_network) for a traveler who
@@ -97,31 +83,28 @@ def networks_for_traveler(microtransit_run, iteration, time_period, operating_pe
     return T_F_network, T_micro_network
 
 
-def auto_path(path_cache, study_area, auto_network, agent, cfg, iteration):
-    """Compute the car path (and cache it). Returns parking_dur, bt_c_gas and the AutoPath."""
-    parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario=0, mode="C", verbose=False, iteration=iteration)
+def auto_path(study_area, auto_network, agent, cfg, iteration):
+    """Compute the car path. Returns parking_dur, bt_c_gas and the AutoPath."""
+    parking_dur, bt_c_gas, auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, auto_path, auto_time_path,auto_dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,auto_network, agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,mode="C", verbose=False, iteration=iteration)
     auto_time_path_all_ = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, auto_time_path, auto_visited_temp)
     auto = AutoPath(auto_visited_temp, auto_time_visited_temp, auto_dist_visited_temp, auto_fare_visited_temp,
                     auto_path, auto_time_path, auto_time_path_all_)
-    path_cache.auto[agent.rq_id] = auto
-    path_cache.last_parking_dur, path_cache.last_bt_c_gas = parking_dur, bt_c_gas
     return parking_dur, bt_c_gas, auto
 
 
-def frt_path(path_cache, study_area, T_F_network, agent, cfg, test_scenario, total_rejection_penalty, iteration):
-    """Compute the walk + FRT path of the base case (and cache it), with the base FRT fare."""
-    visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,config.BASE_FRT_FARE, cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
+def frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, iteration):
+    """Compute the walk + FRT path of the base case, with the base FRT fare."""
+    visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,config.BASE_FRT_FARE, cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
     transit_time_path_all_F = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, time_path_F, visited_temp_F)
     transit_dist_path_all_F = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, dist_path_F, dist_visited_temp_F)  # calculate fixed transit VMT
     frt = FrtPath(visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F, path_F, time_path_F,
                   transit_time_path_all_F, transit_dist_path_all_F)
-    path_cache.frt[agent.rq_id] = frt
     return frt
 
 
-def micro_path(study_area, T_micro_network, agent, cfg, test_scenario, total_rejection_penalty, iteration):
+def micro_path(study_area, T_micro_network, agent, cfg, total_rejection_penalty, iteration):
     """Compute the walk + microtransit + FRT path, with the scenario's fares."""
-    visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,test_scenario,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
+    visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
     transit_time_path_all_ = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, time_path, visited_temp)
     transit_dist_path_all_ = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, dist_path, dist_visited_temp)  # calculate microtransit and fixed transit VMT
     return MicroPath(visited_temp, time_visited_temp, dist_visited_temp, fare_visited_temp, F_fare_visited_temp,

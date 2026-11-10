@@ -16,13 +16,13 @@ from mtsm_model.state import IterationTotals
 def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, total_rejection_penalty, wait_times):
     """Run the choice model for all travelers; write the FRT demand file (F_transit_trips) and FleetPy's demand
     file (new_fleetpy_demand). Updates state, base (iteration 0 of the first virtual-stop / fleet / period
-    scenario), path_cache, the link VMT dicts and iter_choice_prob (iter_agent_choice_prob[iteration]). wait_times:
+    scenario), the link VMT dicts and iter_choice_prob (iter_agent_choice_prob[iteration]). wait_times:
     FleetPy's average waiting time per period from the previous iteration (None in iteration 0, where it is not
     read). area: scenarios.StudyArea, scen: scenarios.Scenario. Returns the IterationTotals."""
-    test_scenario, microtransit_run, headway, virstop = scen.test_scenario, scen.microtransit_run, scen.headway, scen.virstop
+    microtransit_run, headway, virstop = scen.microtransit_run, scen.headway, scen.virstop
     fleet_size, M_operating_hrs, operating_periods = scen.fleet_size, scen.M_operating_hrs, scen.operating_periods
     num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
-    path_cache, F_transit_trips = scen.path_cache, scen.F_transit_trips
+    F_transit_trips = scen.F_transit_trips
     study_area, agent_list_, tt_num_agents, auto_network = area.study_area, area.agent_list_, area.tt_num_agents, area.auto_network
     initial_super_network, final_super_network = area.initial_super_network, area.final_super_network
     MicroTransitNodes, new_fleetpy_demand = area.MicroTransitNodes, area.new_fleetpy_demand
@@ -68,25 +68,15 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                                                                            initial_super_network, final_super_network, auto_network,
                                                                            headway, virstop, M_operating_hrs, fleet_size)
 
-                # least generalized cost paths: car and walk + FRT computed in the first fare scenario and reused in the others
-                if test_scenario == cfg.TRPartA_test_scenario_list[0]:
-                    parking_dur, bt_c_gas, auto = paths.auto_path(path_cache, study_area, auto_network, agent, cfg, iteration)
-                else:
-                    # parking_dur and bt_c_gas are not cached: they are the values of the last car path computed, i.e. of the
-                    # last traveler of the first fare scenario (docs/open_issues.md, I-18)
-                    auto = path_cache.auto[rq_id]
-                    parking_dur, bt_c_gas = path_cache.last_parking_dur, path_cache.last_bt_c_gas
-                if test_scenario == cfg.TRPartA_test_scenario_list[0]:
-                    frt = paths.frt_path(path_cache, study_area, T_F_network, agent, cfg, test_scenario, total_rejection_penalty,
-                                         iteration)
-                else:
-                    frt = path_cache.frt[rq_id]
+                # least generalized cost paths: car, and walk + FRT (the base case without microtransit)
+                parking_dur, bt_c_gas, auto = paths.auto_path(study_area, auto_network, agent, cfg, iteration)
+                frt = paths.frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, iteration)
                 # walk + microtransit + FRT; no path for "micro_only" outside the operating periods (only transit costs 0 are
                 # read then)
                 if microtransit_run == "micro_only" and not in_operating_period:
                     micro = None
                 else:
-                    micro = paths.micro_path(study_area, T_micro_network, agent, cfg, test_scenario, total_rejection_penalty,
+                    micro = paths.micro_path(study_area, T_micro_network, agent, cfg, total_rejection_penalty,
                                              iteration)
 
                 costs = choice.trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_gas, frt, micro, dest,

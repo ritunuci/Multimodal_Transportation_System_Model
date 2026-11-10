@@ -27,7 +27,8 @@ earlier entries; commits before that date use the old names.
 | 2c | FleetPy as a separate module: `fleetpy/`, `fleetpy_runner.py`, inputs copied from `mtsm_data/` | Done 2026-11-08 (open: I-11, I-12) |
 | 2d | Remove downtown San Diego: code (also commented), inputs and outputs | Done 2026-11-08 (left by decision: I-13, I-14) |
 | 2e | Remove the `TRPartA`, `BayesianOptimization` and `debug_mode` branches (columns kept in the input file) | Done 2026-11-09 (open: I-15) |
-| 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | Done 2026-11-09 (open: I-16, I-17, I-18) |
+| 2f | Restructure the entry script into a package (`docs/entry_script_refactor_plan.md`) | Done 2026-11-09 (open: I-16, I-17) |
+| 2g | Only fare scenario 10: drop fare scenarios 0-9, the fare-scenario loop and the path cache (column kept) | Done 2026-11-09 (open: I-15, I-19) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -726,6 +727,30 @@ file was renamed, so the code still builds the same file names. The folder const
   (steps 1-8), step 9 (docs).
 - Verification: after each of steps 1-8 a full seed-0 run under the I/O tracer: `compare_reference.py` **32
   identical, `REPRODUCED`**; `check_inputs.py` passes; no new pyflakes warnings. Step 9 is docs only.
+
+## Only fare scenario 10 (2026-11-09)
+
+- Decision by the user: the model uses only fare scenario 10 from now on. Drop scenarios 0-9, the fare-scenario loop
+  and the path cache; keep the column `TRPartA_test_scenario_list` in `input_parameter.csv` (the optimizer writes the
+  file by column position), with an open item to drop it later (I-15).
+- What the other scenarios did (for the record; the last version with them is commit `3c11671`): 0 base fares;
+  1 low-income discount; 2 time-based and 3 accessibility-based fare (both behaved like 0, because a later block
+  reset their factor to 1); 4 transfer discounts; 5 microtransit flat fare; 6 start + distance fare; 7 = 4 + 6;
+  8 time-based without peak surcharge; 9 accessibility-based without surcharge.
+- Code: `network_algorithms.generalized_cost_dijsktra_OD_heap` has no `test_scenario` parameter any more and applies
+  scenario 10's rules (peak factor `PkFareFactor` / `OffPkFareFactor`; `Micro2FixedFactor` on the FRT fare after
+  microtransit; `Fixed2MicroFactor` on the distance fare after FRT and on the start fare; rejection penalty).
+  The car path used to pass scenario 0: the car network has only link type 7, which no fare rule touches. The
+  FRT-only base case has no microtransit links. `low_income_factor` and `acc_factor` (always 1 in scenario 10) were
+  removed from the distance fare: multiplying by 1 is exact. The fare-scenario loop in `mtsm_model/scenarios.py`,
+  `paths.PathCache` and the "first fare scenario" conditions in `results.py` were removed (the base-case rows are
+  written as before; I-18 closed). The number 10 stays as `config.FARE_SCENARIO` in the output file names
+  (`..._scen_10`, read by the optimizer) and the evaluation rows. The startup check refuses any other value in the
+  column.
+- Found: the start fare always gets `Fixed2MicroFactor` (I-19, not changed).
+- Verification (2026-11-09): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes; no new pyflakes warnings; `network_algorithms.py` reviewed with
+  `git diff -w`.
 
 ---
 

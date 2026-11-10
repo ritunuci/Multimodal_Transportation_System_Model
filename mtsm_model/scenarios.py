@@ -1,9 +1,9 @@
 """Study areas and scenarios of a model run (restructuring step 8, docs/entry_script_refactor_plan.md).
 
 - load_study_area(): what a study area needs for all its scenarios (folders, networks, travelers, link dicts).
-- scenarios(): the scenario loops (repositioning x fare scenario x FRT headway x virtual stops x fleet size x
-  operating periods x microtransit setup); yields one Scenario per model run. Each list has one element in the
-  current runs; several rows in input_parameter.csv give several fare scenarios / fleet sizes.
+- scenarios(): the scenario loops (repositioning x FRT headway x virtual stops x fleet size x operating periods x
+  microtransit setup); yields one Scenario per model run. Each list has one element in the current runs; several
+  rows in input_parameter.csv give several fleet sizes.
 
 Moved from run_examples_new_parking.py. scenarios() is a generator, so the work done in the outer loops (the FRT
 headway in the initial networks, the FRT-only accessibility, FleetPy's scenario config) happens at the same point as
@@ -23,7 +23,6 @@ import output_performance_metrics as output_metrics
 import testing_scenario_creation as tst_scen_create
 import update_initial_network as init_net
 from mtsm_model import config
-from mtsm_model.paths import PathCache
 
 
 @dataclass
@@ -61,8 +60,6 @@ class StudyArea:
 @dataclass
 class Scenario:
     repositioning: bool
-    path_cache: PathCache  # one per repositioning setting, shared by its fare scenarios
-    test_scenario: int  # fare scenario
     headway: int  # FRT headway (min)
     num_headway_scen: int  # 1-based position in the loop
     tot_weighted_5_min_F: Any  # accessibility of the fixed-route-only network
@@ -139,63 +136,61 @@ def scenarios(cfg, area, log_f):
     study_area = area.study_area
     for repositioning in config.REPOSITIONING_LIST:
 
-        # the car and FRT-only paths of each traveler, computed in the first fare scenario (paths.py)
-        path_cache = PathCache()
+        # the fare structure: the former fare scenario 10, the only one (docs/progress.md, "Only fare scenario 10")
+        test_scenario = config.FARE_SCENARIO
+        print("aggregation:",config.AGGREGATION,"; mode_change_threshold:",config.MODE_CHANGE_THRESHOLD,"; convergence_gap:",config.CONVERGENCE_GAP,"; maximum_iteration:",config.MAXIMUM_ITERATION,  "; F_gas_per_mile ($/mi):",config.F_GAS_PER_MILE,
+        "; M_gas_per_mile ($/mi):", config.M_GAS_PER_MILE,"; repositioning",repositioning,"; Testing Scenario:",test_scenario,"; transit_fare ($):", cfg.transit_fare,"; microtransit_start_fare ($):",cfg.microtransit_start_fare,"; microtransit_dist_based_rate ($/mi):",cfg.microtransit_dist_based_rate*config.MILE_METER,
+              "; Peak fare factor (0~1):",cfg.PkFareFactor,"; Off-peak fare factor (0~1):",cfg.OffPkFareFactor,"; Fixed to Micro discount factor (0~1):",cfg.Fixed2MicroFactor,"; Micro to Fixed discount factor (0~1):",cfg.Micro2FixedFactor)
 
-        for test_scenario in cfg.TRPartA_test_scenario_list:
-            print("aggregation:",config.AGGREGATION,"; mode_change_threshold:",config.MODE_CHANGE_THRESHOLD,"; convergence_gap:",config.CONVERGENCE_GAP,"; maximum_iteration:",config.MAXIMUM_ITERATION,  "; F_gas_per_mile ($/mi):",config.F_GAS_PER_MILE,
-            "; M_gas_per_mile ($/mi):", config.M_GAS_PER_MILE,"; repositioning",repositioning,"; Testing Scenario:",test_scenario,"; transit_fare ($):", cfg.transit_fare,"; microtransit_start_fare ($):",cfg.microtransit_start_fare,"; microtransit_dist_based_rate ($/mi):",cfg.microtransit_dist_based_rate*config.MILE_METER,
-                  "; Peak fare factor (0~1):",cfg.PkFareFactor,"; Off-peak fare factor (0~1):",cfg.OffPkFareFactor,"; Fixed to Micro discount factor (0~1):",cfg.Fixed2MicroFactor,"; Micro to Fixed discount factor (0~1):",cfg.Micro2FixedFactor)
+        num_headway_scen = 0
+        for headway in area.headway_scenarios: #put bus design parameter in the most outer loop
+            init_net.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
+            tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,test_scenario)
+            num_headway_scen+=1
+            num_virstop_scen = 0
+            for virstop in config.VIRTUAL_STOP_SCENARIOS: #virtual stops - not necessarily influence the cost, but will influence the mobility
+                num_virstop_scen+=1
+                num_fleet_size_scen = 0
+                for fleet_size in area.fleet_size_scenarios: #fleetsize - influence the cost & mobility
+                    num_fleet_size_scen+=1
+                    scs_path = mtsm.LG_FLEETPY_SCENARIOS_DIR
+                    num_operating_periods_scen = 0
 
-            num_headway_scen = 0
-            for headway in area.headway_scenarios: #put bus design parameter in the most outer loop
-                init_net.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
-                tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,test_scenario)
-                num_headway_scen+=1
-                num_virstop_scen = 0
-                for virstop in config.VIRTUAL_STOP_SCENARIOS: #virtual stops - not necessarily influence the cost, but will influence the mobility
-                    num_virstop_scen+=1
-                    num_fleet_size_scen = 0
-                    for fleet_size in area.fleet_size_scenarios: #fleetsize - influence the cost & mobility
-                        num_fleet_size_scen+=1
-                        scs_path = mtsm.LG_FLEETPY_SCENARIOS_DIR
-                        num_operating_periods_scen = 0
+                    if repositioning ==True:
+                        sc = os.path.join(scs_path, "%s_example_ir_heuristics_repositioning_%s_veh.csv" % (str(study_area), str(fleet_size)))
+                    else:
+                        sc = os.path.join(scs_path, "%s_example_ir_only_%s_veh.csv" % (str(study_area), str(fleet_size)))
+                    isExist = os.path.exists(sc)
+                    if isExist==False:
+                        fleetpy.create_config_files(sc, study_area, repositioning, fleet_size)
 
-                        if repositioning ==True:
-                            sc = os.path.join(scs_path, "%s_example_ir_heuristics_repositioning_%s_veh.csv" % (str(study_area), str(fleet_size)))
+                    for operating_periods in config.OPERATING_PERIODS_SCENARIOS: #fleetsize - influence the cost & mobility
+                        num_operating_periods_scen+=1
+                        if operating_periods==["AM", "MD", "PM", "EV"]:
+                            M_operating_hrs=19
+                        elif operating_periods==["AM", "MD", "PM"]:
+                            M_operating_hrs = 15
                         else:
-                            sc = os.path.join(scs_path, "%s_example_ir_only_%s_veh.csv" % (str(study_area), str(fleet_size)))
-                        isExist = os.path.exists(sc)
-                        if isExist==False:
-                            fleetpy.create_config_files(sc, study_area, repositioning, fleet_size)
+                            M_operating_hrs = 10
+                        F_operating_hrs = 19 # fixed route transit 19 hrs
 
-                        for operating_periods in config.OPERATING_PERIODS_SCENARIOS: #fleetsize - influence the cost & mobility
-                            num_operating_periods_scen+=1
-                            if operating_periods==["AM", "MD", "PM", "EV"]:
-                                M_operating_hrs=19
-                            elif operating_periods==["AM", "MD", "PM"]:
-                                M_operating_hrs = 15
+
+                        F_transit_trips = os.path.join(area.fleetpy_demand_folder, "debug_False_F_transit_demand_%s_op_hr_%s_hw_%s_virstop_%s.csv" % (str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
+
+                        for microtransit_run in config.MICROTRANSIT_RUNNING_SCENARIOS:
+                            if microtransit_run == "micro_only" and num_headway_scen>1:
+                                continue
                             else:
-                                M_operating_hrs = 10
-                            F_operating_hrs = 19 # fixed route transit 19 hrs
-
-
-                            F_transit_trips = os.path.join(area.fleetpy_demand_folder, "debug_False_F_transit_demand_%s_op_hr_%s_hw_%s_virstop_%s.csv" % (str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
-
-                            for microtransit_run in config.MICROTRANSIT_RUNNING_SCENARIOS:
-                                if microtransit_run == "micro_only" and num_headway_scen>1:
-                                    continue
+                                if len(sys.argv) > 1:
+                                    fleetpy.run_scenarios(*sys.argv)
                                 else:
-                                    if len(sys.argv) > 1:
-                                        fleetpy.run_scenarios(*sys.argv)
-                                    else:
-                                        # touch log file
-                                        with open(log_f, "w") as _:
-                                            pass
+                                    # touch log file
+                                    with open(log_f, "w") as _:
+                                        pass
 
-                                        yield Scenario(repositioning, path_cache, test_scenario, headway,
-                                                       num_headway_scen, tot_weighted_5_min_F, tot_weighted_10_min_F,
-                                                       tot_weighted_15_min_F, virstop, num_virstop_scen, fleet_size,
-                                                       num_fleet_size_scen, scs_path, sc, operating_periods,
-                                                       num_operating_periods_scen, M_operating_hrs, F_operating_hrs,
-                                                       F_transit_trips, microtransit_run)
+                                    yield Scenario(repositioning, headway,
+                                                   num_headway_scen, tot_weighted_5_min_F, tot_weighted_10_min_F,
+                                                   tot_weighted_15_min_F, virstop, num_virstop_scen, fleet_size,
+                                                   num_fleet_size_scen, scs_path, sc, operating_periods,
+                                                   num_operating_periods_scen, M_operating_hrs, F_operating_hrs,
+                                                   F_transit_trips, microtransit_run)

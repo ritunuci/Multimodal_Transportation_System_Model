@@ -235,7 +235,8 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
 1. Remove `test_repositioning`, `iteration_debug`, the `zonal_partition` branches and the commented-out code (except
    the block under "Must be kept"). **Keep the aggregate convergence test** (`indiv_converg_test == False`), with
    enough comments to understand it later. **Keep `micro_only` and `non_micro` as options.**
-2. (a) Keep the ability to run several scenarios in one run.
+2. (a) Keep the ability to run several scenarios in one run. (Revisited after the restructuring: the fare-scenario
+   loop was removed with fare scenarios 0-9; `docs/progress.md`, "Only fare scenario 10". The other loops stay.)
 3. Keep the name `run_examples_new_parking.py` for now.
 4. Package name `mtsm_model/`.
 

@@ -32,6 +32,11 @@ removed on 2026-11-08; the last version that has it is tagged `last-with-downtow
 6. **Convergence.** If the choice probabilities still change between iterations, the new set of transit and auto
    travelers goes back to step 2. Otherwise the run stops and writes its results.
 
+Fares: FRT fare per boarding; microtransit start fare plus a distance-based fare, with a peak / off-peak factor and
+transfer discounts between microtransit and FRT (the former "fare scenario 10"; the columns `transit_fare ($)`,
+`microtransit_start_fare ($)`, `microtransit_dist_based_rate ($/mile)`, `PkFareFactor`, `OffPkFareFactor`,
+`Fixed2MicroFactor`, `Micro2FixedFactor` of `input_parameter.csv`).
+
 ## Running the model
 
 Requirements: Windows (64-bit), conda, and a valid [Gurobi](https://www.gurobi.com) license (FleetPy uses Gurobi
@@ -89,7 +94,7 @@ through the modules of `mtsm_model/` like this (the numbers are the steps of [Ho
 run_examples_new_parking.py   config.read_run_config(), config.check_run_config(), random seeds
 └─ model.run_model()
    └─ for each study area: scenarios.load_study_area()           folders, networks, travelers
-      └─ for each scenario: scenarios.scenarios()                 fare, headway, fleet size, ...
+      └─ for each scenario: scenarios.scenarios()                 headway, fleet size, ...
          └─ model.run_scenario(): until converged
             ├─ networks.read_iteration_networks()               3: the super-networks of this iteration
             ├─ iteration.run_iteration(): for each traveler
@@ -109,7 +114,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | `state.py` | `TravelerState` (per-traveler values across iterations), `BaseCase` (the fixed-route-only base case), `IterationTotals` |
 | `networks.py` | Reading an iteration's super-networks |
 | `iteration.py` | One iteration of the choice model for all travelers |
-| `paths.py` | A traveler's networks and least generalized cost paths, and the path cache |
+| `paths.py` | A traveler's networks and least generalized cost paths |
 | `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
 | `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
 | `microtransit.py` | Running FleetPy (through `fleetpy_runner.py`) and updating the super-networks with its results |

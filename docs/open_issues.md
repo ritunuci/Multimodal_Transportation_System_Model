@@ -39,7 +39,8 @@ Paths are relative to the codebase root.
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Open | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Open | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
-| I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Open | 2026-11-09 |
+| I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
+| I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
 
 ---
 
@@ -175,12 +176,14 @@ Paths are relative to the codebase root.
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing the TRPartA / BayesianOptimization /
   debug_mode branches).
 - **What:** the code no longer branches on `BayesianOptimization`, `TRPartA` or `debug_mode_list` (only the values
-  TRUE, TRUE, FALSE are supported; the startup check refuses others). The three columns are still in
+  TRUE, TRUE, FALSE are supported; the startup check refuses others). Since 2026-11-09 the same holds for
+  `TRPartA_test_scenario_list` (the fare scenario): the code has only fare scenario 10 (`config.FARE_SCENARIO`), and
+  the startup check refuses other values. The four columns are still in
   `mtsm_data/input_parameter/input_parameter.csv`, because `Bayesian_optimization_script.py` writes the candidate's
   values by column position (`rows[1][5]` to `rows[1][13]`: fares, fleet size, peak factor, Micro2FixedFactor,
-  headway). Removing columns 1-2 or 4 would shift those positions.
+  headway). Removing columns 1-4 would shift those positions.
 - **Impact:** none on results; the columns are misleading (they look like options but have only one valid value).
-- **Fix (later, user's intention):** remove the three columns from the input file and make the optimizer write by
+- **Fix (later, user's intention):** remove the four columns from the input file and make the optimizer write by
   column name instead of position; then remove them from the startup check. `input_parameter.csv` is a frozen
   input, so `MANIFEST.csv` must be regenerated and the change recorded in `docs/progress.md`. The optimizer change
   needs a test run of the optimizer (I-03).
@@ -216,8 +219,24 @@ Paths are relative to the codebase root.
   as a list) and write all of them. This changes the FleetPy demand and the results, so it needs a new reference.
   First count how often it happens in the reference run.
 
+
+### I-19: The microtransit start fare always gets the FRT-to-microtransit transfer discount
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (dropping fare scenarios 0-9).
+- **What:** in the fare structure (the former fare scenario 10, `network_algorithms.generalized_cost_dijsktra_OD_heap`),
+  the microtransit distance fare is multiplied by `Fixed2MicroFactor` only after an FRT trip leg (`IsFixedLink`),
+  but the start fare at a microtransit waiting link is always multiplied by `Fixed2MicroFactor` (and by the peak
+  factor), also when no FRT leg came before.
+- **Impact:** none in the reference run (`Fixed2MicroFactor = 1`). When the optimizer sets `Fixed2MicroFactor` below
+  1, every microtransit trip gets the transfer discount on its start fare, not only trips after FRT.
+- **To decide:** is this intended? If not, apply the factor to the start fare only after an FRT leg, like the
+  distance fare. This changes results for `Fixed2MicroFactor != 1` (not the reference).
+
+---
+
+## Closed
+
 ### I-18: In later fare scenarios, every traveler gets the parking values of one traveler
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 5).
+- **Status:** Closed (2026-11-09). **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 5).
 - **What:** the car path is computed only in the first fare scenario (`test_scenario ==
   TRPartA_test_scenario_list[0]`) and cached for the others (`paths.PathCache`). The same call also returns the
   traveler's parking duration and gas cost coefficient (`parking_dur`, `bt_c_gas`), which are not cached. In the
@@ -230,10 +249,9 @@ Paths are relative to the codebase root.
   `last_bt_c_gas`, read in `iteration.run_iteration` when the car path comes from the cache.
 - **Fix:** cache `parking_dur` and `bt_c_gas` with the car path (two fields of `paths.AutoPath`). This does not change
   the reference (one fare scenario); test it with a two-row parameter file.
-
----
-
-## Closed
+- **Resolution:** the fare-scenario loop and the path cache were removed together with fare scenarios 0-9
+  (`docs/progress.md`, "Only fare scenario 10"): every traveler's car path, and with it `parking_dur` and
+  `bt_c_gas`, is computed in every iteration, so no value is carried over any more. Full run: `REPRODUCED`.
 
 ### I-09: The model's vehicle capacity is stored in FleetPy's vehicle file
 - **Status:** Closed (2026-11-08). **Severity:** Medium. **Found:** 2026-11-07 (comparison with

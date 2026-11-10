@@ -32,8 +32,8 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
     """Compute and write the results of the converged scenario (area: scenarios.StudyArea, scen:
     scenarios.Scenario). writer: the DictWriter of the evaluation file.
     headway and microtransit_run are changed only inside this function (for the base case and "micro_only").
-    The fare scenario's description is known for test_scenario 0-10."""
-    test_scenario, repositioning, microtransit_run, headway = scen.test_scenario, scen.repositioning, scen.microtransit_run, scen.headway
+    test_scenario is the fare scenario number (10), used in file names and the evaluation rows."""
+    test_scenario, repositioning, microtransit_run, headway = config.FARE_SCENARIO, scen.repositioning, scen.microtransit_run, scen.headway
     virstop, fleet_size, M_operating_hrs, F_operating_hrs = scen.virstop, scen.fleet_size, scen.M_operating_hrs, scen.F_operating_hrs
     operating_periods = scen.operating_periods
     num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
@@ -254,165 +254,160 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
         individual_result_dir = os.path.join(output_folder,"individual_results_%s_M_fsize_%s_op_hr_%s_hw_%s_virstop_%s_scen_%s.csv" % (str(microtransit_run), str(fleet_size),str(M_operating_hrs), str(headway),str(virstop),str(test_scenario)))
 
         aaa=1
-        if test_scenario==cfg.TRPartA_test_scenario_list[0]:
-            with open(individual_result_dir,'w+',newline='', encoding='utf-8') as csvfile_indiv_fixed_only:
-                fieldnames = ["rq_id", "origin","dest", "dp_time","mode","switch_mode","tt (s)","dist (mi)",
-                              "tt_C (s)","dist_C (mi)","tt_M (s)","dist_M (mi)",
-                              "tt_F (s)","dist_F (mi)","tt_W (s)","dist_W (mi)","agent_M_tot_wait_time (s)",
-                              "agent_F_tot_wait_time (s)","out_of_pock_cost ($)",
-                              "tt_saved_with_micro (s)","gen_cost_saved_with_micro","mob_logsum_increased_with_micro",
-                              "agent_prob (auto,transit)","agent_ran_num"]
-                writer_indiv_fixed_only = csv.DictWriter(
-                    csvfile_indiv_fixed_only,
-                    fieldnames=fieldnames)
-                writer_indiv_fixed_only.writeheader()
-                for rq_id in state.travel_time_delta:
+        with open(individual_result_dir,'w+',newline='', encoding='utf-8') as csvfile_indiv_fixed_only:
+            fieldnames = ["rq_id", "origin","dest", "dp_time","mode","switch_mode","tt (s)","dist (mi)",
+                          "tt_C (s)","dist_C (mi)","tt_M (s)","dist_M (mi)",
+                          "tt_F (s)","dist_F (mi)","tt_W (s)","dist_W (mi)","agent_M_tot_wait_time (s)",
+                          "agent_F_tot_wait_time (s)","out_of_pock_cost ($)",
+                          "tt_saved_with_micro (s)","gen_cost_saved_with_micro","mob_logsum_increased_with_micro",
+                          "agent_prob (auto,transit)","agent_ran_num"]
+            writer_indiv_fixed_only = csv.DictWriter(
+                csvfile_indiv_fixed_only,
+                fieldnames=fieldnames)
+            writer_indiv_fixed_only.writeheader()
+            for rq_id in state.travel_time_delta:
 
-                    mode = base.off_micro_ag_mode[
-                        rq_id]
+                mode = base.off_micro_ag_mode[
+                    rq_id]
 
-                    origin = state.agent_O[rq_id]
-                    dest = state.agent_D[rq_id]
-                    dp_time = state.agent_rq_time[
-                        rq_id]
+                origin = state.agent_O[rq_id]
+                dest = state.agent_D[rq_id]
+                dp_time = state.agent_rq_time[
+                    rq_id]
 
-                    tt_M = 0
-                    dist_M = 0
-                    tt_F = 0
-                    dist_F = 0
+                tt_M = 0
+                dist_M = 0
+                tt_F = 0
+                dist_F = 0
+                tt_C = 0
+                dist_C = 0
+                if mode == "T":
                     tt_C = 0
                     dist_C = 0
-                    if mode == "T":
-                        tt_C = 0
-                        dist_C = 0
-                        if base.off_micro_agent_F_tot_wait_time[rq_id] > 0:
-                            tt_F = base.off_micro_ag_tot_tt[rq_id]
-                            dist_F = base.off_micro_ag_tot_dist[rq_id]
-                        else:
-                            tt_F = 0
-                            dist_F = 0
+                    if base.off_micro_agent_F_tot_wait_time[rq_id] > 0:
+                        tt_F = base.off_micro_ag_tot_tt[rq_id]
+                        dist_F = base.off_micro_ag_tot_dist[rq_id]
                     else:
-                        tt_C =base.off_micro_ag_tot_tt[rq_id]
-                        dist_C = base.off_micro_ag_tot_dist[rq_id]
                         tt_F = 0
                         dist_F = 0
+                else:
+                    tt_C =base.off_micro_ag_tot_tt[rq_id]
+                    dist_C = base.off_micro_ag_tot_dist[rq_id]
+                    tt_F = 0
+                    dist_F = 0
 
-                    writer_indiv_fixed_only.writerow(
-                        {"rq_id": rq_id,
-                         "origin": origin,
-                         "dest": dest,
-                         "dp_time": dp_time,
-                         "mode": mode,
-                         "switch_mode": 0,
-                         "tt (s)":
-                             base.off_micro_ag_tot_tt[
-                                 rq_id],
-                         "dist (mi)":
-                             base.off_micro_ag_tot_dist[
-                                 rq_id],
-                         "tt_C (s)": tt_C,
-                         "dist_C (mi)": dist_C,
-                         "tt_M (s)": tt_M,
-                         "dist_M (mi)": dist_M,
-                         "tt_F (s)": tt_F,
-                         "dist_F (mi)": dist_F,
-                         "out_of_pock_cost ($)":
-                             base.off_micro_agent_op_cost[
-                                 rq_id],
-                         "tt_saved_with_micro (s)": 0,
-                         "gen_cost_saved_with_micro": 0,
-                         "mob_logsum_increased_with_micro": 0,
-                         "agent_prob (auto,transit)":
-                             base.off_micro_agent_choice_prob[
-                                 rq_id],
-                         "agent_ran_num":
-                             base.off_micro_agent_ran_num[
-                                 rq_id],
-                         "agent_M_tot_wait_time (s)": 0,
-                         "agent_F_tot_wait_time (s)":
-                             base.off_micro_agent_F_tot_wait_time[
-                                 rq_id],
-                         "tt_W (s)":
-                             base.off_micro_agent_tot_walk_time[
-                                 rq_id],
-                         "dist_W (mi)":
-                             base.off_micro_ag_VMT_W[
-                                 rq_id]})
+                writer_indiv_fixed_only.writerow(
+                    {"rq_id": rq_id,
+                     "origin": origin,
+                     "dest": dest,
+                     "dp_time": dp_time,
+                     "mode": mode,
+                     "switch_mode": 0,
+                     "tt (s)":
+                         base.off_micro_ag_tot_tt[
+                             rq_id],
+                     "dist (mi)":
+                         base.off_micro_ag_tot_dist[
+                             rq_id],
+                     "tt_C (s)": tt_C,
+                     "dist_C (mi)": dist_C,
+                     "tt_M (s)": tt_M,
+                     "dist_M (mi)": dist_M,
+                     "tt_F (s)": tt_F,
+                     "dist_F (mi)": dist_F,
+                     "out_of_pock_cost ($)":
+                         base.off_micro_agent_op_cost[
+                             rq_id],
+                     "tt_saved_with_micro (s)": 0,
+                     "gen_cost_saved_with_micro": 0,
+                     "mob_logsum_increased_with_micro": 0,
+                     "agent_prob (auto,transit)":
+                         base.off_micro_agent_choice_prob[
+                             rq_id],
+                     "agent_ran_num":
+                         base.off_micro_agent_ran_num[
+                             rq_id],
+                     "agent_M_tot_wait_time (s)": 0,
+                     "agent_F_tot_wait_time (s)":
+                         base.off_micro_agent_F_tot_wait_time[
+                             rq_id],
+                     "tt_W (s)":
+                         base.off_micro_agent_tot_walk_time[
+                             rq_id],
+                     "dist_W (mi)":
+                         base.off_micro_ag_VMT_W[
+                             rq_id]})
 
-            microtransit_run = microtransit_run_pre
+        microtransit_run = microtransit_run_pre
 
-            pure_F_users = (
-                        base.off_micro_T_trips - base.off_micro_W_trips)
+        pure_F_users = (
+                    base.off_micro_T_trips - base.off_micro_W_trips)
 
-            # Write the fixed only scenario
-            if test_scenario == cfg.TRPartA_test_scenario_list[0]:
-                writer.writerow({"test_scen": 0,"dscrptn": "FRT_only_scen", "study_area": study_area,"repositioning": str(False),
-                                 "microtrasnit": "non_micro","hdwy (min)": headway,
-                                 "vir_stop (%)": 0,"flt_sz": 0, "op_periods": 0,"tt_agents": tt_num_agents,
-                                 "car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips / tt_num_agents,
-                                 "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)": base.off_micro_T_trips / tt_num_agents,
-                                 "pure_M_users": 0,"M_trips": 0,"M_mode_share (%)": 0 / tt_num_agents,"pure_F_users": pure_F_users,
-                                 "F_trips": base.off_micro_F_trips,"F_mode_share (%)": base.off_micro_F_trips / tt_num_agents,
-                                 "pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)": base.off_micro_W_trips / tt_num_agents,
-                                 "walk_users": off_micro_w_trip_legs,"M_pls_F_users": 0,
-                                 "M_pls_F_mode_share (%)": 0,"F_oper_cost ($)": F_oper_cost_base,
-                                 "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue,
-                                 "M_revenue ($)": 0,"Total_T_revenue ($)": off_micro_F_revenue,
-                                 "tot_sub ($)": off_micro_tt_sub,"sub_per_F_trip ($)": off_micro_F_sub_per_ridership,
-                                 "sub_per_F_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
-                                 "sub_per_M_trip ($)": 0,"sub_per_M_rider ($)": 0,"sub_per_T_trip ($)": off_micro_F_sub_per_ridership,
-                                 "sub_per_T_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
-                                 "sub_per_M_pax_mile ($/mi)": 0,"sub_per_F_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,
-                                 "sub_per_T_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,"sub_per_M_VMT ($/mi)": 0,
-                                 "sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
-                                 "sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
-                                 "tt_auto_gas_cost ($)": off_micro_total_op_cost - off_micro_F_revenue,
-                                 "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_VMT_auto,
-                                 "avg_M_fare": 0,"avg_F_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
-                                 "avg_T_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
-                                 "avg_auto_gas_cost": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_auto_trips,
-                                 "tt_o_pckt_cost ($)": off_micro_total_op_cost,"tt_mob_lgsm_inc_with_micro": 0,
-                                 "tt_gen_cost": off_micro_tt_gen_cost,"tt_mode_switch": 0,
-                                 "M_avg_wait_time (s)": 0,"F_avg_wait_time (s)": off_micro_avg_F_wait_time,
-                                 "avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)": off_micro_tot_walk_time / 3600,
-                                 "car_VMT (mi)": base.off_micro_VMT_auto,"M_VMT (mi)": 0,
-                                 "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT,
-                                 "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": base.off_micro_VMT_W,
-                                 "wghted_acc_emp_5_min": tot_weighted_5_min_F,"wghted_acc_emp_10_min": tot_weighted_10_min_F,
-                                 "wghted_acc_emp_15_min": tot_weighted_15_min_F,"M_util_rate (%)": 0,
-                                 "M_veh_occ": 0,"M_avg_speed (mph)": 0,"cnvrg (iter, sm_sq_per_diff)": 0, "fleetpy_wait": 0, "rejection_rate": 0})
+        # Write the fixed only scenario
+        writer.writerow({"test_scen": 0,"dscrptn": "FRT_only_scen", "study_area": study_area,"repositioning": str(False),
+                         "microtrasnit": "non_micro","hdwy (min)": headway,
+                         "vir_stop (%)": 0,"flt_sz": 0, "op_periods": 0,"tt_agents": tt_num_agents,
+                         "car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips / tt_num_agents,
+                         "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)": base.off_micro_T_trips / tt_num_agents,
+                         "pure_M_users": 0,"M_trips": 0,"M_mode_share (%)": 0 / tt_num_agents,"pure_F_users": pure_F_users,
+                         "F_trips": base.off_micro_F_trips,"F_mode_share (%)": base.off_micro_F_trips / tt_num_agents,
+                         "pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)": base.off_micro_W_trips / tt_num_agents,
+                         "walk_users": off_micro_w_trip_legs,"M_pls_F_users": 0,
+                         "M_pls_F_mode_share (%)": 0,"F_oper_cost ($)": F_oper_cost_base,
+                         "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue,
+                         "M_revenue ($)": 0,"Total_T_revenue ($)": off_micro_F_revenue,
+                         "tot_sub ($)": off_micro_tt_sub,"sub_per_F_trip ($)": off_micro_F_sub_per_ridership,
+                         "sub_per_F_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
+                         "sub_per_M_trip ($)": 0,"sub_per_M_rider ($)": 0,"sub_per_T_trip ($)": off_micro_F_sub_per_ridership,
+                         "sub_per_T_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
+                         "sub_per_M_pax_mile ($/mi)": 0,"sub_per_F_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,
+                         "sub_per_T_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,"sub_per_M_VMT ($/mi)": 0,
+                         "sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
+                         "sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
+                         "tt_auto_gas_cost ($)": off_micro_total_op_cost - off_micro_F_revenue,
+                         "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_VMT_auto,
+                         "avg_M_fare": 0,"avg_F_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
+                         "avg_T_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
+                         "avg_auto_gas_cost": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_auto_trips,
+                         "tt_o_pckt_cost ($)": off_micro_total_op_cost,"tt_mob_lgsm_inc_with_micro": 0,
+                         "tt_gen_cost": off_micro_tt_gen_cost,"tt_mode_switch": 0,
+                         "M_avg_wait_time (s)": 0,"F_avg_wait_time (s)": off_micro_avg_F_wait_time,
+                         "avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)": off_micro_tot_walk_time / 3600,
+                         "car_VMT (mi)": base.off_micro_VMT_auto,"M_VMT (mi)": 0,
+                         "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT,
+                         "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": base.off_micro_VMT_W,
+                         "wghted_acc_emp_5_min": tot_weighted_5_min_F,"wghted_acc_emp_10_min": tot_weighted_10_min_F,
+                         "wghted_acc_emp_15_min": tot_weighted_15_min_F,"M_util_rate (%)": 0,
+                         "M_veh_occ": 0,"M_avg_speed (mph)": 0,"cnvrg (iter, sm_sq_per_diff)": 0, "fleetpy_wait": 0, "rejection_rate": 0})
 
 
-        else:
-            aaa=1
 
         microtransit_run=microtransit_run_pre
 
         pure_F_users=(base.off_micro_T_trips-base.off_micro_W_trips)
 
         # Write the fixed only scenario
-        if test_scenario == cfg.TRPartA_test_scenario_list[0]:
 
-            writer.writerow({"test_scen":0,"dscrptn":"FRT_only_scen","study_area":study_area,"repositioning":str(False),"microtrasnit":"non_micro","hdwy (min)": headway, "vir_stop (%)": 0, "flt_sz": 0,"op_periods": 0,
-                         "tt_agents": tt_num_agents,"car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips/tt_num_agents,
-                         "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)":base.off_micro_T_trips/tt_num_agents,"pure_M_users":0, "M_trips": 0,"M_mode_share (%)":0/tt_num_agents,
-                         "pure_F_users":pure_F_users,"F_trips": base.off_micro_F_trips,"F_mode_share (%)":base.off_micro_F_trips/tt_num_agents,"pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)":base.off_micro_W_trips/tt_num_agents,
-                         "walk_users":off_micro_w_trip_legs, "M_pls_F_users":0,"M_pls_F_mode_share (%)":0,"F_oper_cost ($)": F_oper_cost_base,
-                         "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue, "M_revenue ($)": 0,"Total_T_revenue ($)":off_micro_F_revenue, "tot_sub ($)":off_micro_tt_sub,
-                         "sub_per_F_trip ($)": off_micro_F_sub_per_ridership,"sub_per_F_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),"sub_per_M_trip ($)": 0,"sub_per_M_rider ($)":0,"sub_per_T_trip ($)":off_micro_F_sub_per_ridership,"sub_per_T_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),
-                         "sub_per_M_pax_mile ($/mi)":0,"sub_per_F_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,"sub_per_T_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,
-                         "sub_per_M_VMT ($/mi)": 0,"sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),"sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
-                         "tt_auto_gas_cost ($)":off_micro_total_op_cost-off_micro_F_revenue,"auto_gas_cost_per_mile ($/mi)":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_VMT_auto,
-                         "avg_M_fare": 0, "avg_F_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users),"avg_T_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users), "avg_auto_gas_cost":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_auto_trips,
-                        "tt_o_pckt_cost ($)": off_micro_total_op_cost,
-                         "tt_mob_lgsm_inc_with_micro": 0,"tt_gen_cost":off_micro_tt_gen_cost,
-                         "tt_mode_switch": 0,"M_avg_wait_time (s)": 0,
-                         "F_avg_wait_time (s)": off_micro_avg_F_wait_time,"avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)":off_micro_tot_walk_time/3600,
-                         "car_VMT (mi)":base.off_micro_VMT_auto,"M_VMT (mi)":0,"M_PMT (mi)":0,"M_PMT/M_VMT":0,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":base.off_micro_VMT_F,"F_PMT/F_VMT":base.off_micro_VMT_F/transit_tt_VMT,"tt_VMT (mi)":off_micro_tt_VMT,"tt_walk_dist (mi)":base.off_micro_VMT_W,
-                         "wghted_acc_emp_5_min":tot_weighted_5_min_F,
-                         "wghted_acc_emp_10_min":tot_weighted_10_min_F,
-                         "wghted_acc_emp_15_min":tot_weighted_15_min_F,
-                         "M_util_rate (%)": 0, "M_veh_occ": 0,"M_avg_speed (mph)": 0 ,"cnvrg (iter, sm_sq_per_diff)":0, "fleetpy_wait": 0, "rejection_rate": 0})
+        writer.writerow({"test_scen":0,"dscrptn":"FRT_only_scen","study_area":study_area,"repositioning":str(False),"microtrasnit":"non_micro","hdwy (min)": headway, "vir_stop (%)": 0, "flt_sz": 0,"op_periods": 0,
+                     "tt_agents": tt_num_agents,"car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips/tt_num_agents,
+                     "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)":base.off_micro_T_trips/tt_num_agents,"pure_M_users":0, "M_trips": 0,"M_mode_share (%)":0/tt_num_agents,
+                     "pure_F_users":pure_F_users,"F_trips": base.off_micro_F_trips,"F_mode_share (%)":base.off_micro_F_trips/tt_num_agents,"pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)":base.off_micro_W_trips/tt_num_agents,
+                     "walk_users":off_micro_w_trip_legs, "M_pls_F_users":0,"M_pls_F_mode_share (%)":0,"F_oper_cost ($)": F_oper_cost_base,
+                     "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue, "M_revenue ($)": 0,"Total_T_revenue ($)":off_micro_F_revenue, "tot_sub ($)":off_micro_tt_sub,
+                     "sub_per_F_trip ($)": off_micro_F_sub_per_ridership,"sub_per_F_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),"sub_per_M_trip ($)": 0,"sub_per_M_rider ($)":0,"sub_per_T_trip ($)":off_micro_F_sub_per_ridership,"sub_per_T_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),
+                     "sub_per_M_pax_mile ($/mi)":0,"sub_per_F_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,"sub_per_T_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,
+                     "sub_per_M_VMT ($/mi)": 0,"sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),"sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
+                     "tt_auto_gas_cost ($)":off_micro_total_op_cost-off_micro_F_revenue,"auto_gas_cost_per_mile ($/mi)":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_VMT_auto,
+                     "avg_M_fare": 0, "avg_F_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users),"avg_T_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users), "avg_auto_gas_cost":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_auto_trips,
+                    "tt_o_pckt_cost ($)": off_micro_total_op_cost,
+                     "tt_mob_lgsm_inc_with_micro": 0,"tt_gen_cost":off_micro_tt_gen_cost,
+                     "tt_mode_switch": 0,"M_avg_wait_time (s)": 0,
+                     "F_avg_wait_time (s)": off_micro_avg_F_wait_time,"avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)":off_micro_tot_walk_time/3600,
+                     "car_VMT (mi)":base.off_micro_VMT_auto,"M_VMT (mi)":0,"M_PMT (mi)":0,"M_PMT/M_VMT":0,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":base.off_micro_VMT_F,"F_PMT/F_VMT":base.off_micro_VMT_F/transit_tt_VMT,"tt_VMT (mi)":off_micro_tt_VMT,"tt_walk_dist (mi)":base.off_micro_VMT_W,
+                     "wghted_acc_emp_5_min":tot_weighted_5_min_F,
+                     "wghted_acc_emp_10_min":tot_weighted_10_min_F,
+                     "wghted_acc_emp_15_min":tot_weighted_15_min_F,
+                     "M_util_rate (%)": 0, "M_veh_occ": 0,"M_avg_speed (mph)": 0 ,"cnvrg (iter, sm_sq_per_diff)":0, "fleetpy_wait": 0, "rejection_rate": 0})
 
     #calculate the turn-on micro transit scenario
 
@@ -435,28 +430,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
         PMT_VMT_ratio_F = totals.VMT_F / transit_tt_VMT
 
 
-    if test_scenario==0:
-        dscrptn="Base_scen (M+F)"
-    if test_scenario==1:
-        dscrptn="Low-income discount"
-    if test_scenario == 2:
-        dscrptn = "Time-based fare"
-    if test_scenario == 3:
-        dscrptn = "FRT accessibility-based fare"
-    if test_scenario == 4:
-        dscrptn = "Intermodal transfer discount"
-    if test_scenario == 5:
-        dscrptn = "Micro_flat_fare"
-    if test_scenario == 6:
-        dscrptn = "Micro_start+dist_based_fr"
-    if test_scenario == 7:
-        dscrptn = "Intermodal trfr disct+Micro_start+dist_based_fr"
-    if test_scenario == 8:
-        dscrptn = "Time-based fare+no_peak_surchge"
-    if test_scenario == 9:
-        dscrptn = "FRT accessibility-based fare+no_high_FRT_acc_surchge"
-    if test_scenario == 10:
-        dscrptn = "Ritun BO (time-based+intrmdl_trfr+Micro_start+dist_based_fr)"
+    dscrptn = "Ritun BO (time-based+intrmdl_trfr+Micro_start+dist_based_fr)"
 
     if (totals.pure_F_user + totals.M_F_user)!=0:
         sub_per_F_rider = (F_oper_cost-F_revenue)/(totals.pure_F_user+totals.M_F_user)

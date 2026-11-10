@@ -595,7 +595,7 @@ def get_link_type_from_O_to_D(origin, destination, path):
 #############################################################
 #Multi-modal generalized cost shortest path algorithm
 ############################################################
-def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,microtransit_start_fare,microtransit_dist_based_rate, PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,test_scenario,mode,verbose=False, total_rejection_penalty=0, iteration=0):  # mode="T" or mode="C"
+def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,microtransit_start_fare,microtransit_dist_based_rate, PkFareFactor,OffPkFareFactor,Fixed2MicroFactor,Micro2FixedFactor,mode,verbose=False, total_rejection_penalty=0, iteration=0):  # mode="T" or mode="C"
 
     # Define a class Node to store the values
 
@@ -633,94 +633,25 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     bt_f_trfer = agent.bt_f_trfer  #
     bt_t_fr = agent.bt_t_fr
 
-    income = agent.income
-    transit_15min_acc = agent.transit_15min_acc
     parking_dur = agent.parking_dur
     # transit_pass = agent.transit_pass
 
-    if study_area == "lemon_grove":
-        low_acc_thrshd= 562
-        high_acc_thrshd = 2297
-
-    ##########################
-    ###Scenario #1:income based-fare
-    ###########################
-    low_income_threshold=31850 # 30% of area median income
-    if test_scenario == 1:
-        if income<=low_income_threshold:
-            low_income_factor=0.5
-        else:
-            low_income_factor = 1
-    else:
-        low_income_factor=1
     ########################################
-    ##Scenario #2: peak and off-peak fare
+    # Peak and off-peak factor of the microtransit fares. The model has one fare structure, the former fare
+    # scenario 10 (docs/progress.md, "Only fare scenario 10").
     #########################################
-    if test_scenario == 2:
-        if rq_time <= (10 * 3600):
-            time_period = "AM"
-        elif rq_time <= (15 * 3600):
-            time_period = "MD"
-        elif rq_time <= (20 * 3600):
-            time_period = "PM"
-        else:
-            time_period = "EV"
-        if time_period in ["AM","PM"]:
-            peak_factor=1.5
-        else:
-            peak_factor=0.5
+    if rq_time <= (10 * 3600):
+        time_period = "AM"
+    elif rq_time <= (15 * 3600):
+        time_period = "MD"
+    elif rq_time <= (20 * 3600):
+        time_period = "PM"
     else:
-        peak_factor = 1
-
-    ########################################
-    ##Scenario #8: peak and off-peak fare (but not suppressing for the peak fare)
-    #########################################
-    if test_scenario == 8 or test_scenario==10:
-        if rq_time <= (10 * 3600):
-            time_period = "AM"
-        elif rq_time <= (15 * 3600):
-            time_period = "MD"
-        elif rq_time <= (20 * 3600):
-            time_period = "PM"
-        else:
-            time_period = "EV"
-        if test_scenario == 8:
-            if time_period in ["AM","PM"]:
-                peak_factor = 1
-            else:
-                peak_factor = 0.5
-        else: # if test_scenario==10.
-            if time_period in ["AM","PM"]:
-                peak_factor = PkFareFactor
-            else:
-                peak_factor = OffPkFareFactor
+        time_period = "EV"
+    if time_period in ["AM","PM"]:
+        peak_factor = PkFareFactor
     else:
-        peak_factor = 1
-
-    #######################################
-    ###Scenario #3: accessibility-based fare
-    ######################################
-    if test_scenario == 3:
-        if transit_15min_acc<=low_acc_thrshd:
-            acc_factor=0.5
-        elif transit_15min_acc<=high_acc_thrshd:
-            acc_factor = 1
-        else:
-            acc_factor = 1.5
-    else:
-        acc_factor = 1
-    #######################################
-    ###Scenario #9: accessibility-based fare (but not suppressing for the high accessibility persons)
-    ######################################
-    if test_scenario == 9:
-        if transit_15min_acc<=low_acc_thrshd:
-            acc_factor=0.5
-        elif transit_15min_acc<=high_acc_thrshd:
-            acc_factor = 1
-        else:
-            acc_factor = 1
-    else:
-        acc_factor = 1
+        peak_factor = OffPkFareFactor
 
     # define a priority queue as the heap
     heap_q = []
@@ -812,66 +743,32 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                             transit_fare = 0
                     # transit_fare = transit_fare * 1
 
-                    if IsMicroLink==True and (test_scenario == 4 or test_scenario==7 or test_scenario==10):
-                        if test_scenario == 10:
-                            transit_fare = transit_fare_set* Micro2FixedFactor
-                            aaa=0
-                        else:
-                            transit_fare=0
+                    if IsMicroLink==True:  # transfer discount after a microtransit trip leg
+                        transit_fare = transit_fare_set* Micro2FixedFactor
                     generalized_link_travel_time = bt_f_wt * link_travel_time / 60 + bt_t_fr * transit_fare
                     # transit_fare=0 ##10/15/2024 Siwei
                 if link_type_ == 3:  # transfer link
                     generalized_link_travel_time = bt_f_trfer * link_travel_time / 60
                 if link_type_ == 4:  # microtransit in-vehicle-travel time link
-                    if test_scenario==5:
-                        micro_fare=0
-                        aaa=1
-                    else:
-                        micro_fare = microtransit_dist_based_rate * link_length * low_income_factor * peak_factor * acc_factor  # microtransit fare: 0.00123 dollar per meter, 1.97 dollar per mile
-                        if IsFixedLink == True and (test_scenario == 4 or test_scenario==7  or test_scenario==10):
-                            if test_scenario == 10:
-                                micro_fare = micro_fare * Fixed2MicroFactor
-                                aaa=0
-                            else:
-                                micro_fare = micro_fare * 0.5
-                        if (low_income_factor!=1) or (peak_factor!=0.5) or (acc_factor!=1):
-                            aaa=0
+                    micro_fare = microtransit_dist_based_rate * link_length * peak_factor  # microtransit fare: 0.00123 dollar per meter, 1.97 dollar per mile
+                    if IsFixedLink == True:  # transfer discount after a fixed-route trip leg
+                        micro_fare = micro_fare * Fixed2MicroFactor
                     generalized_link_travel_time = bt_m_ivt * link_travel_time / 60 + bt_t_fr * micro_fare
                     # micro_fare=0 ##10/15/2024 Siwei
                 else:
                     micro_fare = 0
                 if link_type_ == 5:  # microtransit waiting link
-                    if test_scenario==5: #Scenario 5: microtransit flat fare, same as fixed transit
+                    # microtransit start fare (with the transfer discount and the peak factor) and the rejection penalty
+                    if study_area == "lemon_grove":
+                        if min_node <= 1098 and 1171 <= edge <= 2269:
+                            micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun (docs/open_issues.md, I-19)
+                        else:
+                            micro_fare = 0
 
-                        if study_area == "lemon_grove":
-                            if min_node <= 1098 and 1171 <= edge <= 2269:
-                                micro_fare = transit_fare_set
-                            else:
-                                micro_fare = 0
-
-                        generalized_link_travel_time = bt_m_wt * link_travel_time / 60 + bt_t_fr * micro_fare
-                        # micro_fare=0 ##10/15/2024 Siwei
-                        aaa=0
-                    elif (test_scenario==6 or test_scenario==7 or test_scenario==10):
-                        if study_area == "lemon_grove":
-                            if min_node <= 1098 and 1171 <= edge <= 2269:
-                                if test_scenario == 10:
-                                    micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun
-                                elif test_scenario == 7:
-                                    micro_fare = microtransit_start_fare * 0.5
-                                else:
-                                    micro_fare = microtransit_start_fare
-                            else:
-                                micro_fare = 0
-
-                        # micro_fare = microtransit_start_fare
-                        if iteration>0:
-                            if link_travel_time==180:
-                                print(f"WAITING LINK = {link_travel_time}")
-                        generalized_link_travel_time = bt_m_wt * link_travel_time / 60 + bt_t_fr * micro_fare + bt_t_fr * total_rejection_penalty
-                        # micro_fare=0 ##10/15/2024 Siwei
-                    else:
-                        generalized_link_travel_time = bt_m_wt * link_travel_time / 60
+                    if iteration>0:
+                        if link_travel_time==180:
+                            print(f"WAITING LINK = {link_travel_time}")
+                    generalized_link_travel_time = bt_m_wt * link_travel_time / 60 + bt_t_fr * micro_fare + bt_t_fr * total_rejection_penalty
                 if link_type_ == 7:  # auto network links
                     gas_cost = 0.00025 * link_length  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.4 ($/mile)
                     generalized_link_travel_time = bt_c_ivt * link_travel_time / 60 + bt_c_gas * gas_cost       # Ritun
