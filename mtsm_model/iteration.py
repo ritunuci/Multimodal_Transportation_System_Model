@@ -13,12 +13,16 @@ from mtsm_model import config, paths, choice, trip_legs
 from mtsm_model.state import IterationTotals
 
 
-def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, total_rejection_penalty, wait_times):
+def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, total_rejection_penalty, wait_times,
+                  fixed_paths):
     """Run the choice model for all travelers; write the FRT demand file (F_transit_trips) and FleetPy's demand
     file (new_fleetpy_demand). Updates state, base (iteration 0 of the first virtual-stop / fleet / period
     scenario), the link VMT dicts and iter_choice_prob (iter_agent_choice_prob[iteration]). wait_times:
     FleetPy's average waiting time per period from the previous iteration (None in iteration 0, where it is not
-    read). area: scenarios.StudyArea, scen: scenarios.Scenario. Returns the IterationTotals."""
+    read). fixed_paths: {rq_id: (parking_dur, bt_c_gas, car path, FRT path)}, empty at the start of a scenario and
+    filled in its first iteration; the car and FRT paths do not change between iterations (their networks, the fares
+    and the traveler are the same), so later iterations reuse them. area: scenarios.StudyArea, scen:
+    scenarios.Scenario. Returns the IterationTotals."""
     microtransit_run, headway, virstop = scen.microtransit_run, scen.headway, scen.virstop
     fleet_size, M_operating_hrs, operating_periods = scen.fleet_size, scen.M_operating_hrs, scen.operating_periods
     num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
@@ -28,6 +32,9 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
     MicroTransitNodes, new_fleetpy_demand = area.MicroTransitNodes, area.new_fleetpy_demand
     transit_link_vmt, transit_link_pax = area.transit_link_vmt, area.transit_link_pax
     off_micro_transit_link_vmt, off_micro_transit_link_pax = area.off_micro_transit_link_vmt, area.off_micro_transit_link_pax
+
+    if not fixed_paths:
+        paths.check_frt_network_reusable(initial_super_network["non_micro"][config.BASE_FRT_HEADWAY])
 
     totals = IterationTotals()
 
@@ -68,9 +75,13 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                                                                            initial_super_network, final_super_network, auto_network,
                                                                            headway, virstop, M_operating_hrs, fleet_size)
 
-                # least generalized cost paths: car, and walk + FRT (the base case without microtransit)
-                parking_dur, bt_c_gas, auto = paths.auto_path(study_area, auto_network, agent, cfg, iteration)
-                frt = paths.frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, iteration)
+                # least generalized cost paths: car, and walk + FRT (the base case without microtransit); searched in
+                # the scenario's first iteration, then reused (only the values read below are kept)
+                if rq_id not in fixed_paths:
+                    parking_dur, bt_c_gas, auto = paths.auto_path(study_area, auto_network, agent, cfg, iteration)
+                    frt = paths.frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, iteration)
+                    fixed_paths[rq_id] = (parking_dur, bt_c_gas, paths.dest_only(auto, dest), paths.dest_only(frt, dest))
+                parking_dur, bt_c_gas, auto, frt = fixed_paths[rq_id]
                 # walk + microtransit + FRT; no path for "micro_only" outside the operating periods (only transit costs 0 are
                 # read then)
                 if microtransit_run == "micro_only" and not in_operating_period:

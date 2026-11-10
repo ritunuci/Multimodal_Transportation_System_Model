@@ -2,10 +2,12 @@
 
 Three paths per traveler and iteration: by car (auto network), by walk + fixed-route transit (FRT-only network, the
 "without microtransit" base case) and by walk + microtransit + FRT (the super-network with microtransit). Moved from
-run_examples_new_parking.py; the calls of network_algorithms are unchanged.
+run_examples_new_parking.py; the calls of network_algorithms are unchanged. The car and FRT paths do not change
+between iterations; iteration.run_iteration searches them in a scenario's first iteration and then reuses them
+(dest_only, check_frt_network_reusable).
 
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import network_algorithms as n_a
@@ -109,3 +111,21 @@ def micro_path(study_area, T_micro_network, agent, cfg, total_rejection_penalty,
     transit_dist_path_all_ = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, dist_path, dist_visited_temp)  # calculate microtransit and fixed transit VMT
     return MicroPath(visited_temp, time_visited_temp, dist_visited_temp, fare_visited_temp, F_fare_visited_temp,
                      M_fare_visited_temp, transit_time_path_all_, transit_dist_path_all_)
+
+
+def dest_only(p, dest):
+    """A copy of an AutoPath or FrtPath with only what is read after the search: the values at the destination (as
+    one-entry dicts) and the trajectories. path and time_path are dropped. The full result takes about 0.25 MB per
+    traveler; the copy is kept for all iterations of a scenario."""
+    return replace(p, visited_temp={dest: p.visited_temp[dest]}, time_visited_temp={dest: p.time_visited_temp[dest]},
+                   dist_visited_temp={dest: p.dist_visited_temp[dest]}, fare_visited_temp={dest: p.fare_visited_temp[dest]},
+                   path=None, time_path=None)
+
+
+def check_frt_network_reusable(T_F_network):
+    """The FRT path is reused across iterations, but the rejection penalty changes between iterations. It applies only
+    to microtransit waiting links (link type 5), so the FRT-only network must have none."""
+    for from_node, to_node, d in T_F_network.edges(data=True):
+        if d["object"].link_type == 5:
+            raise ValueError("the FRT-only network has a microtransit waiting link (%s -> %s); its paths cannot be reused "
+                             "across iterations" % (from_node, to_node))

@@ -51,7 +51,7 @@ for vehicle repositioning).
 
        python run_examples_new_parking.py
 
-   A run takes about 7–10 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
+   A run takes about 5–7 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
    `lemon_grove_evaluation_zonal_partition_False.csv`.
 5. **Check reproducibility (optional).** With the reference parameters and seed listed in
    [`docs/reference_results/README.md`](docs/reference_results/README.md), `python tools/compare_reference.py` must
@@ -114,7 +114,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | `state.py` | `TravelerState` (per-traveler values across iterations), `BaseCase` (the fixed-route-only base case), `IterationTotals` |
 | `networks.py` | Reading an iteration's super-networks |
 | `iteration.py` | One iteration of the choice model for all travelers |
-| `paths.py` | A traveler's networks and least generalized cost paths |
+| `paths.py` | A traveler's networks and least generalized cost paths (car and FRT paths are reused across iterations) |
 | `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
 | `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
 | `microtransit.py` | Running FleetPy (through `fleetpy_runner.py`) and updating the super-networks with its results |

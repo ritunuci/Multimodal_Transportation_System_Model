@@ -8,7 +8,7 @@ model's behavior, and that is a mistake unless it was intended (and then it need
 
 1. Make sure the inputs are the frozen ones: `python tools/check_inputs.py`, which must report "all frozen inputs match".
 2. Make sure `mtsm_data/input_parameter/input_parameter.csv` has the values listed below (including `random_seed`).
-3. Run the model: `python run_examples_new_parking.py` (about 7–10 min).
+3. Run the model: `python run_examples_new_parking.py` (about 5–7 min).
 4. Compare: `python tools/compare_reference.py`. It must end with `REPRODUCED`.
 
 `compare_reference.py` compares every file below with the file the run just wrote, byte for byte. One

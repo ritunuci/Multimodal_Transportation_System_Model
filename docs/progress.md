@@ -31,6 +31,7 @@ earlier entries; commits before that date use the old names.
 | 2g | Only fare scenario 10: drop fare scenarios 0-9, the fare-scenario loop and the path cache (column kept) | Done 2026-11-09 (open: I-15, I-19) |
 | 2h | Remove unused code from `network_algorithms.py` (skim functions left untouched) | Done 2026-11-09 (open: I-20) |
 | 2i | Faster least-cost path search (`docs/path_search_speedup_plan.md`): run 18 -> 7 min | Done 2026-11-10 |
+| 2j | Reuse the car and FRT paths across iterations: run 7 -> 5 min | Done 2026-11-10 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -789,6 +790,29 @@ file was renamed, so the code still builds the same file names. The folder const
   calls, 0 differing (dicts also in key order). Full seed-0 run under the I/O tracer: **6 min 58 s** (before
   17 min 53 s); `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
 
+## Car and FRT paths reused across iterations (2026-11-10)
+
+- Why: the car and FRT paths of a traveler are the same in every iteration. Their networks do not change (the car
+  network is read once; the FRT-only network `initial_super_network_non_micro_hw_20.csv` is re-read but never
+  written during a run, checked with the I/O trace), nor do the traveler and the fares. Of the arguments that change
+  between iterations, `total_rejection_penalty` acts only on microtransit waiting links (type 5), which the FRT
+  network does not have, and `iteration` only on the debug print on those links. The search draws no random numbers.
+  Searching them once removes about 55% of the searches.
+- Decisions by the user (all as recommended): (1) keep only the values read later (the full results would take
+  about 1.9 GB: 0.24 MB per traveler for the car path, 0.26 MB for the FRT path); (2) the microtransit path is
+  still searched every iteration, also outside the operating periods, where it runs on the FRT network (it would
+  save about 5–7 s, for a second condition); (3) the store lasts one scenario, so nothing is carried from one
+  scenario to the next (the kind of carry-over of I-18); (4) a guard on the FRT network.
+- Code: `mtsm_model/model.py` `run_scenario` creates `fixed_paths = {}` (rq_id -> parking_dur, bt_c_gas, car path,
+  FRT path) before the iteration loop and passes it to `run_iteration`. `mtsm_model/iteration.py` searches the two
+  paths only for a traveler not yet in the store, then reads them from it. `mtsm_model/paths.py`: `dest_only` keeps
+  the four destination values (as one-entry dicts, so the callers are unchanged) and the trajectories and drops
+  `path` / `time_path`; `check_frt_network_reusable` stops the run with a `ValueError` if the FRT-only network has a
+  link of type 5 (checked when the store is empty).
+- Verification (2026-11-10): passed. Full seed-0 run (with stage timers): **5 min 08 s** (before 6 min 58 s); car and
+  FRT searches 3,742 each (before 22,452); `compare_reference.py` **32 identical, `REPRODUCED`**;
+  `check_inputs.py` passes; no pyflakes warnings in the three files.
+
 ---
 
 ## Continuing work in a fresh clone
@@ -799,7 +823,7 @@ file was renamed, so the code still builds the same file names. The folder const
 3. Python: the `fleetpy` conda env (`C:\Users\Autonomicity\.conda\envs\fleetpy\python.exe`; in VS Code:
    *Python: Select Interpreter*). Gurobi with a valid license must be installed (used by repositioning).
 4. Check that everything is in place: `python tools/check_inputs.py` must report that all frozen inputs match.
-5. Optional full check (about 7–10 min): `python run_examples_new_parking.py`, then `python tools/compare_reference.py`, which must print
+5. Optional full check (about 5–7 min): `python run_examples_new_parking.py`, then `python tools/compare_reference.py`, which must print
    `REPRODUCED`.
 6. Working rules:
    - After **any** code change, do a full run with the reference inputs and seed; `compare_reference.py` must print `REPRODUCED`

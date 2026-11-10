@@ -74,6 +74,9 @@ def run_scenario(cfg, area, scen, writer, log_f):
     # per-traveler values with microtransit, kept across the iterations
     state = TravelerState()
 
+    # the car and FRT paths of each traveler, searched in the first iteration and reused (iteration.run_iteration)
+    fixed_paths = {}
+
     iter_sum_sq_per_diff=[]
 
     rejection_rate_dict = {}  # Ritun added Feb 14
@@ -111,7 +114,8 @@ def run_scenario(cfg, area, scen, writer, log_f):
         # write into FleetPy's demand input directly
         totals = run_iteration(cfg, area, scen, iteration=iteration, state=state, base=base,
                                iter_choice_prob=iter_agent_choice_prob[iteration],
-                               total_rejection_penalty=total_rejection_penalty, wait_times=wait_times)
+                               total_rejection_penalty=total_rejection_penalty, wait_times=wait_times,
+                               fixed_paths=fixed_paths)
 
 
         ####################
