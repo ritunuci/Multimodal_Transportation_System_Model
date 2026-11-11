@@ -17,6 +17,7 @@ MANIFEST = os.path.join(MTSM_DIR, "MANIFEST.csv")
 # frozen input -> role; paths relative to mtsm_data/, "/" separated
 INPUTS = {
     "input_parameter/input_parameter.csv": "scenario parameters",
+    "input_parameter/mtsm_constant_configurations.csv": "all MTSM parameters (not read by the run yet)",
     "region/pre_nodes.csv": "region road nodes",
     "region/final_land_use.csv": "land use (employment)",
     "region/activitysim_output/lemon_grove_MGRA_pop_inc.csv": "MGRA population / income",

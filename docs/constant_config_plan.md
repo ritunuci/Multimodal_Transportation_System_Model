@@ -1,12 +1,14 @@
 # Plan: one configuration file for all MTSM parameters (`mtsm_constant_configurations.csv`)
 
-Status: **waiting for the user's decisions** (see "Decisions needed", at the end). No code has been changed for this
-plan. Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
+Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; step 1 done 2026-11-10;
+step 2 next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
 
 ## The user's request (2026-11-10)
 
 - One config file, `mtsm_constant_configurations.csv`, with two columns: `parameter_name` and the parameter value
   (the user wrote `paramter_value`; see decision 5).
+- A third column, `description` (added by the user, 2026-11-10): a very short description of the parameter, with its
+  unit. No code reads it.
 - The file is read into a dictionary. Each `parameter_name` gets a key, listed in a new file `mtsm_global_parameters.py`
   (the way FleetPy lists its parameter names in `src/misc/globals.py`).
 - The scattered hardcoded parameters go into this file, **including the ones now in `input_parameter.csv`**.
@@ -95,6 +97,11 @@ file (`op_max_VR_con` 3, `op_repo_horizons` 60, `op_repo_timestep` 300): they ar
    variables at the start of the function (a dictionary lookup per link would slow the run).
 4. **Access from the helpers.** The file is read once at startup into one dictionary held in `mtsm_model/config.py`,
    which all modules import (instead of passing `cfg` into every helper function).
+5. **The `description` column.** The loader requires the header `parameter_name,parameter_value,description` and
+   reads only the first two columns. A description that contains a comma is quoted (the `csv` module does this when
+   the file is written by code; by hand, write `"..."`). The unit goes in the description, so the keys are plain names
+   (`transit_fare`, not `transit_fare ($)`). Editing a description changes the file's checksum: after a deliberate
+   edit, run `tools/check_inputs.py --write` and note it in `docs/progress.md`.
 
 ## The frozen input
 
@@ -121,8 +128,17 @@ to the new file.
 ## Steps (each ends with a full seed-0 run: `REPRODUCED`)
 
 1. **File and keys:** `mtsm_global_parameters.py` (keys and types), `mtsm_constant_configurations.csv` with the
-   reference values, and the loader. A test checks that every loaded value equals today's value and type. Nothing
-   uses them yet.
+   reference values and a description per parameter, and the loader. A test checks that every loaded value equals
+   today's value and type. Nothing uses them yet.
+   *Done 2026-11-10:* 53 parameters; `config.read_constant_config()` (header, unknown, repeated and missing keys,
+   values that do not convert: all listed, then stop); `tools/check_constant_config.py` compares every value and
+   type with today's (`SAME: 53 parameters`; removed in step 5). The new CSV is already a frozen input (added to
+   `MANIFEST.csv` and `tools/check_inputs.py`, ahead of step 4, so it is protected from the start). Not added as
+   keys: the `OPERATING_PERIOD_1`/`_3` alternatives (unused), the `/ 2` rules (half the headway, half the parking
+   duration), the `"lemon_grove"` name checks. Derived instead of new keys: the FRT-stop and microtransit node
+   ranges (from `num_walk_nodes`, `microtransit_node_offset`) and the microtransit operating hours (sum of the
+   period lengths, from `day_start_h` ... `day_end_h`: 10 / 15 / 19, checked). Full seed-0 run: `REPRODUCED`.
+
 2. **`config.py` and `RunConfig`** switch to the dictionary; the model reads the new file instead of
    `input_parameter.csv`.
 3. **Scattered values** replaced: `mtsm_model/` first, then the helpers.
@@ -143,4 +159,7 @@ to the new file.
    checksummed); `mtsm_global_parameters.py` in `mtsm_model/` (next to `config.py`). *(Recommended: as listed.)*
 5. **Second column name:** `parameter_value` (the request said `paramter_value`)? *(Recommended: `parameter_value`.)*
 
-User's answers: *(to be filled in)*
+User's answers (2026-11-10): all five as recommended: (1) B; (2) separate keys now, open item to merge later;
+(3) drop the four I-15 columns; (4) the CSV in `mtsm_data/input_parameter/`, `mtsm_global_parameters.py` in
+`mtsm_model/`; (5) `parameter_value`. Also: a third column `description`, never read by code (see "What must be
+handled", point 5).

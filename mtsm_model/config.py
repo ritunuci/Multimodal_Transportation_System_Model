@@ -3,6 +3,9 @@
 - RunConfig / read_run_config(): the run's parameters, read from mtsm_data/input_parameter/input_parameter.csv
   (written by Bayesian_optimization_script.py for each candidate).
 - check_run_config(): the startup check; stops on a configuration the code does not support.
+- read_constant_config(): all MTSM parameters from mtsm_data/input_parameter/mtsm_constant_configurations.csv, as a
+  dictionary (keys and types: mtsm_global_parameters.py). Not used by the run yet (docs/constant_config_plan.md,
+  step 1); it will replace input_parameter.csv and the constants below.
 - The model's fixed settings and constants, which are not in the input file (upper-case names below).
 
 Moved from run_examples_new_parking.py without changes to the values or the reading (restructuring step 2,
@@ -18,7 +21,12 @@ from typing import List
 from colorama import Fore, Style
 
 import mtsm_paths as mtsm
+from mtsm_model import mtsm_global_parameters as gp
 from tools.check_inputs import check_inputs
+
+# all MTSM parameters (keys and types: mtsm_global_parameters.py); read by read_constant_config()
+CONSTANT_CONFIG_FILE = os.path.join(mtsm.INPUT_PARAMETER_DIR, "mtsm_constant_configurations.csv")
+CONSTANT_CONFIG_HEADER = ["parameter_name", "parameter_value", "description"]
 
 # ---- units ----
 MILE_METER = 1609.34  # meters per mile
@@ -129,6 +137,61 @@ def str2bool(string_, default='raise'):
     else:
         raise ValueError('The value \'{}\' cannot be mapped to boolean.'
                          .format(string_))
+
+
+def convert_parameter(value, value_type):
+    """Convert a parameter_value string to value_type (one of the types in mtsm_global_parameters.py)."""
+    if value_type == gp.INT:
+        return int(value)
+    if value_type == gp.FLOAT:
+        return float(value)
+    if value_type == gp.BOOL:
+        return str2bool(value)
+    if value_type == gp.STR:
+        return value
+    if value_type == gp.INT_LIST:
+        return [int(v) for v in value.split(";")]
+    if value_type == gp.BOOL_LIST:
+        return [str2bool(v) for v in value.split(";")]
+    if value_type == gp.STR_LIST:
+        return value.split(";")
+    if value_type == gp.STR_LIST_LIST:
+        return [v.split(";") for v in value.split("|")]
+    raise ValueError(f"unknown parameter type {value_type}")
+
+
+def read_constant_config(path=CONSTANT_CONFIG_FILE):
+    """Read the MTSM parameters into a dictionary {key: value}, each value converted to its type in
+    mtsm_global_parameters.PARAMETER_TYPES. The description column is not read. Stops on a wrong header, a missing,
+    unknown or repeated key, or a value that cannot be converted, listing all of them."""
+    params = {}
+    unconverted = set()
+    problems = []
+    with open(path, newline="") as f:
+        reader = csv.reader(f)
+        header = next(reader, None)
+        if header != CONSTANT_CONFIG_HEADER:
+            sys.exit(f"ERROR: {path}: the header must be {','.join(CONSTANT_CONFIG_HEADER)}, not {header}")
+        for line_number, row in enumerate(reader, start=2):
+            if len(row) != len(CONSTANT_CONFIG_HEADER):
+                problems.append(f"line {line_number}: {len(row)} columns instead of {len(CONSTANT_CONFIG_HEADER)}")
+                continue
+            name, value = row[0], row[1]
+            if name not in gp.PARAMETER_TYPES:
+                problems.append(f"line {line_number}: unknown parameter {name}")
+            elif name in params or name in unconverted:
+                problems.append(f"line {line_number}: {name} is repeated")
+            else:
+                try:
+                    params[name] = convert_parameter(value, gp.PARAMETER_TYPES[name])
+                except ValueError:
+                    unconverted.add(name)
+                    problems.append(f"line {line_number}: {name} = '{value}' is not a {gp.PARAMETER_TYPES[name]}")
+    problems += [f"missing parameter {name}" for name in gp.PARAMETER_TYPES
+                 if name not in params and name not in unconverted]
+    if problems:
+        sys.exit(f"ERROR: {path}:\n  " + "\n  ".join(problems))
+    return params
 
 
 def read_run_config(input_para_dir=os.path.join(mtsm.INPUT_PARAMETER_DIR, "input_parameter.csv")):

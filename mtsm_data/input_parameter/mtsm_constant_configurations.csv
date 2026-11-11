@@ -1,0 +1,54 @@
+parameter_name,parameter_value,description
+test_area,lemon_grove,study area (only lemon_grove is supported)
+transit_fare,3.615388,FRT fare ($)
+microtransit_dist_based_rate,5,microtransit distance-based fare ($/mile)
+microtransit_start_fare,2.3811314,microtransit start fare ($)
+fleet_size,2,microtransit fleet size (vehicles)
+pk_fare_factor,2.3703918,microtransit fare factor in the peak periods AM and PM
+off_pk_fare_factor,1,microtransit fare factor in the off-peak periods MD and EV
+fixed2micro_factor,1,microtransit fare factor after an FRT leg (transfer discount)
+micro2fixed_factor,0,FRT fare factor after a microtransit leg (transfer discount)
+frt_headway,10,FRT headway (min)
+initial_rejection_rate,20,microtransit rejection rate assumed in the first iteration (%)
+micro_rejection_penalty,3,generalized cost penalty for microtransit rejection ($)
+random_seed,0,seed of the mode-choice draws and of FleetPy
+fare_scenario,10,fare structure number (the only one); kept in output file names
+base_frt_headway,20,FRT headway of the base case without microtransit (min)
+base_frt_fare,2.5,FRT fare of the base case without microtransit ($)
+indiv_converg_test,True,True = individual-level convergence test (False = aggregate-level; unfinished; I-16)
+maximum_iteration,15,iteration limit
+convergence_gap,0.01,convergence threshold
+mode_change_threshold,0.05,keep the previous mode if the transit probability changes by at most this
+aggregation,whole_region,how FleetPy's waiting times update the network: whole_region or census_track
+rejection_rate_window,3,from this iteration on the rejection rate is the average of this many previous iterations
+day_start_h,5,start of the AM period (h)
+am_end_h,10,end of the AM period (h)
+md_end_h,15,end of the MD period (h)
+pm_end_h,20,end of the PM period (h)
+day_end_h,24,end of the EV period (h)
+frt_operating_hours,19,FRT service hours per day
+parking_factor_peak,1,share of the parking charge in AM and PM
+parking_factor_offpeak,0.5,share of the parking charge in MD and EV
+parking_charge_interval_min,30,parking is charged per started interval of this length (min)
+num_walk_nodes,1099,number of walk nodes (0 to 1098); FRT stops follow
+microtransit_node_offset,1171,first microtransit node; walk node i is microtransit node offset + i
+micro_only_max_walk_node,731,micro_only network: waiting links from walk nodes up to this are updated (I-13)
+car_gas_cost_per_meter,0.00025,traveler's car fuel cost ($/m; about 0.40 $/mile)
+f_gas_per_mile,0.35,FRT bus fuel cost to the operator ($/mile)
+m_gas_per_mile,0.55,microtransit vehicle fuel cost to the operator ($/mile)
+frt_operating_cost_per_veh_hour,170,FRT operating cost ($/vehicle-hour)
+micro_operating_cost_per_veh_hour,130,microtransit operating cost ($/vehicle-hour)
+frt_speed_mph,30,FRT bus speed for the line duration (mph)
+frt_dwell_time_min,3,FRT dwell time per stop (min)
+frt_dead_end_time_min,20,FRT dead-end time per line run (min)
+default_micro_wait_time,180,microtransit waiting time of a period without served requests (s)
+meters_per_mile,1609.34,meters per mile
+meters_per_mile_frt_lines,1609,meters per mile for the FRT line lengths (to merge with meters_per_mile later)
+km_per_mile_fleetpy,1.609,km per mile for FleetPy's vkm and speed (to merge with meters_per_mile later)
+accessibility_thresholds_min,5;10;15,travel-time thresholds of the employment accessibility (min)
+fallback_employment_micro,431;5074;6341,jobs within the thresholds for a zone with no data (with microtransit)
+fallback_employment_frt,156;486;1020,jobs within the thresholds for a zone with no data (FRT only)
+operating_periods_scenarios,AM;MD;PM,microtransit operating periods; scenarios separated by |
+virtual_stop_scenarios,75,% of the nodes that are virtual microtransit stops
+microtransit_running_scenarios,micro,micro (microtransit + FRT) or micro_only (no FRT)
+repositioning_list,True,FleetPy vehicle repositioning
