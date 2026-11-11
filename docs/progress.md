@@ -38,6 +38,7 @@ earlier entries; commits before that date use the old names.
 | 2n | Transfers FRT <-> microtransit checked: discounted FRT fare no longer charged on alighting (I-23) | Done 2026-11-11 (open: I-22, I-24) |
 | 2o | Transfer penalty `bt_f_trfer` per transfer behind a switch (off); link type 3 removed | Done 2026-11-11 (open: I-25) |
 | 2p | Runs with `--config` (the optimizer's candidates) work again: FleetPy no longer gets the command line (I-26) | Done 2026-11-11 |
+| 2q | Representative super-network script `pre_process/build_super_network.py` (not used by the model yet) | Done 2026-11-11 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -928,6 +929,33 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   (`check_inputs.py` passes); with `--config` and a copy of the frozen file **`REPRODUCED`** (the optimizer's way
   of starting the model); with `--config` and `enable_num_transfer_penalty=True`: runs to the end, results differ
   (numbers in I-25).
+
+## Super-network script (2026-11-11)
+
+- `pre_process/build_super_network.py` builds a super-network from a road network (walk and microtransit: nodes
+  with coordinates, edges with distance and car travel time) and an FRT network (stops with coordinates, edges with
+  distance, travel time and route); variants `micro` and `non_micro`, the FRT headway, the virtual stops (a list,
+  or a share with a seed). No model code uses it yet (user's request); it is not a frozen input. Usage and the
+  layers, link types and link order: the module docstring.
+- How the frozen Lemon Grove super-networks are built (found from the data): walk nodes 0-1098 = FleetPy's nodes;
+  FRT stops after them; microtransit node = walk node + offset. Walk links: every road edge, time = distance /
+  1.251 m/s (the old `process_network.py` says 1.6). Microtransit links: every road edge, time = car time x 1.4
+  (all 2,816; four "exceptions" reported earlier came from a comparison that matched parallel links by node
+  pair). FRT waiting: boarding half the headway, alighting 0 s. Microtransit waiting: 180 s at the virtual
+  stops (75 %: 815 nodes), alighting 0 s. No transfer links. CRLF, values written as Python floats.
+- User's decisions: (1) each stop is joined to the nearest walk node by coordinates (both files have coordinates for
+  all nodes); (2) only stops with FRT links are numbered (for Lemon Grove the offset would be 1170, not 1171: stop
+  1159 has no link); (3) walk speed 1.251 m/s and factor 1.4 as defaults; (4) see above; (5) compare the content.
+  Also: a tie in the nearest node goes to the smaller node number; with a share, the virtual stops are drawn with
+  `random.Random(seed)` (the old code drew them without a seed).
+- Check (2026-11-11, a scratch script): inputs made from the frozen data (FleetPy's nodes.csv / edges.csv; FRT edges
+  = the type 1 links of the super-network, which have more digits than `super_network_transit_edges.csv`; each stop
+  at its walk node's coordinates, stop 1159 added without links; the virtual stops from the type 5 links). The four
+  frozen super-networks (micro hw 10 / 75 %, non_micro hw 10, non_micro hw 20, micro hw 20 / 100 %) were rebuilt
+  **byte for byte**, with every node number above 1159 lowered by one. Stops moved off their node by 40 % of the
+  distance to the next node (8-194 ft) gave the same network; a share with the same seed gives the same file, another
+  seed another one. The frozen data has no stop coordinates (the old code read them from an outside folder), so the
+  nearest-node step was checked only this way.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
