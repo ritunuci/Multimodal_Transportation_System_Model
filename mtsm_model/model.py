@@ -11,6 +11,7 @@ from collections import OrderedDict
 
 from mtsm_model.helpers import convergence_test as conv_test
 from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 from mtsm_model.state import BaseCase, TravelerState
 from mtsm_model.scenarios import load_study_area, scenarios
 from mtsm_model.networks import read_iteration_networks
@@ -88,11 +89,9 @@ def run_scenario(cfg, area, scen, writer, log_f):
     while converged==False:
         # Ritun added Feb 14
         rejection_rate_dict[iteration] = rejection_rate
-        if iteration >= 3:
-            rejection_rate = (rejection_rate_dict[iteration - 1] +
-                              rejection_rate_dict[iteration - 2] +
-                              rejection_rate_dict[
-                                  iteration - 3]) / 3
+        window = config.PARAMETERS[gp.G_REJECTION_RATE_WINDOW]
+        if iteration >= window:  # the average rejection rate of the last <window> iterations
+            rejection_rate = sum(rejection_rate_dict[iteration - k] for k in range(1, window + 1)) / window
         total_rejection_penalty = rejection_rate * cfg.micro_rejection_penalty
         print(f"TOATL REJECTION PENALTY IS: {total_rejection_penalty}")
 

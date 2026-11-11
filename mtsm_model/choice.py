@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from mtsm_model.helpers import binary_choice as b_c
 from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 
 @dataclass
@@ -88,9 +89,9 @@ def trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_ga
         agent_F_fare = micro.F_fare_visited_temp[dest]
         agent_M_fare = micro.M_fare_visited_temp[dest]
 
-    # parking charge per started 30 minutes of half the parking duration: full in the peak periods, half otherwise
+    # parking charge per started interval (30 min) of half the parking duration: full in the peak periods, half otherwise
     parking_dur_trip = parking_dur / 2
-    parking_dur_30_min_count = math.ceil(parking_dur_trip / 30)
+    parking_dur_30_min_count = math.ceil(parking_dur_trip / config.PARAMETERS[gp.G_PARKING_CHARGE_INTERVAL_MIN])
     if time_period in ["AM","PM"]:  # Ritun added for parking fee
         gen_cost_auto = auto.visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * config.PARKING_FACTOR_PEAK
     else:

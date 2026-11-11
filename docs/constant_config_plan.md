@@ -1,7 +1,7 @@
 # Plan: one configuration file for all MTSM parameters (`mtsm_constant_configurations.csv`)
 
-Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; steps 1 and 2 done
-2026-11-10; step 3 next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
+Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; steps 1-3 done
+2026-11-10; step 4 next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
 
 ## The user's request (2026-11-10)
 
@@ -149,6 +149,16 @@ to the new file.
    `tools/check_constant_config.py` now compares with literal copies of today's values (otherwise it would compare
    the file with itself). Full seed-0 run: `REPRODUCED`.
 3. **Scattered values** replaced: `mtsm_model/` first, then the helpers.
+   *Done 2026-11-10:* in `mtsm_model/` (model, choice, scenarios, results) and the helpers (network_algorithms,
+   update_network_files, testing_scenario_creation, output_performance_metrics), only in the functions the run calls
+   (the `__main__` blocks keep their literals). Simple values are read as `config.PARAMETERS[gp.G_<NAME>]`; derived
+   values are in `config.py`: `LAST_WALK_NODE`, `FIRST_FRT_STOP`, `LAST_FRT_STOP`, `LAST_MICROTRANSIT_NODE`,
+   `PERIOD_HOURS` and `microtransit_operating_hours(periods)` (replaces the three copies of 19 / 15 / 10). The path
+   search copies its per-link values into local variables once per call. The rejection-rate average is
+   `sum(last <window> rates) / window` (same additions in the same order). The accessibility thresholds index the
+   results (`[t_5]`); the variable and output column names keep 5 / 10 / 15 (said in the parameter's description;
+   the CSV and its `MANIFEST.csv` line updated). Full seed-0 run: `REPRODUCED`.
+
 4. **Optimizer and frozen input:** per-candidate copies written by name (B), the model takes the config path,
    `RunConfig` is built from the dictionary (moved here from step 2; the four I-15 fields and their startup checks
    go),

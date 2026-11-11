@@ -45,7 +45,7 @@ default_micro_wait_time,180,microtransit waiting time of a period without served
 meters_per_mile,1609.34,meters per mile
 meters_per_mile_frt_lines,1609,meters per mile for the FRT line lengths (to merge with meters_per_mile later)
 km_per_mile_fleetpy,1.609,km per mile for FleetPy's vkm and speed (to merge with meters_per_mile later)
-accessibility_thresholds_min,5;10;15,travel-time thresholds of the employment accessibility (min)
+accessibility_thresholds_min,5;10;15,travel-time thresholds of the employment accessibility (min); three; output names keep 5/10/15 min
 fallback_employment_micro,431;5074;6341,jobs within the thresholds for a zone with no data (with microtransit)
 fallback_employment_frt,156;486;1020,jobs within the thresholds for a zone with no data (FRT only)
 operating_periods_scenarios,AM;MD;PM,microtransit operating periods; scenarios separated by |

@@ -12,6 +12,7 @@ import numpy as np
 
 from mtsm_model.helpers import output_performance_metrics as output_metrics
 from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 # the columns of the evaluation file
 EVALUATION_FIELDNAMES = ["test_scen","dscrptn","study_area","repositioning","microtrasnit",'hdwy (min)', 'vir_stop (%)', 'flt_sz', 'op_periods',"tt_agents", "car_users", "car_mode_share (%)",
@@ -47,6 +48,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
     transit_tt_VMT_base = 0
     F_oper_cost = 0
     F_oper_cost_base = 0
+    frt_cost_per_veh_hour = config.PARAMETERS[gp.G_FRT_OPERATING_COST_PER_VEH_HOUR]  # $170/veh-hour
     if microtransit_run == "micro_only":
         transit_tt_VMT=0
         transit_tt_VMT_base = 0
@@ -55,11 +57,11 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
             F_oper_cost += 2 * (
                     F_operating_hrs * 60 / headway) * \
                            transit_line_duration[
-                               route_id] / 60 * 170  # 5 lines and $fixed route transit operating cost 170/veh-hour
+                               route_id] / 60 * frt_cost_per_veh_hour  # 5 lines and $fixed route transit operating cost 170/veh-hour
             F_oper_cost_base += 2 * (
                     F_operating_hrs * 60 / config.BASE_FRT_HEADWAY) * \
                                 transit_line_duration[
-                                    route_id] / 60 * 170  # Ritun Jan 7, 2024: add base F operating cost calculation
+                                    route_id] / 60 * frt_cost_per_veh_hour  # Ritun Jan 7, 2024: add base F operating cost calculation
             transit_tt_VMT += 2 * (
                     F_operating_hrs * 60 / headway) * dist
             transit_tt_VMT_base += 2 * (
@@ -70,7 +72,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
     F_oper_cost += F_gas_cost
     F_oper_cost_base += F_gas_cost_base  # Ritun Jan 7, 2024: add base F gas cost calculation
 
-    M_mode_operating_cost = M_operating_hrs * fleet_size * 130  # microtransit operating cost $130/veh-hour
+    M_mode_operating_cost = M_operating_hrs * fleet_size * config.PARAMETERS[gp.G_MICRO_OPERATING_COST_PER_VEH_HOUR]  # microtransit operating cost $130/veh-hour
     output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,test_scenario,microtransit="micro")
     output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,off_micro_transit_link_vmt,off_micro_transit_link_pax,test_scenario,microtransit="non_micro")
 

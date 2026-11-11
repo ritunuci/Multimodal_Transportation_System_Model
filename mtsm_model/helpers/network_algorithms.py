@@ -3,6 +3,8 @@ import csv
 from collections import OrderedDict
 import collections
 import heapq
+from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 class Link(object):
 
@@ -418,11 +420,11 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     # Peak and off-peak factor of the microtransit fares. The model has one fare structure, the former fare
     # scenario 10 (docs/progress.md, "Only fare scenario 10").
     #########################################
-    if rq_time <= (10 * 3600):
+    if rq_time <= config.AM_END:
         time_period = "AM"
-    elif rq_time <= (15 * 3600):
+    elif rq_time <= config.MD_END:
         time_period = "MD"
-    elif rq_time <= (20 * 3600):
+    elif rq_time <= config.PM_END:
         time_period = "PM"
     else:
         time_period = "EV"
@@ -453,6 +455,11 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     micro_fare=0
     gas_cost=0
     links = out_links(graph)
+    # parameters used per link, as local variables (a lookup per link would slow the search)
+    last_walk_node = config.LAST_WALK_NODE
+    first_frt_stop, last_frt_stop = config.FIRST_FRT_STOP, config.LAST_FRT_STOP
+    first_micro_node, last_micro_node = config.MICROTRANSIT_NODE_OFFSET, config.LAST_MICROTRANSIT_NODE
+    car_gas_cost_per_meter = config.PARAMETERS[gp.G_CAR_GAS_COST_PER_METER]  # $/m
     # has the path to a node used a microtransit link (type 4) / an FRT link (type 1)? (for the transfer discounts)
     micro_on_path = {initial: False}
     fixed_on_path = {initial: False}
@@ -490,7 +497,7 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     generalized_link_travel_time = bt_f_ivt * link_travel_time / 60
                 if link_type_ == 2:  # fixed route transit waiting link
                     if study_area == "lemon_grove":
-                        if min_node <= 1098 and 1099 <= edge <= 1170:
+                        if min_node <= last_walk_node and first_frt_stop <= edge <= last_frt_stop:
                             if link_type_pre != 2:
                                 transit_fare = transit_fare_set
                         else:
@@ -511,7 +518,7 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                 if link_type_ == 5:  # microtransit waiting link
                     # microtransit start fare (with the transfer discount and the peak factor) and the rejection penalty
                     if study_area == "lemon_grove":
-                        if min_node <= 1098 and 1171 <= edge <= 2269:
+                        if min_node <= last_walk_node and first_micro_node <= edge <= last_micro_node:
                             micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun (docs/open_issues.md, I-19)
                         else:
                             micro_fare = 0
@@ -521,7 +528,7 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                             print(f"WAITING LINK = {link_travel_time}")
                     generalized_link_travel_time = bt_m_wt * link_travel_time / 60 + bt_t_fr * micro_fare + bt_t_fr * total_rejection_penalty
                 if link_type_ == 7:  # auto network links
-                    gas_cost = 0.00025 * link_length  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.4 ($/mile)
+                    gas_cost = car_gas_cost_per_meter * link_length  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.4 ($/mile)
                     generalized_link_travel_time = bt_c_ivt * link_travel_time / 60 + bt_c_gas * gas_cost       # Ritun
                 else:
                     gas_cost=0

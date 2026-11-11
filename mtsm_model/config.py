@@ -201,6 +201,25 @@ VIRTUAL_STOP_SCENARIOS = PARAMETERS[gp.G_VIRTUAL_STOP_SCENARIOS]  # % of the nod
 MICROTRANSIT_RUNNING_SCENARIOS = PARAMETERS[gp.G_MICROTRANSIT_RUNNING_SCENARIOS]
 REPOSITIONING_LIST = PARAMETERS[gp.G_REPOSITIONING_LIST]  # FleetPy vehicle repositioning
 
+# ---- derived from the parameters ----
+# Lemon Grove node ranges: walk nodes 0..LAST_WALK_NODE, FRT stops FIRST_FRT_STOP..LAST_FRT_STOP (1099-1170),
+# microtransit nodes MICROTRANSIT_NODE_OFFSET..LAST_MICROTRANSIT_NODE (1171-2269)
+LAST_WALK_NODE = NUM_WALK_NODES - 1
+FIRST_FRT_STOP = NUM_WALK_NODES
+LAST_FRT_STOP = MICROTRANSIT_NODE_OFFSET - 1
+LAST_MICROTRANSIT_NODE = MICROTRANSIT_NODE_OFFSET + NUM_WALK_NODES - 1
+# length of each time period (h)
+PERIOD_HOURS = {"AM": PARAMETERS[gp.G_AM_END_H] - PARAMETERS[gp.G_DAY_START_H],
+                "MD": PARAMETERS[gp.G_MD_END_H] - PARAMETERS[gp.G_AM_END_H],
+                "PM": PARAMETERS[gp.G_PM_END_H] - PARAMETERS[gp.G_MD_END_H],
+                "EV": PARAMETERS[gp.G_DAY_END_H] - PARAMETERS[gp.G_PM_END_H]}
+
+
+def microtransit_operating_hours(operating_periods):
+    """hours of microtransit service in the operating periods: ["AM", "PM"] -> 10, ["AM", "MD", "PM"] -> 15,
+    ["AM", "MD", "PM", "EV"] -> 19 (until 2026-11-10 these three values were written into the code)"""
+    return sum(PERIOD_HOURS[period] for period in operating_periods)
+
 
 def read_run_config(input_para_dir=os.path.join(mtsm.INPUT_PARAMETER_DIR, "input_parameter.csv")):
     TRPartA_test_scenario_list = []

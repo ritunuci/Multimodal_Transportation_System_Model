@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import os
 
+from mtsm_model import config
+
 def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_periods_scenarios,time_periods,fleet_size_scenarios,headway_scenarios,initial_network_folder,final_network_folder, base_FRT_headway = None):  # Ritun Jan 3
     initial_super_network_dir = OrderedDict()
     initial_super_network = OrderedDict()
@@ -18,12 +20,7 @@ def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_pe
                 final_super_network_dir[microtransit][virstop] = OrderedDict()
                 final_super_network[microtransit][virstop] = OrderedDict()
                 for operating_periods in operating_periods_scenarios:  # fleetsize - influence the cost & mobility
-                    if operating_periods == ["AM", "MD", "PM", "EV"]:
-                        M_operating_hrs = 19
-                    elif operating_periods == ["AM", "MD", "PM"]:
-                        M_operating_hrs = 15
-                    else:
-                        M_operating_hrs = 10
+                    M_operating_hrs = config.microtransit_operating_hours(operating_periods)
                     # initial_super_network_dir[microtransit][headway][virstop][M_operating_hrs] = OrderedDict()
                     # initial_super_network[microtransit][headway][virstop][M_operating_hrs] = OrderedDict()
                     final_super_network_dir[microtransit][virstop][M_operating_hrs] = OrderedDict()
@@ -52,12 +49,7 @@ def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_pe
                         final_super_network_dir[microtransit][headway][virstop] = OrderedDict()
                         final_super_network[microtransit][headway][virstop] = OrderedDict()
                         for operating_periods in operating_periods_scenarios:  # fleetsize - influence the cost & mobility
-                            if operating_periods == ["AM", "MD", "PM", "EV"]:
-                                M_operating_hrs = 19
-                            elif operating_periods == ["AM", "MD", "PM"]:
-                                M_operating_hrs = 15
-                            else:
-                                M_operating_hrs = 10
+                            M_operating_hrs = config.microtransit_operating_hours(operating_periods)
                             # initial_super_network_dir[microtransit][headway][virstop][M_operating_hrs] = OrderedDict()
                             # initial_super_network[microtransit][headway][virstop][M_operating_hrs] = OrderedDict()
                             final_super_network_dir[microtransit][headway][virstop][M_operating_hrs] = OrderedDict()

@@ -23,6 +23,7 @@ from mtsm_model.helpers import output_performance_metrics as output_metrics
 from mtsm_model.helpers import testing_scenario_creation as tst_scen_create
 from mtsm_model.helpers import update_initial_network as init_net
 from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 
 @dataclass
@@ -166,13 +167,8 @@ def scenarios(cfg, area, log_f):
 
                     for operating_periods in config.OPERATING_PERIODS_SCENARIOS: #fleetsize - influence the cost & mobility
                         num_operating_periods_scen+=1
-                        if operating_periods==["AM", "MD", "PM", "EV"]:
-                            M_operating_hrs=19
-                        elif operating_periods==["AM", "MD", "PM"]:
-                            M_operating_hrs = 15
-                        else:
-                            M_operating_hrs = 10
-                        F_operating_hrs = 19 # fixed route transit 19 hrs
+                        M_operating_hrs = config.microtransit_operating_hours(operating_periods)
+                        F_operating_hrs = config.PARAMETERS[gp.G_FRT_OPERATING_HOURS]  # fixed route transit 19 hrs
 
 
                         F_transit_trips = os.path.join(area.fleetpy_demand_folder, "debug_False_F_transit_demand_%s_op_hr_%s_hw_%s_virstop_%s.csv" % (str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))

@@ -5,6 +5,8 @@ import heapq
 from mtsm_model.helpers import network_algorithms as n_a
 import pandas as pd
 import mtsm_paths as mtsm
+from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 network_folder = mtsm.REGION_DIR
 asim_output_folder = mtsm.ACTIVITYSIM_DIR
@@ -369,7 +371,9 @@ def accessibility_calculation(headway,virstop,microtransit,time_period,all_node_
         # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/example_demand/matched/example_network"
         output_folder = mtsm.LG_OUTPUT_DIR
 
-    minutes_set = [5, 10,15]
+    minutes_set = list(config.PARAMETERS[gp.G_ACCESSIBILITY_THRESHOLDS_MIN])  # (min); the names below keep 5, 10, 15
+    t_5, t_10, t_15 = minutes_set
+    fallback_emp = config.PARAMETERS[gp.G_FALLBACK_EMPLOYMENT_MICRO]  # jobs within the thresholds, zones with no data
     minute_acc_emp = OrderedDict()
     demand_nodes_fleetpy=get_fleetpy_demand_nodes()
     if microtransit=="micro":
@@ -457,31 +461,31 @@ def accessibility_calculation(headway,virstop,microtransit,time_period,all_node_
         for MGRA in MGRA_pop_percent:
             MGRA_pop=MGRA_pop_dict[MGRA]
             if MGRA in minute_acc_MGRA_avg_emp:
-                emp_5_min=minute_acc_MGRA_avg_emp[MGRA][5]
-                emp_10_min=minute_acc_MGRA_avg_emp[MGRA][10]
-                emp_15_min = minute_acc_MGRA_avg_emp[MGRA][15]
+                emp_5_min=minute_acc_MGRA_avg_emp[MGRA][t_5]
+                emp_10_min=minute_acc_MGRA_avg_emp[MGRA][t_10]
+                emp_15_min = minute_acc_MGRA_avg_emp[MGRA][t_15]
                 weighted_5_min=emp_5_min*MGRA_pop_percent[MGRA]
                 weighted_10_min = emp_10_min * MGRA_pop_percent[MGRA]
                 weighted_15_min = emp_15_min * MGRA_pop_percent[MGRA]
             elif MGRA in MGRA_adj_dict:
                 adjacent_MGRA=MGRA_adj_dict[MGRA]
                 if adjacent_MGRA in minute_acc_MGRA_avg_emp:
-                    emp_5_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][5]
-                    emp_10_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][10]
-                    emp_15_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][15]
+                    emp_5_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][t_5]
+                    emp_10_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][t_10]
+                    emp_15_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][t_15]
                 else:
                     if study_area == "lemon_grove":
-                        emp_5_min = 431
-                        emp_10_min = 5074
-                        emp_15_min = 6341
+                        emp_5_min = fallback_emp[0]
+                        emp_10_min = fallback_emp[1]
+                        emp_15_min = fallback_emp[2]
                 weighted_5_min = emp_5_min * MGRA_pop_percent[MGRA]
                 weighted_10_min = emp_10_min * MGRA_pop_percent[MGRA]
                 weighted_15_min = emp_15_min * MGRA_pop_percent[MGRA]
             else:
                 if study_area == "lemon_grove":
-                    emp_5_min = 431
-                    emp_10_min = 5074
-                    emp_15_min = 6341
+                    emp_5_min = fallback_emp[0]
+                    emp_10_min = fallback_emp[1]
+                    emp_15_min = fallback_emp[2]
                 weighted_5_min = emp_5_min * MGRA_pop_percent[MGRA]
                 weighted_10_min = emp_10_min * MGRA_pop_percent[MGRA]
                 weighted_15_min = emp_15_min * MGRA_pop_percent[MGRA]
@@ -550,7 +554,9 @@ def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,debug=Fa
 
 
     # minutes_set = [5, 10, 15, 20, 30, 40]
-    minutes_set = [5, 10, 15]
+    minutes_set = list(config.PARAMETERS[gp.G_ACCESSIBILITY_THRESHOLDS_MIN])  # (min); the names below keep 5, 10, 15
+    t_5, t_10, t_15 = minutes_set
+    fallback_emp = config.PARAMETERS[gp.G_FALLBACK_EMPLOYMENT_FRT]  # jobs within the thresholds, zones with no data
     minute_acc_emp = OrderedDict()
     demand_nodes_fleetpy = get_fleetpy_demand_nodes()
     if study_area == "lemon_grove":
@@ -633,31 +639,31 @@ def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,debug=Fa
         for MGRA in MGRA_pop_percent:
             MGRA_pop = MGRA_pop_dict[MGRA]
             if MGRA in minute_acc_MGRA_avg_emp:
-                emp_5_min = minute_acc_MGRA_avg_emp[MGRA][5]
-                emp_10_min = minute_acc_MGRA_avg_emp[MGRA][10]
-                emp_15_min = minute_acc_MGRA_avg_emp[MGRA][15]
+                emp_5_min = minute_acc_MGRA_avg_emp[MGRA][t_5]
+                emp_10_min = minute_acc_MGRA_avg_emp[MGRA][t_10]
+                emp_15_min = minute_acc_MGRA_avg_emp[MGRA][t_15]
                 weighted_5_min = emp_5_min * MGRA_pop_percent[MGRA]
                 weighted_10_min = emp_10_min * MGRA_pop_percent[MGRA]
                 weighted_15_min = emp_15_min * MGRA_pop_percent[MGRA]
             elif MGRA in MGRA_adj_dict:
                 adjacent_MGRA = MGRA_adj_dict[MGRA]
                 if adjacent_MGRA in minute_acc_MGRA_avg_emp:
-                    emp_5_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][5]
-                    emp_10_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][10]
-                    emp_15_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][15]
+                    emp_5_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][t_5]
+                    emp_10_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][t_10]
+                    emp_15_min = minute_acc_MGRA_avg_emp[adjacent_MGRA][t_15]
                 else:
                     if study_area == "lemon_grove":
-                        emp_5_min = 156
-                        emp_10_min = 486
-                        emp_15_min = 1020
+                        emp_5_min = fallback_emp[0]
+                        emp_10_min = fallback_emp[1]
+                        emp_15_min = fallback_emp[2]
                 weighted_5_min = emp_5_min * MGRA_pop_percent[MGRA]
                 weighted_10_min = emp_10_min * MGRA_pop_percent[MGRA]
                 weighted_15_min = emp_15_min * MGRA_pop_percent[MGRA]
             else:
                 if study_area == "lemon_grove":
-                    emp_5_min = 156
-                    emp_10_min = 486
-                    emp_15_min = 1020
+                    emp_5_min = fallback_emp[0]
+                    emp_10_min = fallback_emp[1]
+                    emp_15_min = fallback_emp[2]
                 weighted_5_min = emp_5_min * MGRA_pop_percent[MGRA]
                 weighted_10_min = emp_10_min * MGRA_pop_percent[MGRA]
                 weighted_15_min = emp_15_min * MGRA_pop_percent[MGRA]
@@ -701,10 +707,10 @@ def get_fleetpy_eval_output_metrics(repositioning):
     # util_rate_=util_rate["MoD_0"]
     veh_occ = df.loc["occupancy"]["MoD_0"]
     total_vkm = df.loc["total vkm"]["MoD_0"]
-    total_vmt = total_vkm/1.609
+    total_vmt = total_vkm/config.PARAMETERS[gp.G_KM_PER_MILE_FLEETPY]
     empty_vkm = df.loc["% empty vkm"]["MoD_0"]
     avg_speed_kmh = df.loc["avg driving velocity [km/h]"]["MoD_0"]
-    avg_speed_mph = avg_speed_kmh/1.609
+    avg_speed_mph = avg_speed_kmh/config.PARAMETERS[gp.G_KM_PER_MILE_FLEETPY]
     print("util_rate(%)",util_rate,"veh_occ",veh_occ,"total_vmt (miles)",total_vmt,"empty_vkm(%)",empty_vkm,"avg_speed (vmp)",avg_speed_mph)
     return util_rate,veh_occ,total_vmt,empty_vkm,avg_speed_mph
 
@@ -755,7 +761,7 @@ def get_transit_line_dist(study_area):
     for route_id in routes:
         route_dist_list=transit_rt_dist_dict[route_id]
         # print("route",route_id,"dist_list",transit_rt_dist_dict[route_id])
-        route_tt_dist = sum(route_dist_list)/1609
+        route_tt_dist = sum(route_dist_list)/config.PARAMETERS[gp.G_METERS_PER_MILE_FRT_LINES]
         num_ts_stops = len(transit_rt_stps_dict[route_id])
         transit_line_dist_list.append((route_id,route_tt_dist,num_ts_stops))
 
@@ -765,10 +771,10 @@ def get_transit_line_dist(study_area):
 
 def get_transit_line_duration(study_area,transit_line_dist_list):
     transit_line_duration = OrderedDict()
-    dwell_time = 3 / 60  # unit hour
-    dead_end_time = 20 / 60  # unit hour - (10min) on one end
+    dwell_time = config.PARAMETERS[gp.G_FRT_DWELL_TIME_MIN] / 60  # unit hour
+    dead_end_time = config.PARAMETERS[gp.G_FRT_DEAD_END_TIME_MIN] / 60  # unit hour - (10min) on one end
     if study_area == "lemon_grove":
-        avg_speed = 30
+        avg_speed = config.PARAMETERS[gp.G_FRT_SPEED_MPH]
         for (route_id, dist, num_stops) in transit_line_dist_list:
             transit_line_duration[route_id] = dist / avg_speed + num_stops * dwell_time + dead_end_time  # dwell time (3min/stop), dead-end times (10min)
 

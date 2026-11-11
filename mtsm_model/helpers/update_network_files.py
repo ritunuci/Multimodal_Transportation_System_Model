@@ -7,6 +7,8 @@ from csv import reader, writer
 import io
 import pandas as pd
 import mtsm_paths as mtsm
+from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 def copy_csv(filename,iteration):
     indiv_output_folder = mtsm.LG_INDIV_OUTPUT_DIR
@@ -136,7 +138,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                 #######################################################
                 start_node_ct = node_census_tract[start_node]
 
-                if rq_time <= (10 * 3600):
+                if rq_time <= config.AM_END:
                     time_period = "AM"
                     rq_served_period[time_period] += 1
                     tt_wait_time_period[time_period] += wait_time_
@@ -145,7 +147,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                     census_tract_num_rq[time_period][start_node_ct] += 1
                     # model rejection rate
                     census_tract_rq_served_num[time_period][start_node_ct] += 1
-                elif rq_time <= (15 * 3600):
+                elif rq_time <= config.MD_END:
                     time_period = "MD"
                     rq_served_period[time_period] += 1
                     tt_wait_time_period[time_period] += wait_time_
@@ -153,7 +155,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                     census_tract_num_rq[time_period][start_node_ct] += 1
                     # model rejection rate
                     census_tract_rq_served_num[time_period][start_node_ct] += 1
-                elif rq_time <= (20 * 3600):
+                elif rq_time <= config.PM_END:
                     time_period = "PM"
                     rq_served_period[time_period] += 1
                     tt_wait_time_period[time_period] += wait_time_
@@ -174,16 +176,16 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                 # Calculate the average time detour ratio by time of day
                 #######################################################
                 start_node_ct = node_census_tract[start_node]
-                if rq_time <= (10 * 3600):
+                if rq_time <= config.AM_END:
                     time_period = "AM"
                     time_tt_drive_time[time_period] += drive_time_
                     time_tt_direct_time[time_period] += direct_route_travel_time
 
-                elif rq_time <= (15 * 3600):
+                elif rq_time <= config.MD_END:
                     time_period = "MD"
                     time_tt_drive_time[time_period] += drive_time_
                     time_tt_direct_time[time_period] += direct_route_travel_time
-                elif rq_time <= (20 * 3600):
+                elif rq_time <= config.PM_END:
                     time_period = "PM"
                     time_tt_drive_time[time_period] += drive_time_
                     time_tt_direct_time[time_period] += direct_route_travel_time
@@ -193,15 +195,15 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                     time_tt_direct_time[time_period] += direct_route_travel_time
             else:
                 start_node_ct = node_census_tract[start_node]
-                if rq_time <= (10 * 3600):
+                if rq_time <= config.AM_END:
                     time_period = "AM"
                     # model rejection rate
                     census_tract_rq_reject_num[time_period][start_node_ct] += 1
-                elif rq_time <= (15 * 3600):
+                elif rq_time <= config.MD_END:
                     time_period = "MD"
                     # model rejection rate
                     census_tract_rq_reject_num[time_period][start_node_ct] += 1
-                elif rq_time <= (20 * 3600):
+                elif rq_time <= config.PM_END:
                     time_period = "PM"
                     # model rejection rate
                     census_tract_rq_reject_num[time_period][start_node_ct] += 1
@@ -214,7 +216,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
         try:
             wait_times[time_period] = tt_wait_time_period[time_period]/rq_served_period[time_period]
         except Exception:
-            wait_times[time_period] = 180
+            wait_times[time_period] = config.PARAMETERS[gp.G_DEFAULT_MICRO_WAIT_TIME]
 
     total_demand_ = 0
     for time_period in ["AM", "MD", "PM", "EV"]:
@@ -257,7 +259,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                 elif rq_served_period["AM"] != 0:
                     census_tract_avg_wait_time[time_period][census_tract] = tt_wait_time_period["AM"] / rq_served_period["AM"]  # no service in this time period - 180 waiting time
                 else:
-                    census_tract_avg_wait_time[time_period][census_tract] = 180
+                    census_tract_avg_wait_time[time_period][census_tract] = config.PARAMETERS[gp.G_DEFAULT_MICRO_WAIT_TIME]
 
 
     print("total microtransit demand", total_demand_, "number of requests served:", num_rq_served)
@@ -336,7 +338,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
 
                         if link_type == 5:  # adjust the microtransit waiting time according to fleetpy results
                             if study_area == "lemon_grove":
-                                if from_node <= 1098:
+                                if from_node <= config.LAST_WALK_NODE:
                                     census_tract = node_census_tract[from_node]
                                     travel_time = census_tract_avg_wait_time[time_period][
                                         census_tract]  # update the connector link travel time as the waiting time
@@ -375,7 +377,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                         route = int(data["route"])
 
                         if link_type == 5:  # adjust the microtransit waiting time according to fleetpy results
-                            if from_node <= 731:
+                            if from_node <= config.PARAMETERS[gp.G_MICRO_ONLY_MAX_WALK_NODE]:
                                 census_tract = node_census_tract[from_node]
                                 travel_time = census_tract_avg_wait_time[time_period][census_tract]  # update the connector link travel time as the waiting time
 
