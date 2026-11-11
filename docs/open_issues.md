@@ -42,6 +42,7 @@ Paths are relative to the codebase root.
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
 | I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Decision needed | 2026-11-09 |
+| I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Open | 2026-11-10 |
 
 ---
 
@@ -215,6 +216,18 @@ Paths are relative to the codebase root.
 - **Impact:** none on results; unused code at the root of the repository, listed in the README as part of the model.
 - **To decide:** keep them, move them (with the five functions) to `pre_process/` as preprocessing tools, or delete
   them (git keeps the history; the standalone `run_examples_*` scripts would then no longer import).
+
+### I-21: Three different meters-per-mile values (1609.34, 1609, 1.609 km)
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-10 (one parameter file, `docs/constant_config_plan.md`).
+- **What:** the code converts miles with three different values, now three parameters in
+  `mtsm_constant_configurations.csv`: `meters_per_mile` 1609.34 (fares, gas costs, VMT; `config.MILE_METER`),
+  `meters_per_mile_frt_lines` 1609 (FRT line lengths, `output_performance_metrics.get_transit_line_dist`) and
+  `km_per_mile_fleetpy` 1.609 (FleetPy's vkm and km/h, `output_performance_metrics.get_fleetpy_eval_output_metrics`).
+  They were kept apart so that the results stayed identical (user's decision 2: separate keys now, merge later).
+- **Impact:** small differences in the FRT line durations and operating costs and in the microtransit VMT and speed
+  reported from FleetPy (1609 vs 1609.34: about 0.02 %).
+- **Fix (later, user's intention):** use one value (`meters_per_mile`, 1.60934 km) everywhere and remove the two other
+  keys. This changes results: make and document a new reference in `docs/reference_results/`.
 
 ---
 

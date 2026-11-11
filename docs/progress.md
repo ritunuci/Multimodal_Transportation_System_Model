@@ -856,7 +856,7 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   candidate's copy by parameter name into `<folder_name>/candidate_configs/` and never changes the frozen file.
   `input_parameter.csv` was deleted; I-02 and I-15 closed.
 - Kept apart, to keep the results identical: meters per mile 1609.34, 1609 and 1.609 km (three keys; merging them
-  changes results and needs a new reference).
+  changes results and needs a new reference; open item `docs/open_issues.md`, I-21).
 - Verification: after each of the four code steps a full seed-0 run printed `REPRODUCED` (32 files, about 4:45);
   `tools/check_constant_config.py` compared every value and type with the old ones (`SAME: 53 parameters`; deleted
   with this step); the old and the new optimizer writer gave the same values and types on three candidates.
