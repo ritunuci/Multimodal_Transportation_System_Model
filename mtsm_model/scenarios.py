@@ -83,7 +83,7 @@ def load_study_area(cfg, study_area):
     headway_scenarios = [cfg.headway]  # [30,60]  #Ritun
     fleet_size_scenarios = cfg.read_fleet_size
 
-    demand_folder,initial_network_folder,final_network_folder,fleetpy_demand_folder,output_folder=fld_dir.determine_dolders(study_area)
+    demand_folder,initial_network_folder,final_network_folder,fleetpy_demand_folder,output_folder=fld_dir.determine_folders(study_area)
     new_fleetpy_demand = os.path.join(fleetpy_demand_folder,"%s_debug_False_fleetpy_demand.csv" % str(study_area))
     #############
     ## transit information

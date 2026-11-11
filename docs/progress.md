@@ -374,6 +374,8 @@ file was renamed, so the code still builds the same file names. The folder const
   - `pre_process/`: `generate_configs.py`, `process_network_trial_edit.py`, `zonal_partition.py`.
 - Kept at the root: the 14 modules the run and the optimizer use (plus 3 in `pre_process/`) (static import closure, imports inside functions
   included), the empty `__init__.py`, and non-script files (`README.md`, `Input_Parameters.md`, the `.docx`/`.txt` notes).
+  (2026-11-11: the `.docx`, `Micro Transit Code changing.docx`, was deleted; it held only its title, made
+  2022-11-16, and nothing read it.)
 - Checked before moving: no non-import references from staying code (file names in strings, `.gitignore`, `importlib`).
   `src/scenario_gui/` imports `ScenarioCreatorGUI` only under `TYPE_CHECKING`.
 - Moved scripts import repo modules by name; run them from the root with `PYTHONPATH=.` (see `standalone_scripts/README.md`).
