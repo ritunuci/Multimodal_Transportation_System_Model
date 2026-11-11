@@ -7,8 +7,9 @@ the same functions (its path has no microtransit links).
 The functions do not add anything up: they return the per-link values in path order, and the caller adds them to
 its totals one by one, in the same order as before, so that the floating-point sums stay identical.
 
-Link types (network_algorithms.py): 0 walk, 1 fixed-route transit (FRT) in-vehicle, 2 FRT waiting, 3 FRT transfer,
-4 microtransit in-vehicle, 5 microtransit waiting.
+Link types (network_algorithms.KNOWN_LINK_TYPES): 0 walk, 1 fixed-route transit (FRT) in-vehicle, 2 FRT waiting,
+4 microtransit in-vehicle, 5 microtransit waiting (type 3, an FRT transfer link that no network had, was removed on
+2026-11-11).
 """
 from dataclasses import dataclass, field
 from typing import List
@@ -24,7 +25,7 @@ class TimeLegs:
     F_wait: List[float] = field(default_factory=list)  # FRT waiting times (s)
     walk: List[float] = field(default_factory=list)  # walking times (s)
     M_travel: List[float] = field(default_factory=list)  # microtransit in-vehicle times (s)
-    F_travel: List[float] = field(default_factory=list)  # FRT in-vehicle and transfer times (s)
+    F_travel: List[float] = field(default_factory=list)  # FRT in-vehicle times (s)
     walk_only: bool = False  # all links are walk links (the "pure walking trips")
 
 
@@ -40,9 +41,7 @@ def split_time_path(time_path, rq_time, iteration):
     (node, time, link_type, route). rq_time: the traveler's departure time (s).
 
     A leg's request time is set when the leg starts. An FRT leg starts at an in-vehicle link (1) that does not follow
-    an FRT link (1 or 3). Before the change, an FRT leg whose first FRT link was a transfer link (3) would have
-    reused the origin and request time of an earlier traveler; here it raises an error instead. The networks have no
-    transfer links (checked 2026-11-09), so this cannot happen in the current model.
+    an in-vehicle link; a route change at a shared stop stays in the same leg.
     """
     legs = TimeLegs()
     pre_link_type = None
@@ -57,10 +56,10 @@ def split_time_path(time_path, rq_time, iteration):
         if (pre_link_type == 4) and (link_type != 4):  ##1228 testing!
             legs.M_legs.append((request_time, M_origin_node, pre_node))
         # calculate the number of fixed route transit trip legs
-        if (pre_link_type != 1 and pre_link_type != 3) and (link_type == 1):
+        if (pre_link_type != 1) and (link_type == 1):
             F_origin_node = node
             request_time = rq_time + int(time)
-        if (pre_link_type == 1) and (link_type != 1 and link_type != 3):
+        if (pre_link_type == 1) and (link_type != 1):
             legs.F_legs.append((request_time, F_origin_node, pre_node))
         # 11/07 Siwei: calculate the microtransit waiting time
         if (pre_link_type != 5) and (link_type == 5):
@@ -82,7 +81,7 @@ def split_time_path(time_path, rq_time, iteration):
                 print(f"MICRO Link Travel Time = {M_travel_time}")
             legs.M_travel.append(M_travel_time)
         # 12/22 Siwei: calculate the fixed route transit travel time
-        if link_type == 1 or link_type == 3:
+        if link_type == 1:
             legs.F_travel.append(time - pre_time)
 
         pre_time = time

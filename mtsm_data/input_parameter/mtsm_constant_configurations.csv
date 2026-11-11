@@ -30,6 +30,7 @@ frt_operating_hours,19,FRT service hours per day
 parking_factor_peak,1,share of the parking charge in AM and PM
 parking_factor_offpeak,0.5,share of the parking charge in MD and EV
 parking_charge_interval_min,30,parking is charged per started interval of this length (min)
+enable_num_transfer_penalty,False,True = the path search adds bt_f_trfer per transfer (each transit boarding after the first; a route change at a shared stop); False until a new reference (I-25)
 num_walk_nodes,1099,number of walk nodes (0 to 1098); FRT stops follow
 microtransit_node_offset,1171,first microtransit node; walk node i is microtransit node offset + i
 micro_only_max_walk_node,731,micro_only network: waiting links from walk nodes up to this are updated (I-13)

@@ -4,6 +4,11 @@ import heapq
 from mtsm_model import config
 from mtsm_model import mtsm_global_parameters as gp
 
+# link types of the super-networks: 0 walk, 1 FRT in-vehicle, 2 FRT waiting (boarding / alighting), 4 microtransit
+# in-vehicle, 5 microtransit waiting, 7 car. Type 3 (FRT transfer link) was removed on 2026-11-11: no network had one;
+# transfers are charged by the path search instead (enable_num_transfer_penalty, I-25).
+KNOWN_LINK_TYPES = {0, 1, 2, 4, 5, 7}
+
 class Link(object):
 
 
@@ -125,6 +130,9 @@ def read_super_network(Network_file):
             length = float(data["distance"]) #meter
             free_flow_travel_time_ = float(data["travel_time"])  # in second
             link_type_ = int(data["link_type"])  # link_type
+            if link_type_ not in KNOWN_LINK_TYPES:  # the path search has a cost only for these
+                raise ValueError("unknown link type %s in %s (link %s -> %s); known: %s"
+                                 % (link_type_, Network_file, origin_node, to_node, sorted(KNOWN_LINK_TYPES)))
             route_ = int(data["route"])
             l = Link(link_id=len(links),length=length,
                      from_node=origin_node, to_node=to_node, flow=float(0.0),
@@ -274,6 +282,8 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     first_frt_stop, last_frt_stop = config.FIRST_FRT_STOP, config.LAST_FRT_STOP
     first_micro_node, last_micro_node = config.MICROTRANSIT_NODE_OFFSET, config.LAST_MICROTRANSIT_NODE
     car_gas_cost_per_meter = config.PARAMETERS[gp.G_CAR_GAS_COST_PER_METER]  # $/m
+    # transfer penalty: bt_f_trfer per transit boarding after the first and per route change at a shared stop (I-25)
+    transfer_penalty_on = config.PARAMETERS[gp.G_ENABLE_NUM_TRANSFER_PENALTY]
     # has the path to a node used a microtransit link (type 4) / an FRT link (type 1)? (for the transfer discounts)
     micro_on_path = {initial: False}
     fixed_on_path = {initial: False}
@@ -309,6 +319,8 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     generalized_link_travel_time = bt_t_wk * link_travel_time / 60  # time parameter transfer from sec to min
                 if link_type_ == 1:  # transit link
                     generalized_link_travel_time = bt_f_ivt * link_travel_time / 60
+                    if transfer_penalty_on and link_type_pre == 1 and route != route_pre:  # route change at a shared stop
+                        generalized_link_travel_time += bt_f_trfer
                 if link_type_ == 2:  # fixed route transit waiting link
                     if study_area == "lemon_grove":
                         if min_node <= last_walk_node and first_frt_stop <= edge <= last_frt_stop:
@@ -319,8 +331,8 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                         else:
                             transit_fare = 0
                     generalized_link_travel_time = bt_f_wt * link_travel_time / 60 + bt_t_fr * transit_fare
-                if link_type_ == 3:  # transfer link
-                    generalized_link_travel_time = bt_f_trfer * link_travel_time / 60
+                    if transfer_penalty_on and min_node <= last_walk_node and (IsMicroLink or IsFixedLink):  # FRT boarding after a transit leg
+                        generalized_link_travel_time += bt_f_trfer
                 if link_type_ == 4:  # microtransit in-vehicle-travel time link
                     micro_fare = microtransit_dist_based_rate * link_length * peak_factor  # microtransit fare: 0.00123 dollar per meter, 1.97 dollar per mile
                     if IsFixedLink == True:  # transfer discount after a fixed-route trip leg
@@ -340,6 +352,8 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                         if link_travel_time==180:
                             print(f"WAITING LINK = {link_travel_time}")
                     generalized_link_travel_time = bt_m_wt * link_travel_time / 60 + bt_t_fr * micro_fare + bt_t_fr * total_rejection_penalty
+                    if transfer_penalty_on and min_node <= last_walk_node and (IsMicroLink or IsFixedLink):  # microtransit boarding after a transit leg
+                        generalized_link_travel_time += bt_f_trfer
                 if link_type_ == 7:  # auto network links
                     gas_cost = car_gas_cost_per_meter * link_length  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.4 ($/mile)
                     generalized_link_travel_time = bt_c_ivt * link_travel_time / 60 + bt_c_gas * gas_cost       # Ritun

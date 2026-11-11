@@ -46,6 +46,7 @@ Paths are relative to the codebase root.
 | I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Open | 2026-11-11 |
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
+| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (reminder) | 2026-11-11 |
 
 ---
 
@@ -233,7 +234,7 @@ Paths are relative to the codebase root.
   factors 0.5: 49 travelers. Paths, costs, mode choice and all results depend on it.
 - **Fix:** search over the states (node, microtransit used, FRT used, previous link FRT waiting) instead of nodes
   (up to 8 labels per node; slower). Changes results: make and document a new reference in
-  `docs/reference_results/`; together with the other changes that need one (I-19, I-21).
+  `docs/reference_results/`; together with the other changes that need one (I-19, I-21, I-25).
 
 ### I-24: Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged
 - **Status:** Open (to decide). **Severity:** Low. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
@@ -254,8 +255,33 @@ Paths are relative to the codebase root.
   (then the condition is the previous leg's mode, not "used before")? (2) Should a re-boarding after an alighting
   stay free also after microtransit (move the discount inside `if link_type_pre != 2:`)? Neither changes the
   reference, so a full run with `REPRODUCED` confirms the change; check the fares with factors other than 0 and 1
-  as for I-23. Related: I-19 (start fare), I-22 (search), the missing transfer links (`bt_f_trfer` has no effect;
-  docs/progress.md, "FRT <-> microtransit transfers checked").
+  as for I-23. Related: I-19 (start fare), I-22 (search), I-25 (transfer penalty).
+
+### I-25: Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference
+- **Status:** Open (reminder: turn the switch on later; user's decision 2026-11-11). **Severity:** Medium.
+  **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
+- **What:** nothing charged a transfer: the coefficient `bt_f_trfer` of the demand file was used only on transfer
+  links (type 3), which no network had. Since 2026-11-11 the path search
+  (`network_algorithms.generalized_cost_dijsktra_OD_heap`) adds `bt_f_trfer` to the generalized cost per transfer
+  when `enable_num_transfer_penalty` (in `mtsm_constant_configurations.csv`) is `True`: at every transit boarding
+  after the first (FRT boarding walk node -> stop, microtransit boarding walk node -> micro node, when the path has
+  used FRT or microtransit before) and at a route change at a shared stop (FRT link after an FRT link of another
+  route). The type 3 branch was removed, and `read_super_network` stops on an unknown link type. The switch is
+  `False`, so the results do not change (full seed-0 run `REPRODUCED`).
+- **Impact when turned on** (checked on the reference run's final networks, AM-PM, 3,472 travelers, path search
+  only): transit paths with 1 / 2 / 3 / 4 transfers 574 / 318 / 59 / 6 now and 519 / 206 / 22 / 1 with the penalty;
+  each path's cost is its link costs plus `bt_f_trfer` x the transfers counted on it (all 6,944 paths, microtransit
+  network and FRT-only base case). `bt_f_trfer` is 0.43-0.59 (median 0.50), about 3.3 min of FRT waiting
+  (`bt_f_wt` about 0.15 per min). Most counted transfers are route changes at the four shared stops (1110, 1115,
+  1119, 1160; 72 % of the AM paths that use FRT change route there, e.g. 917 -> 856 -> 936), which are free now:
+  no penalty and no waiting.
+- **Before turning it on:** check the route ids of the FRT links. The preprocessing kept only the first route id of
+  a link served by several routes (`pre_process/process_network.py`, `construct_super_network_transit_links`:
+  `route_id_str_.split(',')[0]`; route 120 became 3), so a route change in the network may be a label, not a
+  transfer; the raw route file is not in the repository. Then set the switch to `True`, make and document a new
+  reference in `docs/reference_results/`, together with the other changes that need one (I-19, I-21, I-22). The
+  penalty depends on the path before the link, like the discounts, so the I-22 fix should cover it (state: also the
+  current route).
 
 ---
 

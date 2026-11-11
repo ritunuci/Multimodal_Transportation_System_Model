@@ -36,6 +36,7 @@ earlier entries; commits before that date use the old names.
 | 2l | One parameter file `mtsm_constant_configurations.csv` (replaces `input_parameter.csv` and the values in the code) | Done 2026-11-10 |
 | 2m | Delete the unused skim scripts and their five functions in `network_algorithms.py` (I-20) | Done 2026-11-11 |
 | 2n | Transfers FRT <-> microtransit checked: discounted FRT fare no longer charged on alighting (I-23) | Done 2026-11-11 (open: I-22, I-24) |
+| 2o | Transfer penalty `bt_f_trfer` per transfer behind a switch (off); link type 3 removed | Done 2026-11-11 (open: I-25) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -895,6 +896,27 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   after an alighting is free without microtransit but charged the discounted fare after it.
 - Verification (2026-11-11): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes (the reference has `micro2fixed_factor` 0, so the fix changes nothing in it).
+
+## Transfer penalty behind a switch; link type 3 removed (2026-11-11)
+
+- User's decisions (all as recommended): a transfer is every transit boarding after the first (FRT <-> microtransit,
+  FRT -> FRT, microtransit -> microtransit) and a route change at a shared stop; each costs `bt_f_trfer` in the
+  generalized cost; behind the new parameter `enable_num_transfer_penalty` (`False`: results unchanged; I-25 is the
+  reminder to turn it on with a new reference).
+- `mtsm_constant_configurations.csv`: new row `enable_num_transfer_penalty,False` (key
+  `G_ENABLE_NUM_TRANSFER_PENALTY`, BOOL); `MANIFEST.csv` regenerated (only this file's size and checksum changed).
+- `network_algorithms.generalized_cost_dijsktra_OD_heap`: reads the switch once; when on, adds `bt_f_trfer` at an FRT
+  or microtransit boarding of a path that used FRT or microtransit before, and at an FRT link after an FRT link of
+  another route. The mode choice takes the search's cost, so the penalty reaches it without other changes.
+- Link type 3 (FRT transfer link) removed: no network had one, so its branch never ran and `bt_f_trfer` had no
+  effect. Removed the branch in the search and the `== 3` checks and the type 3 text in `trip_legs.py`;
+  `network_algorithms.KNOWN_LINK_TYPES = {0, 1, 2, 4, 5, 7}`, and `read_super_network` stops on any other type
+  (without the guard, an unknown link type would get the previous link's cost).
+- Checks: with the switch on (a `--config` copy) and off, on the final networks, every path's cost equals its link
+  costs plus `bt_f_trfer` x the transfers counted on it (6,944 paths each); transfer counts in I-25. Full seed-0 run
+  with the switch off under the I/O tracer: `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py`
+  passes. A full run with the switch on stopped after 11 s in FleetPy, not because of the penalty: any run with
+  `--config` does (`scenarios.py` hands the command line to FleetPy; found here, to fix).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

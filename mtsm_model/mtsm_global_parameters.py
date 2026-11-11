@@ -61,6 +61,9 @@ G_PARKING_FACTOR_PEAK = "parking_factor_peak"  # PARKING_FACTOR_PEAK
 G_PARKING_FACTOR_OFFPEAK = "parking_factor_offpeak"  # PARKING_FACTOR_OFFPEAK
 G_PARKING_CHARGE_INTERVAL_MIN = "parking_charge_interval_min"  # choice.py: per started 30 min
 
+# ---- path search ----
+G_ENABLE_NUM_TRANSFER_PENALTY = "enable_num_transfer_penalty"  # new 2026-11-11; to be turned on with a new reference (I-25)
+
 # ---- Lemon Grove super-network node numbering ----
 G_NUM_WALK_NODES = "num_walk_nodes"  # NUM_WALK_NODES
 G_MICROTRANSIT_NODE_OFFSET = "microtransit_node_offset"  # MICROTRANSIT_NODE_OFFSET
@@ -130,6 +133,7 @@ PARAMETER_TYPES = {
     G_PARKING_FACTOR_PEAK: INT,
     G_PARKING_FACTOR_OFFPEAK: FLOAT,
     G_PARKING_CHARGE_INTERVAL_MIN: INT,
+    G_ENABLE_NUM_TRANSFER_PENALTY: BOOL,
     G_NUM_WALK_NODES: INT,
     G_MICROTRANSIT_NODE_OFFSET: INT,
     G_MICRO_ONLY_MAX_WALK_NODE: INT,
