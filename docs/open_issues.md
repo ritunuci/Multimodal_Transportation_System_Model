@@ -41,7 +41,7 @@ Paths are relative to the codebase root.
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
-| I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Decision needed | 2026-11-09 |
+| I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Closed (2026-11-11) | 2026-11-09 |
 | I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Open | 2026-11-10 |
 
 ---
@@ -204,19 +204,6 @@ Paths are relative to the codebase root.
 - **To decide:** is this intended? If not, apply the factor to the start fare only after an FRT leg, like the
   distance fare. This changes results for `Fixed2MicroFactor != 1` (not the reference).
 
-### I-20: The skim modules and their functions in `network_algorithms.py` are not used by the run
-- **Status:** Decision needed. **Severity:** Low. **Found:** 2026-11-09 (removing unused code from
-  `network_algorithms.py`).
-- **What:** `get_auto_skims.py` and `get_walk_transit_skims.py` (all-to-all shortest paths: skims) are not imported by
-  a model run; only the standalone `run_examples_*` scripts in `standalone_scripts/New folder/` import them. Five
-  functions of `network_algorithms.py` (since 2026-11-10 in `mtsm_model/helpers/`) exist only for them: `read_network`, `read_walking_network`,
-  `read_network_dist`, `dijsktra_source_to_all`, `dijsktra_all_to_all`. They were left untouched in the cleanup of
-  `network_algorithms.py` (user's decision), because the reference run does not execute them and could not check a
-  change.
-- **Impact:** none on results; unused code at the root of the repository, listed in the README as part of the model.
-- **To decide:** keep them, move them (with the five functions) to `pre_process/` as preprocessing tools, or delete
-  them (git keeps the history; the standalone `run_examples_*` scripts would then no longer import).
-
 ### I-21: Three different meters-per-mile values (1609.34, 1609, 1.609 km)
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-10 (one parameter file, `docs/constant_config_plan.md`).
 - **What:** the code converts miles with three different values, now three parameters in
@@ -232,6 +219,25 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-20: The skim modules and their functions in `network_algorithms.py` are not used by the run
+- **Status:** Closed (2026-11-11). **Severity:** Low. **Found:** 2026-11-09 (removing unused code from
+  `network_algorithms.py`).
+- **What:** `get_auto_skims.py` and `get_walk_transit_skims.py` (all-to-all shortest paths: skims) are not imported by
+  a model run; only the standalone `run_examples_*` scripts in `standalone_scripts/New folder/` import them. Five
+  functions of `network_algorithms.py` (since 2026-11-10 in `mtsm_model/helpers/`) exist only for them: `read_network`, `read_walking_network`,
+  `read_network_dist`, `dijsktra_source_to_all`, `dijsktra_all_to_all`. They were left untouched in the cleanup of
+  `network_algorithms.py` (user's decision), because the reference run does not execute them and could not check a
+  change.
+- **Impact:** none on results; unused code at the root of the repository, listed in the README as part of the model.
+- **To decide:** keep them, move them (with the five functions) to `pre_process/` as preprocessing tools, or delete
+  them (git keeps the history; the standalone `run_examples_*` scripts would then no longer import).
+- **Resolution (user's decision: delete):** `get_auto_skims.py`, `get_walk_transit_skims.py` and the five
+  functions were deleted (git keeps the history), and with them the imports `OrderedDict` and `collections`,
+  which only these functions used. Class `Link` stays: `read_super_network` uses it. The four
+  `standalone_scripts/New folder/run_examples_new*.py` import the two modules but never call them; their imports
+  now fail (they were already broken: old `determine_folders` signature; `standalone_scripts/` left untouched).
+  Full seed-0 run `REPRODUCED`.
 
 ### I-02: The optimizer overwrites the frozen parameter file
 - **Status:** Closed (2026-11-10). **Severity:** Medium. **Found:** 2026-10-23 (Phase 1c).

@@ -34,6 +34,7 @@ earlier entries; commits before that date use the old names.
 | 2j | Reuse the car and FRT paths across iterations: run 7 -> 5 min | Done 2026-11-10 |
 | 2k | Move the helper modules from the root to `mtsm_model/helpers/` | Done 2026-11-10 |
 | 2l | One parameter file `mtsm_constant_configurations.csv` (replaces `input_parameter.csv` and the values in the code) | Done 2026-11-10 |
+| 2m | Delete the unused skim scripts and their five functions in `network_algorithms.py` (I-20) | Done 2026-11-11 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -862,6 +863,20 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Verification: after each of the four code steps a full seed-0 run printed `REPRODUCED` (32 files, about 4:45);
   `tools/check_constant_config.py` compared every value and type with the old ones (`SAME: 53 parameters`; deleted
   with this step); the old and the new optimizer writer gave the same values and types on three candidates.
+
+## Skim scripts deleted (2026-11-11)
+
+- Deleted (user's decision, I-20 option 3; git keeps the history): `get_auto_skims.py` and
+  `get_walk_transit_skims.py` (all-to-all shortest paths), and the five functions of
+  `mtsm_model/helpers/network_algorithms.py` only they used: `read_network`, `read_walking_network`,
+  `read_network_dist`, `dijsktra_source_to_all`, `dijsktra_all_to_all`; also the imports `OrderedDict` and
+  `collections`, used only by these. Class `Link` stays (`read_super_network` uses it). 186 lines removed.
+- Before: no code imported the two modules except the four `standalone_scripts/New folder/run_examples_new*.py`,
+  which never call them; no skim file is an input. Those four scripts now fail at the import (they were already
+  broken by the old `determine_folders` signature; `standalone_scripts/` left untouched).
+- Docs: README layout table, I-20 closed.
+- Verification (2026-11-11): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

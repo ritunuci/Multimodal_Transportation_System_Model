@@ -80,7 +80,6 @@ The frozen parameter file is never changed.
 | `mtsm_model/` | The model (see [Code map](#code-map)) |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
 | `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
-| `get_walk_transit_skims.py`, `get_auto_skims.py` | Walk-transit and car skims; not used by a run (`docs/open_issues.md`, I-20) |
 | `pre_process/` | Preprocessing of networks and demand |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`) |
 | `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`) and the outputs of a run |
