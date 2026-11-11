@@ -3,10 +3,11 @@
 - RunConfig / read_run_config(): the run's parameters, read from mtsm_data/input_parameter/input_parameter.csv
   (written by Bayesian_optimization_script.py for each candidate).
 - check_run_config(): the startup check; stops on a configuration the code does not support.
-- read_constant_config(): all MTSM parameters from mtsm_data/input_parameter/mtsm_constant_configurations.csv, as a
-  dictionary (keys and types: mtsm_global_parameters.py). Not used by the run yet (docs/constant_config_plan.md,
-  step 1); it will replace input_parameter.csv and the constants below.
-- The model's fixed settings and constants, which are not in the input file (upper-case names below).
+- read_constant_config() / PARAMETERS: all MTSM parameters, from
+  mtsm_data/input_parameter/mtsm_constant_configurations.csv (keys and types: mtsm_global_parameters.py), read once
+  at import. The model's constants (upper-case names below) take their values from it. The run's parameters
+  (RunConfig) are still read from input_parameter.csv, which the optimizer writes, until the optimizer writes the
+  new file (docs/constant_config_plan.md, step 4).
 
 Moved from run_examples_new_parking.py without changes to the values or the reading (restructuring step 2,
 docs/entry_script_refactor_plan.md). The field names of RunConfig and the constant names keep the old variable names
@@ -27,58 +28,6 @@ from tools.check_inputs import check_inputs
 # all MTSM parameters (keys and types: mtsm_global_parameters.py); read by read_constant_config()
 CONSTANT_CONFIG_FILE = os.path.join(mtsm.INPUT_PARAMETER_DIR, "mtsm_constant_configurations.csv")
 CONSTANT_CONFIG_HEADER = ["parameter_name", "parameter_value", "description"]
-
-# ---- units ----
-MILE_METER = 1609.34  # meters per mile
-
-# ---- fixed-route transit (FRT) base case: the "without microtransit" network and fare ----
-BASE_FRT_HEADWAY = 20  # min
-BASE_FRT_FARE = 2.5  # $, Ritun: base fare for fixed route transit
-
-# ---- iterations and convergence ----
-# True: individual-level convergence test (used). False: aggregate-level test, kept for later but unfinished;
-# see the convergence test in the iteration loop of run_examples_new_parking.py and docs/open_issues.md, I-16.
-INDIV_CONVERG_TEST = True
-MAXIMUM_ITERATION = 15  # the iterations stop here even if the convergence test has not passed
-CONVERGENCE_GAP = 0.01  # Ritun changed it from 0.01
-# A traveler keeps the mode of the previous iteration if the transit probability changed by at most this.
-MODE_CHANGE_THRESHOLD = 0.05
-# How FleetPy's waiting times update the microtransit waiting links (update_network_files.py):
-# "whole_region" = one average per time period; "census_track" = per census tract, with a rejection penalty.
-AGGREGATION = "whole_region"
-
-# ---- time periods: a trip departing at t (s) is AM if t <= AM_END, MD if t <= MD_END, PM if t <= PM_END, else EV ----
-AM_END = 10 * 3600
-MD_END = 15 * 3600
-PM_END = 20 * 3600
-
-# ---- parking: share of the parking charge in the generalized cost of a car trip ----
-PARKING_FACTOR_PEAK = 1  # AM and PM
-PARKING_FACTOR_OFFPEAK = 0.5  # MD and EV
-
-# ---- Lemon Grove super-network: walk node i (0..NUM_WALK_NODES-1) is microtransit node MICROTRANSIT_NODE_OFFSET + i,
-# and FleetPy node i ----
-NUM_WALK_NODES = 1099
-MICROTRANSIT_NODE_OFFSET = 1171
-
-# ---- gas cost ----
-F_GAS_PER_MILE = 0.350  # The fuel cost for the CNG buses averaged $0.35 per mile
-M_GAS_PER_MILE = 0.550  # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile
-
-# ---- fare structure: the former fare scenario 10, the only one left (docs/progress.md, "Only fare scenario 10").
-# The number stays in the output file names (..._scen_10) and the evaluation rows. ----
-FARE_SCENARIO = 10
-
-# ---- scenarios (each list has one element in the run) ----
-# Microtransit operating periods: AM = 5-10 h, MD = 10-15 h, PM = 15-20 h, EV = 20-24 h.
-OPERATING_PERIOD_1 = ["AM", "PM"]  # 10 hr
-OPERATING_PERIOD_2 = ["AM", "MD", "PM"]  # 15hr
-OPERATING_PERIOD_3 = ["AM", "MD", "PM", "EV"]  # 19hr
-OPERATING_PERIODS_SCENARIOS = [OPERATING_PERIOD_2]
-VIRTUAL_STOP_SCENARIOS = [75]  # % of the nodes that are virtual microtransit stops
-MICROTRANSIT_RUNNING_SCENARIOS = ["micro"]  # "micro" (microtransit + FRT) or "micro_only" (no FRT)
-REPOSITIONING_LIST = [True]  # FleetPy vehicle repositioning
-
 
 @dataclass
 class RunConfig:
@@ -192,6 +141,65 @@ def read_constant_config(path=CONSTANT_CONFIG_FILE):
     if problems:
         sys.exit(f"ERROR: {path}:\n  " + "\n  ".join(problems))
     return params
+
+
+# ---- all MTSM parameters, read once when this module is imported: PARAMETERS[gp.G_<NAME>] ----
+PARAMETERS = read_constant_config()
+
+# ---- the model's constants, from PARAMETERS (written here until 2026-11-10; docs/constant_config_plan.md, step 2).
+# The names stay, so that they can still be found in the old code and in the git history. ----
+
+# ---- units ----
+MILE_METER = PARAMETERS[gp.G_METERS_PER_MILE]  # meters per mile
+
+# ---- fixed-route transit (FRT) base case: the "without microtransit" network and fare ----
+BASE_FRT_HEADWAY = PARAMETERS[gp.G_BASE_FRT_HEADWAY]  # min
+BASE_FRT_FARE = PARAMETERS[gp.G_BASE_FRT_FARE]  # $, Ritun: base fare for fixed route transit
+
+# ---- iterations and convergence ----
+# True: individual-level convergence test (used). False: aggregate-level test, kept for later but unfinished;
+# see the convergence test in the iteration loop of run_examples_new_parking.py and docs/open_issues.md, I-16.
+INDIV_CONVERG_TEST = PARAMETERS[gp.G_INDIV_CONVERG_TEST]
+# the iterations stop here even if the convergence test has not passed
+MAXIMUM_ITERATION = PARAMETERS[gp.G_MAXIMUM_ITERATION]
+CONVERGENCE_GAP = PARAMETERS[gp.G_CONVERGENCE_GAP]  # Ritun changed it from 0.01
+# A traveler keeps the mode of the previous iteration if the transit probability changed by at most this.
+MODE_CHANGE_THRESHOLD = PARAMETERS[gp.G_MODE_CHANGE_THRESHOLD]
+# How FleetPy's waiting times update the microtransit waiting links (update_network_files.py):
+# "whole_region" = one average per time period; "census_track" = per census tract, with a rejection penalty.
+AGGREGATION = PARAMETERS[gp.G_AGGREGATION]
+
+# ---- time periods: a trip departing at t (s) is AM if t <= AM_END, MD if t <= MD_END, PM if t <= PM_END, else EV ----
+AM_END = PARAMETERS[gp.G_AM_END_H] * 3600
+MD_END = PARAMETERS[gp.G_MD_END_H] * 3600
+PM_END = PARAMETERS[gp.G_PM_END_H] * 3600
+
+# ---- parking: share of the parking charge in the generalized cost of a car trip ----
+PARKING_FACTOR_PEAK = PARAMETERS[gp.G_PARKING_FACTOR_PEAK]  # AM and PM
+PARKING_FACTOR_OFFPEAK = PARAMETERS[gp.G_PARKING_FACTOR_OFFPEAK]  # MD and EV
+
+# ---- Lemon Grove super-network: walk node i (0..NUM_WALK_NODES-1) is microtransit node MICROTRANSIT_NODE_OFFSET + i,
+# and FleetPy node i ----
+NUM_WALK_NODES = PARAMETERS[gp.G_NUM_WALK_NODES]
+MICROTRANSIT_NODE_OFFSET = PARAMETERS[gp.G_MICROTRANSIT_NODE_OFFSET]
+
+# ---- gas cost ----
+F_GAS_PER_MILE = PARAMETERS[gp.G_F_GAS_PER_MILE]  # The fuel cost for the CNG buses averaged $0.35 per mile
+# gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile
+M_GAS_PER_MILE = PARAMETERS[gp.G_M_GAS_PER_MILE]
+
+# ---- fare structure: the former fare scenario 10, the only one left (docs/progress.md, "Only fare scenario 10").
+# The number stays in the output file names (..._scen_10) and the evaluation rows. ----
+FARE_SCENARIO = PARAMETERS[gp.G_FARE_SCENARIO]
+
+# ---- scenarios (each list has one element in the run) ----
+# Microtransit operating periods: AM = 5-10 h, MD = 10-15 h, PM = 15-20 h, EV = 20-24 h. Used so far:
+# AM;PM (10 hr), AM;MD;PM (15 hr, the run), AM;MD;PM;EV (19 hr).
+OPERATING_PERIODS_SCENARIOS = PARAMETERS[gp.G_OPERATING_PERIODS_SCENARIOS]
+VIRTUAL_STOP_SCENARIOS = PARAMETERS[gp.G_VIRTUAL_STOP_SCENARIOS]  # % of the nodes that are virtual microtransit stops
+# "micro" (microtransit + FRT) or "micro_only" (no FRT)
+MICROTRANSIT_RUNNING_SCENARIOS = PARAMETERS[gp.G_MICROTRANSIT_RUNNING_SCENARIOS]
+REPOSITIONING_LIST = PARAMETERS[gp.G_REPOSITIONING_LIST]  # FleetPy vehicle repositioning
 
 
 def read_run_config(input_para_dir=os.path.join(mtsm.INPUT_PARAMETER_DIR, "input_parameter.csv")):

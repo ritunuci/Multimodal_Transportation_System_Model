@@ -1,7 +1,7 @@
 # Plan: one configuration file for all MTSM parameters (`mtsm_constant_configurations.csv`)
 
-Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; step 1 done 2026-11-10;
-step 2 next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
+Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; steps 1 and 2 done
+2026-11-10; step 3 next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
 
 ## The user's request (2026-11-10)
 
@@ -139,10 +139,19 @@ to the new file.
    ranges (from `num_walk_nodes`, `microtransit_node_offset`) and the microtransit operating hours (sum of the
    period lengths, from `day_start_h` ... `day_end_h`: 10 / 15 / 19, checked). Full seed-0 run: `REPRODUCED`.
 
-2. **`config.py` and `RunConfig`** switch to the dictionary; the model reads the new file instead of
-   `input_parameter.csv`.
+2. **`config.py`** switches to the dictionary. *Changed 2026-11-10:* `RunConfig` (the 13 run parameters) moved to
+   step 4. Until the optimizer writes the new file, it writes its candidates into `input_parameter.csv`; a model
+   that read the new file in between would run every candidate with the same frozen values, silently.
+   *Done 2026-11-10:* `config.PARAMETERS = read_constant_config()` at import; the upper-case constants of
+   `config.py` take their values from it (names and comments kept; `AM_END` etc. = hours x 3600). All 24 constants
+   compared with the committed `config.py`: same values and types; the unused `OPERATING_PERIOD_1/2/3` removed (the
+   alternatives are named in a comment). `RunConfig` unchanged (19 fields, same values and types).
+   `tools/check_constant_config.py` now compares with literal copies of today's values (otherwise it would compare
+   the file with itself). Full seed-0 run: `REPRODUCED`.
 3. **Scattered values** replaced: `mtsm_model/` first, then the helpers.
 4. **Optimizer and frozen input:** per-candidate copies written by name (B), the model takes the config path,
+   `RunConfig` is built from the dictionary (moved here from step 2; the four I-15 fields and their startup checks
+   go),
    `MANIFEST.csv` / `check_inputs.py` updated, `input_parameter.csv` deleted, I-02 and I-15 closed. Besides the
    reference run, one short optimizer check: one candidate, compared with what the old optimizer wrote.
 5. **Docs:** README, `docs/progress.md`, `docs/reference_results/README.md`; this plan's status set to done.

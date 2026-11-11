@@ -2,10 +2,10 @@
 
     python tools/check_constant_config.py      exit code 1 on any difference
 
-Compares the dictionary from config.read_constant_config() with input_parameter.csv (config.read_run_config()),
-the constants in config.py, and the values written into the code (literals below, with where they are). A check for
-the move of the parameters into one file (docs/constant_config_plan.md); it is removed in step 5, once the code reads
-everything from the new file.
+Compares the dictionary from config.read_constant_config() with input_parameter.csv (config.read_run_config()) and
+with today's values of the constants of config.py and of the values written into the code (literals below, copied
+from commit 027630a, with where they were). A check for the move of the parameters into one file
+(docs/constant_config_plan.md); it is removed in step 5, once the code reads everything from the new file.
 """
 import csv
 import os
@@ -35,30 +35,30 @@ def expected_values(cfg):
         gp.G_INITIAL_REJECTION_RATE: cfg.initial_rejection_rate,
         gp.G_MICRO_REJECTION_PENALTY: cfg.micro_rejection_penalty,
         gp.G_RANDOM_SEED: cfg.random_seed,
-        # config.py
-        gp.G_FARE_SCENARIO: config.FARE_SCENARIO,
-        gp.G_BASE_FRT_HEADWAY: config.BASE_FRT_HEADWAY,
-        gp.G_BASE_FRT_FARE: config.BASE_FRT_FARE,
-        gp.G_INDIV_CONVERG_TEST: config.INDIV_CONVERG_TEST,
-        gp.G_MAXIMUM_ITERATION: config.MAXIMUM_ITERATION,
-        gp.G_CONVERGENCE_GAP: config.CONVERGENCE_GAP,
-        gp.G_MODE_CHANGE_THRESHOLD: config.MODE_CHANGE_THRESHOLD,
-        gp.G_AGGREGATION: config.AGGREGATION,
-        gp.G_AM_END_H: config.AM_END // 3600,
-        gp.G_MD_END_H: config.MD_END // 3600,
-        gp.G_PM_END_H: config.PM_END // 3600,
-        gp.G_PARKING_FACTOR_PEAK: config.PARKING_FACTOR_PEAK,
-        gp.G_PARKING_FACTOR_OFFPEAK: config.PARKING_FACTOR_OFFPEAK,
-        gp.G_NUM_WALK_NODES: config.NUM_WALK_NODES,
-        gp.G_MICROTRANSIT_NODE_OFFSET: config.MICROTRANSIT_NODE_OFFSET,
-        gp.G_F_GAS_PER_MILE: config.F_GAS_PER_MILE,
-        gp.G_M_GAS_PER_MILE: config.M_GAS_PER_MILE,
-        gp.G_METERS_PER_MILE: config.MILE_METER,
-        gp.G_OPERATING_PERIODS_SCENARIOS: config.OPERATING_PERIODS_SCENARIOS,
-        gp.G_VIRTUAL_STOP_SCENARIOS: config.VIRTUAL_STOP_SCENARIOS,
-        gp.G_MICROTRANSIT_RUNNING_SCENARIOS: config.MICROTRANSIT_RUNNING_SCENARIOS,
-        gp.G_REPOSITIONING_LIST: config.REPOSITIONING_LIST,
-        # written into the code (line numbers at commit 027630a)
+        # the constants of config.py at commit 027630a
+        gp.G_FARE_SCENARIO: 10,  # FARE_SCENARIO
+        gp.G_BASE_FRT_HEADWAY: 20,  # BASE_FRT_HEADWAY
+        gp.G_BASE_FRT_FARE: 2.5,  # BASE_FRT_FARE
+        gp.G_INDIV_CONVERG_TEST: True,  # INDIV_CONVERG_TEST
+        gp.G_MAXIMUM_ITERATION: 15,  # MAXIMUM_ITERATION
+        gp.G_CONVERGENCE_GAP: 0.01,  # CONVERGENCE_GAP
+        gp.G_MODE_CHANGE_THRESHOLD: 0.05,  # MODE_CHANGE_THRESHOLD
+        gp.G_AGGREGATION: "whole_region",  # AGGREGATION
+        gp.G_AM_END_H: 10,  # AM_END = 10 * 3600
+        gp.G_MD_END_H: 15,  # MD_END = 15 * 3600
+        gp.G_PM_END_H: 20,  # PM_END = 20 * 3600
+        gp.G_PARKING_FACTOR_PEAK: 1,  # PARKING_FACTOR_PEAK
+        gp.G_PARKING_FACTOR_OFFPEAK: 0.5,  # PARKING_FACTOR_OFFPEAK
+        gp.G_NUM_WALK_NODES: 1099,  # NUM_WALK_NODES
+        gp.G_MICROTRANSIT_NODE_OFFSET: 1171,  # MICROTRANSIT_NODE_OFFSET
+        gp.G_F_GAS_PER_MILE: 0.350,  # F_GAS_PER_MILE
+        gp.G_M_GAS_PER_MILE: 0.550,  # M_GAS_PER_MILE
+        gp.G_METERS_PER_MILE: 1609.34,  # MILE_METER
+        gp.G_OPERATING_PERIODS_SCENARIOS: [["AM", "MD", "PM"]],  # OPERATING_PERIODS_SCENARIOS = [OPERATING_PERIOD_2]
+        gp.G_VIRTUAL_STOP_SCENARIOS: [75],  # VIRTUAL_STOP_SCENARIOS
+        gp.G_MICROTRANSIT_RUNNING_SCENARIOS: ["micro"],  # MICROTRANSIT_RUNNING_SCENARIOS
+        gp.G_REPOSITIONING_LIST: [True],  # REPOSITIONING_LIST
+        # values written into the code (line numbers at commit 027630a)
         gp.G_REJECTION_RATE_WINDOW: 3,  # mtsm_model/model.py:91-95
         gp.G_DAY_START_H: 5,  # config.py comment: AM = 5-10 h
         gp.G_DAY_END_H: 24,  # config.py comment: EV = 20-24 h
@@ -97,8 +97,7 @@ def derived_problems(p, cfg):
     hours = {"AM": p[gp.G_AM_END_H] - p[gp.G_DAY_START_H], "MD": p[gp.G_MD_END_H] - p[gp.G_AM_END_H],
              "PM": p[gp.G_PM_END_H] - p[gp.G_MD_END_H], "EV": p[gp.G_DAY_END_H] - p[gp.G_PM_END_H]}
     # mtsm_model/scenarios.py:168-173, helpers/testing_scenario_creation.py: microtransit operating hours
-    for periods, hrs in ((config.OPERATING_PERIOD_1, 10), (config.OPERATING_PERIOD_2, 15),
-                         (config.OPERATING_PERIOD_3, 19)):
+    for periods, hrs in ((["AM", "PM"], 10), (["AM", "MD", "PM"], 15), (["AM", "MD", "PM", "EV"], 19)):
         if sum(hours[period] for period in periods) != hrs:
             problems.append(f"operating hours of {periods}: {sum(hours[period] for period in periods)} != {hrs}")
     # helpers/network_algorithms.py:493, 514: walk nodes <= 1098, FRT stops 1099-1170, microtransit nodes 1171-2269
