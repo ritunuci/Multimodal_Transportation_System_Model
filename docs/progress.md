@@ -33,6 +33,7 @@ earlier entries; commits before that date use the old names.
 | 2i | Faster least-cost path search (`docs/path_search_speedup_plan.md`): run 18 -> 7 min | Done 2026-11-10 |
 | 2j | Reuse the car and FRT paths across iterations: run 7 -> 5 min | Done 2026-11-10 |
 | 2k | Move the helper modules from the root to `mtsm_model/helpers/` | Done 2026-11-10 |
+| 2l | One parameter file `mtsm_constant_configurations.csv` (replaces `input_parameter.csv` and the values in the code) | Done 2026-11-10 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -835,6 +836,31 @@ file was renamed, so the code still builds the same file names. The folder const
   standalone scripts compile; no import of the old root names is left. Full seed-0 run under the I/O tracer:
   4 min 43 s; `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
 
+## One parameter file (2026-11-10)
+
+Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
+
+- `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: all 53 MTSM parameters, one row each
+  (`parameter_name,parameter_value,description`; no code reads the description). Keys and types:
+  `mtsm_model/mtsm_global_parameters.py` (`G_<NAME> = "<name>"`, `PARAMETER_TYPES`). A frozen input.
+- `config.read_constant_config()` reads it once at import into `config.PARAMETERS` and stops on a wrong header, an
+  unknown, repeated or missing key, or a value of the wrong type. The constants of `config.py` keep their names and
+  take their values from it; the values that were written into the code (costs, node ranges, operating hours, FRT
+  line duration, default waiting time, accessibility thresholds, ...) are read as `config.PARAMETERS[gp.G_<NAME>]`
+  or from derived constants in `config.py` (`LAST_WALK_NODE`, ..., `microtransit_operating_hours()`).
+- Left where they were (user's decision): the FleetPy check "expected 88 users", the betas and parking durations in
+  the demand file, FleetPy's constant config and scenario files, the vehicle type. Also left: the literals in the
+  `__main__` blocks and in functions the run does not call, the `/ 2` rules, the `"lemon_grove"` name checks.
+- `run_examples_new_parking.py --config <file>` runs with another parameter file (passed to `config.py` in
+  `MTSM_CONFIG_FILE`); the startup prints which values differ from the frozen file. The optimizer writes each
+  candidate's copy by parameter name into `<folder_name>/candidate_configs/` and never changes the frozen file.
+  `input_parameter.csv` was deleted; I-02 and I-15 closed.
+- Kept apart, to keep the results identical: meters per mile 1609.34, 1609 and 1.609 km (three keys; merging them
+  changes results and needs a new reference).
+- Verification: after each of the four code steps a full seed-0 run printed `REPRODUCED` (32 files, about 4:45);
+  `tools/check_constant_config.py` compared every value and type with the old ones (`SAME: 53 parameters`; deleted
+  with this step); the old and the new optimizer writer gave the same values and types on three candidates.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
@@ -873,7 +899,8 @@ about half of the 5-minute run (152 of 310 s); FleetPy, the mode choice and writ
    - Keep source files in CRLF.
    - Do not edit the frozen inputs in `mtsm_data/` without recording it here and regenerating `mtsm_data/MANIFEST.csv`
      (`python tools/check_inputs.py --write`).
-   - The optimizer (`Bayesian_optimization_script.py`) overwrites `mtsm_data/input_parameter/input_parameter.csv` (see Phase 1c).
+   - Change parameters in a copy of `mtsm_data/input_parameter/mtsm_constant_configurations.csv` and run with
+     `--config <copy>`; the frozen file holds the reference values.
    - `fleetpy/` is upstream FleetPy: do not change it without recording the change in `fleetpy/LOCAL_CHANGES.md`. Inputs
      the model gives FleetPy belong in `mtsm_data/lemon_grove/fleetpy_inputs/` (copied in by `fleetpy_runner.py`).
      Files restored from upstream keep upstream's LF line endings.

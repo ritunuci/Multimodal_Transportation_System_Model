@@ -33,9 +33,9 @@ removed on 2026-11-08; the last version that has it is tagged `last-with-downtow
    travelers goes back to step 2. Otherwise the run stops and writes its results.
 
 Fares: FRT fare per boarding; microtransit start fare plus a distance-based fare, with a peak / off-peak factor and
-transfer discounts between microtransit and FRT (the former "fare scenario 10"; the columns `transit_fare ($)`,
-`microtransit_start_fare ($)`, `microtransit_dist_based_rate ($/mile)`, `PkFareFactor`, `OffPkFareFactor`,
-`Fixed2MicroFactor`, `Micro2FixedFactor` of `input_parameter.csv`).
+transfer discounts between microtransit and FRT (the former "fare scenario 10"; the parameters `transit_fare`,
+`microtransit_start_fare`, `microtransit_dist_based_rate`, `pk_fare_factor`, `off_pk_fare_factor`,
+`fixed2micro_factor`, `micro2fixed_factor` of `mtsm_constant_configurations.csv`).
 
 ## Running the model
 
@@ -46,11 +46,17 @@ for vehicle repositioning).
    Do not use `requirements.txt` or FleetPy's own install instructions; they do not match the verified environment.
 2. **Check the inputs.** `python tools/check_inputs.py` must report that all frozen inputs match
    `mtsm_data/MANIFEST.csv`.
-3. **Set the parameters** in `mtsm_data/input_parameter/input_parameter.csv` (design parameters, `random_seed`).
+3. **Set the parameters.** All parameters (design parameters, `random_seed`, iterations and convergence, costs,
+   time periods, scenario lists, ...) are in `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: one row
+   per parameter, `parameter_name,parameter_value,description` (the description is for people; no code reads it).
+   The names and types are in `mtsm_model/mtsm_global_parameters.py`; lists are written `5;10;15`. The file is a
+   frozen input: to change values, copy it, edit the copy and run with `--config <copy>`.
 4. **Run** from the repository root, with `PYTHONHASHSEED=0` and without `PYTHONPATH`:
 
-       python run_examples_new_parking.py
+       python run_examples_new_parking.py                    # the frozen parameter file
+       python run_examples_new_parking.py --config <file>    # another parameter file
 
+   With `--config`, the run prints at startup which values differ from the frozen file.
    A run takes about 5–7 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
    `lemon_grove_evaluation_zonal_partition_False.csv`.
 5. **Check reproducibility (optional).** With the reference parameters and seed listed in
@@ -61,16 +67,16 @@ for vehicle repositioning).
 
 `python Bayesian_optimization_script.py` runs a multi-objective Bayesian optimization (Ax/BoTorch) over fleet size,
 FRT headway, FRT fare, microtransit fares, peak fare factor and transfer discount. The two objectives are total subsidy
-and the increase in travelers' mobility logsum due to microtransit. For each candidate it writes the parameters into
-`input_parameter.csv`, runs the model and reads the evaluation file; results go to
-`mtsm_data/lemon_grove/optimization_output/`. Note: it overwrites `input_parameter.csv`, which is a frozen input
-(see [`docs/open_issues.md`](docs/open_issues.md), I-02).
+and the increase in travelers' mobility logsum due to microtransit. For each candidate it writes a copy of the frozen
+parameter file with the candidate's values (`<folder_name>/candidate_configs/config_call_NNNN.csv`), runs the model
+with `--config <copy>` and reads the evaluation file; results go to `mtsm_data/lemon_grove/optimization_output/`.
+The frozen parameter file is never changed.
 
 ## Repository layout
 
 | Path | Content |
 |---|---|
-| `run_examples_new_parking.py` | Entry script: fixes the hash seed, reads `input_parameter.csv`, sets the random seeds, and calls `mtsm_model.model.run_model()` |
+| `run_examples_new_parking.py` | Entry script: `--config <file>` (optional), fixes the hash seed, reads the parameters, sets the random seeds, and calls `mtsm_model.model.run_model()` |
 | `mtsm_model/` | The model (see [Code map](#code-map)) |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
 | `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
@@ -107,7 +113,8 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 
 | Module | Content |
 |---|---|
-| `config.py` | `RunConfig` (the parameters in `input_parameter.csv`), the startup check, and the model's constants (iterations, convergence, gas costs, time periods, parking, scenario lists) |
+| `config.py` | Reads the parameter file into `PARAMETERS` (`read_constant_config()`); `RunConfig` (the run's design parameters and seed), the startup check, and the model's constants (iterations, convergence, gas costs, time periods, parking, scenario lists, node ranges) |
+| `mtsm_global_parameters.py` | The names (keys) and types of all parameters in `mtsm_constant_configurations.csv` |
 | `scenarios.py` | `StudyArea` (a study area's data) and the scenario loops (`Scenario`) |
 | `model.py` | `run_model()` and `run_scenario()`, the iteration loop |
 | `state.py` | `TravelerState` (per-traveler values across iterations), `BaseCase` (the fixed-route-only base case), `IterationTotals` |

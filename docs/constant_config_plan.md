@@ -1,7 +1,7 @@
 # Plan: one configuration file for all MTSM parameters (`mtsm_constant_configurations.csv`)
 
-Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; steps 1-4 done
-2026-11-10; step 5 (docs) next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
+Status: **done 2026-11-10** (decisions all as recommended, plus a `description` column; steps 1-5 done).
+Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
 
 ## The user's request (2026-11-10)
 
@@ -177,6 +177,9 @@ to the new file.
    `mtsm_constant_configurations.csv` is read. Full seed-0 run: `REPRODUCED`.
 
 5. **Docs:** README, `docs/progress.md`, `docs/reference_results/README.md`; this plan's status set to done.
+   *Done 2026-11-10:* README (fares, step 3 "Set the parameters", the run commands, the optimizer, layout and
+   module tables), `docs/progress.md` (row 2l, section, fresh-clone rule), `docs/reference_results/README.md` (how
+   to check, the run parameters under their new names, change entry). `tools/check_constant_config.py` deleted.
 
 ## Decisions needed
 
