@@ -37,6 +37,7 @@ earlier entries; commits before that date use the old names.
 | 2m | Delete the unused skim scripts and their five functions in `network_algorithms.py` (I-20) | Done 2026-11-11 |
 | 2n | Transfers FRT <-> microtransit checked: discounted FRT fare no longer charged on alighting (I-23) | Done 2026-11-11 (open: I-22, I-24) |
 | 2o | Transfer penalty `bt_f_trfer` per transfer behind a switch (off); link type 3 removed | Done 2026-11-11 (open: I-25) |
+| 2p | Runs with `--config` (the optimizer's candidates) work again: FleetPy no longer gets the command line (I-26) | Done 2026-11-11 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -916,7 +917,17 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   costs plus `bt_f_trfer` x the transfers counted on it (6,944 paths each); transfer counts in I-25. Full seed-0 run
   with the switch off under the I/O tracer: `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py`
   passes. A full run with the switch on stopped after 11 s in FleetPy, not because of the penalty: any run with
-  `--config` does (`scenarios.py` hands the command line to FleetPy; found here, to fix).
+  `--config` did (`scenarios.py` handed the command line to FleetPy; fixed in the next section, I-26).
+
+## Runs with `--config` fixed (2026-11-11)
+
+- `scenarios.scenarios()` called `fleetpy.run_scenarios(*sys.argv)` when the program had any command-line argument
+  (a leftover of FleetPy's example script), so every run with `--config` stopped at once, and with it every
+  optimizer candidate since config step 4 (2026-11-10). Branch removed; the scenario always runs (I-26).
+- Verification (2026-11-11): passed. Full seed-0 runs: without `--config` under the I/O tracer **`REPRODUCED`**
+  (`check_inputs.py` passes); with `--config` and a copy of the frozen file **`REPRODUCED`** (the optimizer's way
+  of starting the model); with `--config` and `enable_num_transfer_penalty=True`: runs to the end, results differ
+  (numbers in I-25).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

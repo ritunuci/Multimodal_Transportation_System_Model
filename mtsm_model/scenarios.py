@@ -9,7 +9,6 @@ headway in the initial networks, the FRT-only accessibility, FleetPy's scenario 
 before: just before the first scenario that needs it.
 """
 import os
-import sys
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
@@ -176,16 +175,15 @@ def scenarios(cfg, area, log_f):
                             if microtransit_run == "micro_only" and num_headway_scen>1:
                                 continue
                             else:
-                                if len(sys.argv) > 1:
-                                    fleetpy.run_scenarios(*sys.argv)
-                                else:
-                                    # touch log file
-                                    with open(log_f, "w") as _:
-                                        pass
+                                # (a branch "if len(sys.argv) > 1: fleetpy.run_scenarios(*sys.argv)" from FleetPy's
+                                # example script was removed on 2026-11-11: it handed --config to FleetPy)
+                                # touch log file
+                                with open(log_f, "w") as _:
+                                    pass
 
-                                    yield Scenario(repositioning, headway,
-                                                   num_headway_scen, tot_weighted_5_min_F, tot_weighted_10_min_F,
-                                                   tot_weighted_15_min_F, virstop, num_virstop_scen, fleet_size,
-                                                   num_fleet_size_scen, scs_path, sc, operating_periods,
-                                                   num_operating_periods_scen, M_operating_hrs, F_operating_hrs,
-                                                   F_transit_trips, microtransit_run)
+                                yield Scenario(repositioning, headway,
+                                               num_headway_scen, tot_weighted_5_min_F, tot_weighted_10_min_F,
+                                               tot_weighted_15_min_F, virstop, num_virstop_scen, fleet_size,
+                                               num_fleet_size_scen, scs_path, sc, operating_periods,
+                                               num_operating_periods_scen, M_operating_hrs, F_operating_hrs,
+                                               F_transit_trips, microtransit_run)

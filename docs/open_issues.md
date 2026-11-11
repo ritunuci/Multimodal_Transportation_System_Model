@@ -47,6 +47,7 @@ Paths are relative to the codebase root.
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
 | I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (reminder) | 2026-11-11 |
+| I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 
 ---
 
@@ -274,7 +275,9 @@ Paths are relative to the codebase root.
   network and FRT-only base case). `bt_f_trfer` is 0.43-0.59 (median 0.50), about 3.3 min of FRT waiting
   (`bt_f_wt` about 0.15 per min). Most counted transfers are route changes at the four shared stops (1110, 1115,
   1119, 1160; 72 % of the AM paths that use FRT change route there, e.g. 917 -> 856 -> 936), which are free now:
-  no penalty and no waiting.
+  no penalty and no waiting. Full seed-0 run with the switch on (2026-11-11, through `--config`; not a reference):
+  ran to the end; in the last evaluation row transit users 298 -> 291, microtransit + FRT users 6 -> 0, pure FRT
+  users 15 -> 10, pure microtransit users 62 -> 66, FRT trips 22 -> 10, mode switches 51 -> 47.
 - **Before turning it on:** check the route ids of the FRT links. The preprocessing kept only the first route id of
   a link served by several routes (`pre_process/process_network.py`, `construct_super_network_transit_links`:
   `route_id_str_.split(',')[0]`; route 120 became 3), so a route change in the network may be a label, not a
@@ -286,6 +289,23 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-26: A run with `--config` failed at once: the command line was handed to FleetPy
+- **Status:** Closed (2026-11-11). **Severity:** High. **Found:** 2026-11-11 (a full run with the transfer penalty
+  switched on through `--config`).
+- **What:** `scenarios.scenarios()` still had a branch from FleetPy's example script: `if len(sys.argv) > 1:
+  fleetpy.run_scenarios(*sys.argv)`, i.e. with any command-line argument, FleetPy was called with the arguments
+  instead of running the scenario. Until 2026-11-10 the model was never started with arguments. Since config step 4
+  (`docs/constant_config_plan.md`) `run_examples_new_parking.py --config <file>` exists, and FleetPy got `"--config"`
+  as `n_parallel_sim`: `AssertionError: n_parallel_sim must be of type int`, before the first iteration.
+- **Impact:** every run with `--config` failed, so every candidate of the optimizer, which starts each candidate with
+  `--config` (from 2026-11-10 to 2026-11-11; the optimizer stops on the failed run, it records no stale results).
+  Runs without arguments, the reference included, were not affected. Step 4 had checked the optimizer's file writer,
+  not a run with `--config`.
+- **Resolution:** the branch was removed (the scenario always runs; unused `import sys` removed). Checked with three
+  full seed-0 runs: without `--config` under the I/O tracer `REPRODUCED`; with `--config` and a copy of the frozen
+  file (the optimizer's way, "different from the frozen file: none") `REPRODUCED`, the same 32 files; with
+  `--config` and the transfer penalty on: ran to the end (6:17), results differ as expected (I-25).
 
 ### I-23: After a microtransit leg, the discounted FRT fare was also charged on alighting
 - **Status:** Closed (2026-11-11). **Severity:** Medium. **Found:** 2026-11-11 (checking the FRT <-> microtransit
