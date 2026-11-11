@@ -1,7 +1,7 @@
 # Plan: one configuration file for all MTSM parameters (`mtsm_constant_configurations.csv`)
 
-Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; steps 1-3 done
-2026-11-10; step 4 next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
+Status: **decisions made 2026-11-10 (all as recommended), plus a `description` column; steps 1-4 done
+2026-11-10; step 5 (docs) next.** Written 2026-11-10, against commit `a28852b`; line numbers refer to that state.
 
 ## The user's request (2026-11-10)
 
@@ -164,6 +164,18 @@ to the new file.
    go),
    `MANIFEST.csv` / `check_inputs.py` updated, `input_parameter.csv` deleted, I-02 and I-15 closed. Besides the
    reference run, one short optimizer check: one candidate, compared with what the old optimizer wrote.
+   *Done 2026-11-10:* `config.CONSTANT_CONFIG_FILE` = the environment variable `MTSM_CONFIG_FILE`, else the frozen
+   file; `run_examples_new_parking.py --config <file>` sets it before `config` is imported (and removes a left-over
+   value when `--config` is not given). `read_run_config()` builds `RunConfig` from `PARAMETERS` (14 fields equal
+   the old ones; `input_para_dir` became `config_file`; the four I-15 fields and their checks are gone; the startup
+   check keeps `test_area` and `fare_scenario` = 10 and prints which values differ from the frozen file). The
+   optimizer's `write_candidate_config()` replaces `update_csv_with_train_x()`: a copy of the frozen file with the
+   seven values set by name, `<folder_name>/candidate_configs/config_call_NNNN.csv`, passed with `--config`.
+   Optimizer check (the old and the new writer on three candidates, read by the old and the new `config.py`): same
+   value strings, same `RunConfig` values and types. `input_parameter.csv` deleted (`git rm`), removed from
+   `MANIFEST.csv` and `tools/check_inputs.py`; I-02 and I-15 closed. The run's I/O trace: only
+   `mtsm_constant_configurations.csv` is read. Full seed-0 run: `REPRODUCED`.
+
 5. **Docs:** README, `docs/progress.md`, `docs/reference_results/README.md`; this plan's status set to done.
 
 ## Decisions needed

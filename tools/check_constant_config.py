@@ -2,12 +2,11 @@
 
     python tools/check_constant_config.py      exit code 1 on any difference
 
-Compares the dictionary from config.read_constant_config() with input_parameter.csv (config.read_run_config()) and
-with today's values of the constants of config.py and of the values written into the code (literals below, copied
-from commit 027630a, with where they were). A check for the move of the parameters into one file
+Compares the dictionary from config.read_constant_config() with the values before the move (literals below, copied
+from commit 027630a: input_parameter.csv, the constants of config.py, the values written into the code, with where
+they were). A check for the move of the parameters into one file
 (docs/constant_config_plan.md); it is removed in step 5, once the code reads everything from the new file.
 """
-import csv
 import os
 import sys
 
@@ -16,25 +15,22 @@ from mtsm_model import config
 from mtsm_model import mtsm_global_parameters as gp
 
 
-def expected_values(cfg):
-    with open(cfg.input_para_dir) as f:
-        raw = list(csv.DictReader(f))[-1]
+def expected_values():
     return {
-        # input_parameter.csv (one row)
-        gp.G_TEST_AREA: cfg.test_area[-1],
-        # read_run_config() converts the file's $/mile to $/m; the new file keeps $/mile (checked in derived_problems)
-        gp.G_MICROTRANSIT_DIST_BASED_RATE: float(raw["microtransit_dist_based_rate ($/mile)"]),
-        gp.G_TRANSIT_FARE: cfg.transit_fare,
-        gp.G_MICROTRANSIT_START_FARE: cfg.microtransit_start_fare,
-        gp.G_FLEET_SIZE: cfg.fleet_size,
-        gp.G_PK_FARE_FACTOR: cfg.PkFareFactor,
-        gp.G_OFF_PK_FARE_FACTOR: cfg.OffPkFareFactor,
-        gp.G_FIXED2MICRO_FACTOR: cfg.Fixed2MicroFactor,
-        gp.G_MICRO2FIXED_FACTOR: cfg.Micro2FixedFactor,
-        gp.G_FRT_HEADWAY: cfg.headway,
-        gp.G_INITIAL_REJECTION_RATE: cfg.initial_rejection_rate,
-        gp.G_MICRO_REJECTION_PENALTY: cfg.micro_rejection_penalty,
-        gp.G_RANDOM_SEED: cfg.random_seed,
+        # input_parameter.csv at commit 027630a (one row; deleted in step 4)
+        gp.G_TEST_AREA: "lemon_grove",  # test_area
+        gp.G_TRANSIT_FARE: 3.615388,  # transit_fare ($)
+        gp.G_MICROTRANSIT_DIST_BASED_RATE: 5.0,  # microtransit_dist_based_rate ($/mile)
+        gp.G_MICROTRANSIT_START_FARE: 2.3811314,  # microtransit_start_fare ($)
+        gp.G_FLEET_SIZE: 2,  # Fleet_size
+        gp.G_PK_FARE_FACTOR: 2.3703918,  # PkFareFactor
+        gp.G_OFF_PK_FARE_FACTOR: 1.0,  # OffPkFareFactor
+        gp.G_FIXED2MICRO_FACTOR: 1.0,  # Fixed2MicroFactor
+        gp.G_MICRO2FIXED_FACTOR: 0.0,  # Micro2FixedFactor
+        gp.G_FRT_HEADWAY: 10,  # FRT_headway
+        gp.G_INITIAL_REJECTION_RATE: 20.0,  # initial_rejection_rate
+        gp.G_MICRO_REJECTION_PENALTY: 3.0,  # micro_rejection_penalty ($)
+        gp.G_RANDOM_SEED: 0,  # random_seed
         # the constants of config.py at commit 027630a
         gp.G_FARE_SCENARIO: 10,  # FARE_SCENARIO
         gp.G_BASE_FRT_HEADWAY: 20,  # BASE_FRT_HEADWAY
@@ -90,9 +86,9 @@ def same(a, b):
 
 
 def derived_problems(p, cfg):
-    """values the code computes today from literals or converts, which will be computed from the parameters"""
+    """values the code computed from literals or converted, now computed from the parameters"""
     problems = []
-    if p[gp.G_MICROTRANSIT_DIST_BASED_RATE] / p[gp.G_METERS_PER_MILE] != cfg.microtransit_dist_based_rate:
+    if cfg.microtransit_dist_based_rate != 5.0 / 1609.34:  # read_run_config() at commit 027630a: $/mile -> $/m
         problems.append("microtransit_dist_based_rate in $/m")
     hours = {"AM": p[gp.G_AM_END_H] - p[gp.G_DAY_START_H], "MD": p[gp.G_MD_END_H] - p[gp.G_AM_END_H],
              "PM": p[gp.G_PM_END_H] - p[gp.G_MD_END_H], "EV": p[gp.G_DAY_END_H] - p[gp.G_PM_END_H]}
@@ -110,7 +106,7 @@ def derived_problems(p, cfg):
 def main():
     params = config.read_constant_config()
     cfg = config.read_run_config()
-    expected = expected_values(cfg)
+    expected = expected_values()
     problems = []
     if set(expected) != set(gp.PARAMETER_TYPES):
         problems.append(f"keys not checked: {sorted(set(gp.PARAMETER_TYPES) - set(expected))}")

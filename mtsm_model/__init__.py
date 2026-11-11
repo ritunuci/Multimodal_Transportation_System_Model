@@ -2,7 +2,8 @@
 (docs/entry_script_refactor_plan.md). run_examples_new_parking.py is still the entry point; it calls
 model.run_model().
 
-- config: the run's parameters (input_parameter.csv), the startup check, and the model's fixed settings and constants.
+- config: all parameters (mtsm_data/input_parameter/mtsm_constant_configurations.csv or the --config copy), the
+  run's parameters (RunConfig), the startup check, and the model's constants.
 - state: the model's state during a scenario (TravelerState, BaseCase, IterationTotals).
 - trip_legs: split a traveler's path into walk / microtransit / fixed-route legs.
 - paths: a traveler's networks and least generalized cost paths (car, walk + FRT, walk + microtransit + FRT).

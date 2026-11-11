@@ -2,8 +2,7 @@
 
 - load_study_area(): what a study area needs for all its scenarios (folders, networks, travelers, link dicts).
 - scenarios(): the scenario loops (repositioning x FRT headway x virtual stops x fleet size x operating periods x
-  microtransit setup); yields one Scenario per model run. Each list has one element in the current runs; several
-  rows in input_parameter.csv give several fleet sizes.
+  microtransit setup); yields one Scenario per model run. Each list has one element in the current runs.
 
 Moved from run_examples_new_parking.py. scenarios() is a generator, so the work done in the outer loops (the FRT
 headway in the initial networks, the FRT-only accessibility, FleetPy's scenario config) happens at the same point as

@@ -35,6 +35,8 @@ from matplotlib.cm import ScalarMappable
 from botorch.utils.multi_objective.pareto import is_non_dominated
 from ax.core.parameter_constraint import ParameterConstraint
 import mtsm_paths as mtsm
+from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 
 # ----------------------------------------------------------------------------------------------------------------------
 # from colorama import Fore, Style
@@ -77,6 +79,10 @@ os.makedirs(optimization_folder_path, exist_ok=True)
 os.makedirs(indv_res_folder_path, exist_ok=True)
 os.makedirs(agg_sim_output_folder_path, exist_ok=True)
 RESULTS_CSV_PATH = os.path.join(optimization_folder_path, "per_call_results.csv")
+# each candidate's parameter file (config_call_0001.csv, ...): a copy of the frozen file with the candidate's values
+CANDIDATE_CONFIG_DIR = os.path.join(optimization_folder_path, "candidate_configs")
+os.makedirs(CANDIDATE_CONFIG_DIR, exist_ok=True)
+candidate_count = 0
 
 log_file_path = os.path.join(optimization_folder_path, "run_log.txt")
 
@@ -216,7 +222,7 @@ def model_output_files(values):
     return output_csv_path, indv_res_csv_path
 
 
-def run_script(values):
+def run_script(values, config_file):
     # Old output files are deleted first, so that a failed run can never hand the previous candidate's results to this
     # candidate (the model rewrites both files on every successful run). A failed run stops the optimizer;
     # the candidates evaluated so far are in per_call_results.csv.
@@ -226,8 +232,8 @@ def run_script(values):
             os.remove(path)
     # the model runs with the optimizer's own interpreter (the fleetpy env, the only one with ax/torch/gurobipy);
     # was "C:/Users/Autonomicity/.conda/envs/fleetpy/python"
-    result = subprocess.run([sys.executable,
-                             os.path.join(mtsm.CODE_ROOT, "run_examples_new_parking.py")], cwd=mtsm.CODE_ROOT)
+    result = subprocess.run([sys.executable, os.path.join(mtsm.CODE_ROOT, "run_examples_new_parking.py"),
+                             "--config", config_file], cwd=mtsm.CODE_ROOT)
     time.sleep(1)
     problem = None
     if result.returncode != 0:
@@ -243,35 +249,36 @@ def run_script(values):
                            f"Results of the earlier candidates: {RESULTS_CSV_PATH}")
 
 
-def update_csv_with_train_x(values):
+def write_candidate_config(values):
+    """Write the candidate's parameter file and return its path: a copy of the frozen
+    mtsm_constant_configurations.csv with the candidate's values, set by parameter name, in CANDIDATE_CONFIG_DIR.
+    The frozen file is never changed (until 2026-11-10 the values went into input_parameter.csv by column position,
+    docs/open_issues.md I-02 and I-15)."""
+    global candidate_count
+    candidate_count += 1
     a, b, c, d, e, h, f = values
-    a1 = float(a)  # transit fare ($)
-    b1 = float(b)  # Micro distance based fare ($/mile)
-    c1 = float(c)  # Micro start fare ($)
-    d1 = int(d)  # Fleet size
-    e1 = float(e)  # Peak fare factor
-    h1 = float(h)  # Micro to fixed factor
-    f1 = int(f)  # FRT headway
-    input_csv_path = os.path.join(mtsm.INPUT_PARAMETER_DIR, "input_parameter.csv")
-    with open(input_csv_path, mode='r', newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        rows = list(reader)
+    candidate_values = {
+        gp.G_TRANSIT_FARE: float(a),  # transit fare ($)
+        gp.G_MICROTRANSIT_DIST_BASED_RATE: float(b),  # Micro distance based fare ($/mile)
+        gp.G_MICROTRANSIT_START_FARE: float(c),  # Micro start fare ($)
+        gp.G_FLEET_SIZE: int(d),  # Fleet size
+        gp.G_PK_FARE_FACTOR: float(e),  # Peak fare factor
+        gp.G_MICRO2FIXED_FACTOR: float(h),  # Micro to fixed factor
+        gp.G_FRT_HEADWAY: int(f),  # FRT headway
+    }
+    with open(config.FROZEN_CONSTANT_CONFIG_FILE, mode='r', newline='') as csvfile:
+        rows = list(csv.reader(csvfile))
+    for row in rows[1:]:  # row: parameter_name, parameter_value, description
+        if row[0] in candidate_values:
+            row[1] = str(candidate_values.pop(row[0]))
+    if candidate_values:
+        raise RuntimeError(f"not in {config.FROZEN_CONSTANT_CONFIG_FILE}: {sorted(candidate_values)}")
 
-    # Update the required values
-    rows[1][5] = str(a1)  # "transit_fare ($)" in .csv file
-    rows[1][6] = str(b1)  # "microtransit_dist_based_rate ($/mile)" in .csv file
-    rows[1][7] = str(c1)  # "microtransit_start_fare ($)" in .csv file
-    rows[1][8] = d1  # "Fleet_size" in .csv file
-
-    rows[1][9] = e1  # "PkFareFactor" in .csv file
-    rows[1][12] = h1  # "Micro2FixedFactor" in .csv file
-    rows[1][13] = f1  # "frt_headway" in .csv file
-
-    # Write the updated rows back to the CSV file
-    with open(input_csv_path, mode='w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
+    config_file = os.path.join(CANDIDATE_CONFIG_DIR, f"config_call_{candidate_count:04d}.csv")
+    with open(config_file, mode='w', newline='') as csvfile:
+        writer = csv.writer(csvfile, lineterminator="\r\n")
         writer.writerows(rows)
-    time.sleep(1)
+    return config_file
 
 
 def collect_output(iteration_type: str, values):
@@ -323,8 +330,8 @@ def send_instruction(train_x, iteration_type):
     all_outputs = []
     other_metrics = []
     for values in train_x_array:
-        update_csv_with_train_x(values)
-        run_script(values)
+        config_file = write_candidate_config(values)
+        run_script(values, config_file)
         output, other_metric = collect_output(iteration_type, values)
         all_outputs.append(output)
         other_metrics.append(other_metric)

@@ -1,17 +1,18 @@
 """Configuration of a model run.
 
-- RunConfig / read_run_config(): the run's parameters, read from mtsm_data/input_parameter/input_parameter.csv
-  (written by Bayesian_optimization_script.py for each candidate).
-- check_run_config(): the startup check; stops on a configuration the code does not support.
-- read_constant_config() / PARAMETERS: all MTSM parameters, from
-  mtsm_data/input_parameter/mtsm_constant_configurations.csv (keys and types: mtsm_global_parameters.py), read once
-  at import. The model's constants (upper-case names below) take their values from it. The run's parameters
-  (RunConfig) are still read from input_parameter.csv, which the optimizer writes, until the optimizer writes the
-  new file (docs/constant_config_plan.md, step 4).
+- read_constant_config() / PARAMETERS: all MTSM parameters (keys and types: mtsm_global_parameters.py), read once at
+  import from CONSTANT_CONFIG_FILE: the file named by the environment variable MTSM_CONFIG_FILE (set by
+  run_examples_new_parking.py --config <file>; the optimizer passes each candidate's copy), else the frozen
+  mtsm_data/input_parameter/mtsm_constant_configurations.csv. The model's constants (upper-case names below) take
+  their values from it.
+- RunConfig / read_run_config(): the run's parameters (the former input_parameter.csv), from PARAMETERS.
+- check_run_config(): the startup check; stops on a configuration the code does not support, and says which values
+  differ from the frozen file.
 
-Moved from run_examples_new_parking.py without changes to the values or the reading (restructuring step 2,
-docs/entry_script_refactor_plan.md). The field names of RunConfig and the constant names keep the old variable names
-(constants in upper case), so that they can still be found in the old code and in the git history.
+Moved from run_examples_new_parking.py (restructuring step 2, docs/entry_script_refactor_plan.md); the parameters
+moved into one file on 2026-11-10 (docs/constant_config_plan.md). The field names of RunConfig and the constant names
+keep the old variable names (constants in upper case), so that they can still be found in the old code and in the git
+history.
 """
 import csv
 import os
@@ -26,20 +27,18 @@ from mtsm_model import mtsm_global_parameters as gp
 from tools.check_inputs import check_inputs
 
 # all MTSM parameters (keys and types: mtsm_global_parameters.py); read by read_constant_config()
-CONSTANT_CONFIG_FILE = os.path.join(mtsm.INPUT_PARAMETER_DIR, "mtsm_constant_configurations.csv")
+FROZEN_CONSTANT_CONFIG_FILE = os.path.join(mtsm.INPUT_PARAMETER_DIR, "mtsm_constant_configurations.csv")
+CONFIG_FILE_ENV = "MTSM_CONFIG_FILE"  # a run with another parameter file (a copy of the frozen one)
+CONSTANT_CONFIG_FILE = os.environ.get(CONFIG_FILE_ENV) or FROZEN_CONSTANT_CONFIG_FILE
 CONSTANT_CONFIG_HEADER = ["parameter_name", "parameter_value", "description"]
 
 @dataclass
 class RunConfig:
-    """The parameters in input_parameter.csv. The lists hold one value per row of the file; the other fields hold
-    the value of the last row (the file has one row)."""
-    input_para_dir: str
-    TRPartA_test_scenario_list: List[int]  # fare scenario, must be 10 (FARE_SCENARIO; I-15)
-    debug_mode_list: List[bool]  # must be FALSE (I-15)
+    """The run's parameters (until 2026-11-10 the columns of input_parameter.csv), from PARAMETERS. The lists hold one
+    value (the model loops over them)."""
+    config_file: str  # the parameter file of the run
     test_area: List[str]  # study area, must be lemon_grove
     read_fleet_size: List[int]  # microtransit fleet size (vehicles)
-    TRPartA: bool  # must be TRUE (I-15)
-    BayesianOptimization: bool  # must be TRUE (I-15)
     transit_fare: float  # $
     microtransit_dist_based_rate: float  # $ per meter (the file gives $ per mile)
     microtransit_start_fare: float  # $
@@ -191,6 +190,7 @@ M_GAS_PER_MILE = PARAMETERS[gp.G_M_GAS_PER_MILE]
 # ---- fare structure: the former fare scenario 10, the only one left (docs/progress.md, "Only fare scenario 10").
 # The number stays in the output file names (..._scen_10) and the evaluation rows. ----
 FARE_SCENARIO = PARAMETERS[gp.G_FARE_SCENARIO]
+SUPPORTED_FARE_SCENARIO = 10  # the fare structure the code implements (check_run_config)
 
 # ---- scenarios (each list has one element in the run) ----
 # Microtransit operating periods: AM = 5-10 h, MD = 10-15 h, PM = 15-20 h, EV = 20-24 h. Used so far:
@@ -221,62 +221,43 @@ def microtransit_operating_hours(operating_periods):
     return sum(PERIOD_HOURS[period] for period in operating_periods)
 
 
-def read_run_config(input_para_dir=os.path.join(mtsm.INPUT_PARAMETER_DIR, "input_parameter.csv")):
-    TRPartA_test_scenario_list = []
-    debug_mode_list = []
-    test_area = []
-    read_fleet_size = []
-    with open(input_para_dir) as f:
-
-        csvreader = csv.DictReader(f)
-        for data in csvreader:
-            TRPartA = str2bool(str(data["TRPartA"]))
-            TRPartA_test_scenario_list.append(int(data["TRPartA_test_scenario_list"]))
-            debug_mode_list.append(str2bool(str(data["debug_mode_list"])))
-            transit_fare = float(data["transit_fare ($)"])
-            microtransit_dist_based_rate = float(data["microtransit_dist_based_rate ($/mile)"]) / MILE_METER
-            microtransit_start_fare = float(data["microtransit_start_fare ($)"])
-            test_area.append(str(data["test_area"]))
-            BayesianOptimization = str2bool(str(data["BayesianOptimization"]))
-            fleet_size = int(data["Fleet_size"])
-            PkFareFactor = float(data["PkFareFactor"])
-            OffPkFareFactor = float(data["OffPkFareFactor"])
-            Fixed2MicroFactor = float(data["Fixed2MicroFactor"])
-            Micro2FixedFactor = float(data["Micro2FixedFactor"])
-            headway = int(data["FRT_headway"])  # Ritun
-            initial_rejection_rate = float(data["initial_rejection_rate"])
-            micro_rejection_penalty = float(data["micro_rejection_penalty ($)"])
-            # 0 if the column is absent
-            random_seed = int(data.get("random_seed") or 0)
-
-            read_fleet_size.append(fleet_size)
-
-    return RunConfig(input_para_dir, TRPartA_test_scenario_list, debug_mode_list, test_area, read_fleet_size, TRPartA,
-                     BayesianOptimization, transit_fare, microtransit_dist_based_rate, microtransit_start_fare,
-                     fleet_size, PkFareFactor, OffPkFareFactor, Fixed2MicroFactor, Micro2FixedFactor, headway,
-                     initial_rejection_rate, micro_rejection_penalty, random_seed)
+def read_run_config():
+    p = PARAMETERS
+    return RunConfig(config_file=CONSTANT_CONFIG_FILE,
+                     test_area=[p[gp.G_TEST_AREA]],
+                     read_fleet_size=[p[gp.G_FLEET_SIZE]],
+                     transit_fare=p[gp.G_TRANSIT_FARE],
+                     microtransit_dist_based_rate=p[gp.G_MICROTRANSIT_DIST_BASED_RATE] / MILE_METER,  # $/mile -> $/m
+                     microtransit_start_fare=p[gp.G_MICROTRANSIT_START_FARE],
+                     fleet_size=p[gp.G_FLEET_SIZE],
+                     PkFareFactor=p[gp.G_PK_FARE_FACTOR],
+                     OffPkFareFactor=p[gp.G_OFF_PK_FARE_FACTOR],
+                     Fixed2MicroFactor=p[gp.G_FIXED2MICRO_FACTOR],
+                     Micro2FixedFactor=p[gp.G_MICRO2FIXED_FACTOR],
+                     headway=p[gp.G_FRT_HEADWAY],
+                     initial_rejection_rate=p[gp.G_INITIAL_REJECTION_RATE],
+                     micro_rejection_penalty=p[gp.G_MICRO_REJECTION_PENALTY],
+                     random_seed=p[gp.G_RANDOM_SEED])
 
 
 def check_run_config(cfg):
     """Stop on a configuration the code does not support; warn if the frozen inputs changed; create the output
     folders."""
-    # The code supports only Lemon Grove with TRPartA=TRUE, BayesianOptimization=TRUE, debug_mode_list=FALSE and fare
-    # scenario 10; the branches for the other values were removed (docs/progress.md). The four columns stay in input_parameter.csv
-    # because the optimizer writes its parameters by column position (docs/open_issues.md, I-15).
+    # The code supports only Lemon Grove and fare scenario 10; the branches for the other values were removed
+    # (docs/progress.md).
     unsupported = []
     if any(area != "lemon_grove" for area in cfg.test_area):
         unsupported.append(f"test_area={cfg.test_area} (only lemon_grove)")
-    if not cfg.TRPartA:
-        unsupported.append("TRPartA=False")
-    if not cfg.BayesianOptimization:
-        unsupported.append("BayesianOptimization=False")
-    if any(cfg.debug_mode_list):
-        unsupported.append("debug_mode_list=True")
-    if any(s != FARE_SCENARIO for s in cfg.TRPartA_test_scenario_list):
-        unsupported.append(f"TRPartA_test_scenario_list={cfg.TRPartA_test_scenario_list} (only {FARE_SCENARIO})")
+    if FARE_SCENARIO != SUPPORTED_FARE_SCENARIO:
+        unsupported.append(f"fare_scenario={FARE_SCENARIO} (only {SUPPORTED_FARE_SCENARIO})")
     if unsupported:
         sys.exit("ERROR: configuration in %s is not supported: %s"
-                 % (cfg.input_para_dir, ", ".join(unsupported)))
+                 % (cfg.config_file, ", ".join(unsupported)))
+    if os.path.abspath(cfg.config_file) != os.path.abspath(FROZEN_CONSTANT_CONFIG_FILE):
+        frozen = read_constant_config(FROZEN_CONSTANT_CONFIG_FILE)
+        changed = [f"{key}={PARAMETERS[key]!r} (frozen: {frozen[key]!r})" for key in gp.PARAMETER_TYPES
+                   if PARAMETERS[key] != frozen[key] or type(PARAMETERS[key]) is not type(frozen[key])]
+        print(f"parameter file: {cfg.config_file}; different from the frozen file: {', '.join(changed) or 'none'}")
     input_problems = check_inputs()
     if input_problems:
         print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm_data/MANIFEST.csv -> results are not comparable to "

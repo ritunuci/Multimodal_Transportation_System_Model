@@ -23,7 +23,7 @@ Paths are relative to the codebase root.
 | ID | Title | Severity | Status | Found |
 |---|---|---|---|---|
 | I-01 | Gurobi license expired | High | Open | 2026-10-23 |
-| I-02 | The optimizer overwrites the frozen parameter file | Medium | Open | 2026-10-23 |
+| I-02 | The optimizer overwrites the frozen parameter file | Medium | Closed (2026-11-10) | 2026-10-23 |
 | I-03 | The optimizer has not been run since the changes | Medium | Open | 2026-10-23 |
 | I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Decision needed | 2026-10-23 |
 | I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Decision needed | 2026-10-23 |
@@ -36,7 +36,7 @@ Paths are relative to the codebase root.
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
-| I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Open | 2026-11-08 |
+| I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Open | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
@@ -58,29 +58,16 @@ Paths are relative to the codebase root.
   `python tools/export_env.py --write` to update `env/fleetpy.system.txt` with the new expiry date, and check that the
   three lock files are unchanged.
 
-### I-02: The optimizer overwrites the frozen parameter file
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1c).
-- **What:** `Bayesian_optimization_script.py` writes each candidate's values into
-  `mtsm_data/input_parameter/input_parameter.csv`, which is a frozen, checksummed input. After a session the file holds the
-  last candidate's values.
-- **Impact:** after an optimizer session, `tools/check_inputs.py` and the model's startup check report the file as
-  changed, and `tools/compare_reference.py` does not print `REPRODUCED` until the reference values are restored (they
-  are listed in `docs/reference_results/README.md`). Nothing records which parameters produced the files in
-  `mtsm_data/lemon_grove/output/`.
-- **Fix:** Phase 3. Give each run its own parameter file and output folder, and record the parameters in a
-  `run_manifest.json`. Until then, restore the file with `git checkout mtsm_data/input_parameter/input_parameter.csv` after
-  each optimizer session.
-
 ### I-03: The optimizer has not been run since the changes
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phases 1c and 2b).
 - **What:** `Bayesian_optimization_script.py` was changed three times: the `mtsm_data/` paths (`d5aee47`), launching the model
   with `sys.executable` (`da839b0`), and stopping on a failed model run (`09e0684`). Each change compiles, and the
   failure handling was tested against a fake model process. The optimizer itself was never run, because a session
-  takes many model evaluations, overwrites the parameter file (I-02) and needs Gurobi (I-01).
+  takes many model evaluations, overwrote the parameter file (I-02, closed 2026-11-10) and needs Gurobi (I-01).
 - **Impact:** an error in the optimizer's own code would only show up in the first real session.
 - **Fix:** after I-01 is fixed, run a short session (a few candidates) into a throwaway `folder_name`. Check that
-  `per_call_results.csv` matches the evaluation files, that a deliberately failed run stops the optimizer, and then
-  restore the parameter file (I-02).
+  `per_call_results.csv` matches the evaluation files and the copies in `candidate_configs/`, and that a
+  deliberately failed run stops the optimizer.
 
 ### I-04: Rows 1 and 2 of the evaluation CSV are identical
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1).
@@ -173,22 +160,6 @@ Paths are relative to the codebase root.
   `last-with-downtown-sd`. Alternatively, bring the source data into the repository first, so that the
   preprocessing can be re-run and checked.
 
-### I-15: Unused columns in `input_parameter.csv`; the optimizer writes it by column position
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing the TRPartA / BayesianOptimization /
-  debug_mode branches).
-- **What:** the code no longer branches on `BayesianOptimization`, `TRPartA` or `debug_mode_list` (only the values
-  TRUE, TRUE, FALSE are supported; the startup check refuses others). Since 2026-11-09 the same holds for
-  `TRPartA_test_scenario_list` (the fare scenario): the code has only fare scenario 10 (`config.FARE_SCENARIO`), and
-  the startup check refuses other values. The four columns are still in
-  `mtsm_data/input_parameter/input_parameter.csv`, because `Bayesian_optimization_script.py` writes the candidate's
-  values by column position (`rows[1][5]` to `rows[1][13]`: fares, fleet size, peak factor, Micro2FixedFactor,
-  headway). Removing columns 1-4 would shift those positions.
-- **Impact:** none on results; the columns are misleading (they look like options but have only one valid value).
-- **Fix (later, user's intention):** remove the four columns from the input file and make the optimizer write by
-  column name instead of position; then remove them from the startup check. `input_parameter.csv` is a frozen
-  input, so `MANIFEST.csv` must be regenerated and the change recorded in `docs/progress.md`. The optimizer change
-  needs a test run of the optimizer (I-03).
-
 ### I-16: The aggregate convergence test is unfinished
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).
 - **What:** `run_examples_new_parking.py` has two convergence tests, chosen by `indiv_converg_test`. The run uses
@@ -248,6 +219,48 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-02: The optimizer overwrites the frozen parameter file
+- **Status:** Closed (2026-11-10). **Severity:** Medium. **Found:** 2026-10-23 (Phase 1c).
+- **What:** `Bayesian_optimization_script.py` writes each candidate's values into
+  `mtsm_data/input_parameter/input_parameter.csv`, which is a frozen, checksummed input. After a session the file holds the
+  last candidate's values.
+- **Impact:** after an optimizer session, `tools/check_inputs.py` and the model's startup check report the file as
+  changed, and `tools/compare_reference.py` does not print `REPRODUCED` until the reference values are restored (they
+  are listed in `docs/reference_results/README.md`). Nothing records which parameters produced the files in
+  `mtsm_data/lemon_grove/output/`.
+- **Fix:** Phase 3. Give each run its own parameter file and output folder, and record the parameters in a
+  `run_manifest.json`. Until then, restore the file with `git checkout mtsm_data/input_parameter/input_parameter.csv` after
+  each optimizer session.
+- **Resolution:** each candidate has its own parameter file (docs/constant_config_plan.md, step 4). The
+  optimizer copies the frozen `mtsm_data/input_parameter/mtsm_constant_configurations.csv`, sets the candidate's
+  seven values by parameter name, saves the copy as `<folder_name>/candidate_configs/config_call_NNNN.csv` and runs
+  the model with `--config <copy>`; the model reports at startup which values differ from the frozen file. The
+  frozen file is never changed, and each candidate's parameters are kept next to its results.
+  `input_parameter.csv` was deleted. Checked: the old and the new optimizer writer on three candidates give the
+  same value strings and the same `RunConfig` values and types; full seed-0 run `REPRODUCED`. Still for Phase 3:
+  a `run_manifest.json` with more than the parameters, and separate output folders per run.
+
+### I-15: Unused columns in `input_parameter.csv`; the optimizer writes it by column position
+- **Status:** Closed (2026-11-10). **Severity:** Low. **Found:** 2026-11-08 (removing the TRPartA / BayesianOptimization /
+  debug_mode branches).
+- **What:** the code no longer branches on `BayesianOptimization`, `TRPartA` or `debug_mode_list` (only the values
+  TRUE, TRUE, FALSE are supported; the startup check refuses others). Since 2026-11-09 the same holds for
+  `TRPartA_test_scenario_list` (the fare scenario): the code has only fare scenario 10 (`config.FARE_SCENARIO`), and
+  the startup check refuses other values. The four columns are still in
+  `mtsm_data/input_parameter/input_parameter.csv`, because `Bayesian_optimization_script.py` writes the candidate's
+  values by column position (`rows[1][5]` to `rows[1][13]`: fares, fleet size, peak factor, Micro2FixedFactor,
+  headway). Removing columns 1-4 would shift those positions.
+- **Impact:** none on results; the columns are misleading (they look like options but have only one valid value).
+- **Fix (later, user's intention):** remove the four columns from the input file and make the optimizer write by
+  column name instead of position; then remove them from the startup check. `input_parameter.csv` is a frozen
+  input, so `MANIFEST.csv` must be regenerated and the change recorded in `docs/progress.md`. The optimizer change
+  needs a test run of the optimizer (I-03).
+- **Resolution:** `input_parameter.csv` was replaced by `mtsm_constant_configurations.csv`
+  (docs/constant_config_plan.md), which has no `TRPartA`, `BayesianOptimization`, `debug_mode_list` or
+  `TRPartA_test_scenario_list` (user's decision 3); the fare scenario is the parameter `fare_scenario`. The
+  optimizer writes by parameter name. The startup check keeps `test_area` (only lemon_grove) and `fare_scenario`
+  (only 10). `MANIFEST.csv` regenerated. Checked as for I-02.
 
 ### I-18: In later fare scenarios, every traveler gets the parking values of one traveler
 - **Status:** Closed (2026-11-09). **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 5).

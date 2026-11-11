@@ -20,7 +20,7 @@ BOOL_LIST = "bool_list"
 STR_LIST = "str_list"
 STR_LIST_LIST = "str_list_list"
 
-# ---- run parameters (the columns of input_parameter.csv; the optimizer sets several of them) ----
+# ---- run parameters (until 2026-11-10 the columns of input_parameter.csv; the optimizer sets seven of them) ----
 G_TEST_AREA = "test_area"  # test_area
 G_TRANSIT_FARE = "transit_fare"  # transit_fare ($)
 G_MICROTRANSIT_DIST_BASED_RATE = "microtransit_dist_based_rate"  # microtransit_dist_based_rate ($/mile)
