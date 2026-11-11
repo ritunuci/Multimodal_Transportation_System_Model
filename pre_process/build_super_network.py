@@ -14,11 +14,15 @@ and these link types (network_algorithms.KNOWN_LINK_TYPES):
     2 FRT waiting             walk -> stop     boarding: half the headway; stop -> walk: alighting, 0 s
     4 microtransit in-vehicle micro -> micro   every road edge; travel time = car travel time x factor
     5 microtransit waiting    walk -> micro    boarding at a virtual stop: the waiting time; micro -> walk: 0 s
-Each stop is joined to its nearest walk node (by the coordinates); several stops can share a walk node. Only the
-"micro" variant has the microtransit layer; "non_micro" has types 0, 1 and 2. The links are written in the order of
-the frozen networks: walk links in road-edge order; each FRT link, followed by the waiting links of a stop that
-appears for the first time; each microtransit link, followed by the waiting links of a virtual stop that appears
-for the first time.
+Each stop is joined to its nearest walk node (by the coordinates); several stops can share a walk node. Variants:
+"micro" has all these types, "non_micro" (no microtransit) types 0, 1 and 2, "micro_only" (no FRT) types 0, 4 and 5.
+"micro_only" numbers the nodes like "micro" (the stops keep their numbers, without links), because the model has one
+microtransit_node_offset for all networks. The links are written in the order of the frozen networks: walk links in
+road-edge order; each FRT link, followed by the waiting links of a stop that appears for the first time; each
+microtransit link, followed by the waiting links of a virtual stop that appears for the first time.
+
+With --auto-out the car network is written too (the model reads it separately, as auto_edges.csv): every road edge
+with its distance and car travel time, link type 7, in road-edge order.
 
 Inputs (CSV; other columns are ignored):
     road nodes   node_index,pos_x,pos_y                       node_index 0 .. N-1 (FleetPy's nodes.csv)
@@ -32,7 +36,7 @@ latitude with --latlon (distance on the sphere).
 Usage (from the repository root):
     python pre_process/build_super_network.py --road-nodes nodes.csv --road-edges edges.csv \\
         --frt-stops stops.csv --frt-edges frt_edges.csv --variant micro --headway 10 \\
-        --virtual-stop-share 75 --seed 0 --out super_network.csv
+        --virtual-stop-share 75 --seed 0 --out super_network.csv --auto-out auto_edges.csv
 The run prints num_walk_nodes and microtransit_node_offset for mtsm_constant_configurations.csv.
 """
 import argparse
@@ -41,7 +45,7 @@ import math
 import random
 import sys
 
-WALK, FRT, FRT_WAIT, MICRO, MICRO_WAIT = 0, 1, 2, 4, 5
+WALK, FRT, FRT_WAIT, MICRO, MICRO_WAIT, CAR = 0, 1, 2, 4, 5, 7
 NO_ROUTE = -1
 FIELDS = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]
 
@@ -138,16 +142,17 @@ def build(nodes, road_edges, stops, frt_edges, variant, headway_min, virtual, wa
 
     for a, b, dist, tt in road_edges:
         add(a, b, dist, dist / walk_speed, WALK)
-    frt_wait = headway_min * 60 / 2
-    joined = set()
-    for a, b, dist, tt, route in frt_edges:
-        add(stop_node[a], stop_node[b], dist, tt, FRT, route)
-        for s in (a, b):
-            if s not in joined:
-                joined.add(s)
-                add(stop_walk[s][0], stop_node[s], 0, frt_wait, FRT_WAIT)  # boarding
-                add(stop_node[s], stop_walk[s][0], 0, 0, FRT_WAIT)  # alighting
-    if variant == "micro":
+    if variant in ("micro", "non_micro"):
+        frt_wait = headway_min * 60 / 2
+        joined = set()
+        for a, b, dist, tt, route in frt_edges:
+            add(stop_node[a], stop_node[b], dist, tt, FRT, route)
+            for s in (a, b):
+                if s not in joined:
+                    joined.add(s)
+                    add(stop_walk[s][0], stop_node[s], 0, frt_wait, FRT_WAIT)  # boarding
+                    add(stop_node[s], stop_walk[s][0], 0, 0, FRT_WAIT)  # alighting
+    if variant in ("micro", "micro_only"):
         boarded = set()
         for a, b, dist, tt in road_edges:
             add(offset + a, offset + b, dist, tt * micro_time_factor, MICRO)
@@ -163,10 +168,24 @@ def build(nodes, road_edges, stops, frt_edges, variant, headway_min, virtual, wa
         "FRT stops without links (not numbered)": sorted(set(stops) - set(used)),
         "walk nodes with an FRT stop": len({w for w, _ in stop_walk.values()}),
         "largest stop -> walk node distance": max((d for _, d in stop_walk.values()), default=0),
-        "virtual stops": len(virtual) if variant == "micro" else 0,
+        "virtual stops": len(virtual) if variant != "non_micro" else 0,
         "links per type": {t: sum(1 for l in links if l["link_type"] == t) for t in sorted({l["link_type"] for l in links})},
     }
     return links, stop_node, summary
+
+
+def car_links(road_edges):
+    """the car network: every road edge with its car travel time"""
+    return [{"from_node": a, "to_node": b, "distance": float(dist), "travel_time": float(tt), "link_type": CAR,
+             "route": NO_ROUTE} for a, b, dist, tt in road_edges]
+
+
+def write_links(path, links):
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)  # CRLF, as the frozen networks
+        w.writeheader()
+        w.writerows(links)
+    print("wrote %s (%d links)" % (path, len(links)))
 
 
 def main(argv=None):
@@ -175,7 +194,7 @@ def main(argv=None):
     p.add_argument("--road-edges", required=True)
     p.add_argument("--frt-stops", required=True)
     p.add_argument("--frt-edges", required=True)
-    p.add_argument("--variant", choices=["micro", "non_micro"], required=True)
+    p.add_argument("--variant", choices=["micro", "non_micro", "micro_only"], required=True)
     p.add_argument("--headway", type=int, required=True, help="FRT headway (min); boarding waits half of it")
     p.add_argument("--virtual-stops", help="CSV with node_index: the walk nodes with microtransit boarding")
     p.add_argument("--virtual-stop-share", type=float, help="instead: share of the walk nodes (%%), drawn with --seed")
@@ -185,22 +204,21 @@ def main(argv=None):
     p.add_argument("--micro-wait", type=float, default=180, help="microtransit waiting time at boarding (s)")
     p.add_argument("--latlon", action="store_true", help="pos_x / pos_y are longitude / latitude")
     p.add_argument("--out", required=True)
+    p.add_argument("--auto-out", help="also write the car network (auto_edges.csv) to this file")
     args = p.parse_args(argv)
-    if args.variant == "micro" and (args.virtual_stops is None) == (args.virtual_stop_share is None):
-        p.error("--variant micro needs one of --virtual-stops or --virtual-stop-share")
+    if args.variant != "non_micro" and (args.virtual_stops is None) == (args.virtual_stop_share is None):
+        p.error("--variant %s needs one of --virtual-stops or --virtual-stop-share" % args.variant)
 
     nodes, road_edges = read_road(args.road_nodes, args.road_edges)
     stops, frt_edges = read_frt(args.frt_stops, args.frt_edges)
     virtual = set()
-    if args.variant == "micro":
+    if args.variant != "non_micro":
         virtual = virtual_stops(nodes, args.virtual_stops, args.virtual_stop_share, args.seed)
     links, stop_node, summary = build(nodes, road_edges, stops, frt_edges, args.variant, args.headway, virtual,
                                       args.walk_speed, args.micro_time_factor, args.micro_wait, args.latlon)
-    with open(args.out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)  # CRLF, as the frozen networks
-        w.writeheader()
-        w.writerows(links)
-    print("wrote %s (%d links)" % (args.out, len(links)))
+    write_links(args.out, links)
+    if args.auto_out:
+        write_links(args.auto_out, car_links(road_edges))
     for k, v in summary.items():
         print("  %s: %s" % (k, v))
 

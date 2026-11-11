@@ -956,6 +956,12 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   distance to the next node (8-194 ft) gave the same network; a share with the same seed gives the same file, another
   seed another one. The frozen data has no stop coordinates (the old code read them from an outside folder), so the
   nearest-node step was checked only this way.
+- Added the same day (user's request): the variant `micro_only` (microtransit without FRT: types 0, 4, 5; nodes
+  numbered like `micro`, the stops without links, because the model has one `microtransit_node_offset`) and the
+  car network (`--auto-out`: every road edge, type 7, route -1; the model reads it as `auto_edges.csv`). Checked:
+  the car network equals `initial_network/auto_edges.csv` byte for byte; `micro_only` equals the frozen micro
+  network (hw 10, 75 %) without its type 1 and 2 links, after the same renumbering (there is no frozen
+  `micro_only` network). The four checks above still pass.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
