@@ -43,6 +43,9 @@ Paths are relative to the codebase root.
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
 | I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Closed (2026-11-11) | 2026-11-09 |
 | I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Open | 2026-11-10 |
+| I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Open | 2026-11-11 |
+| I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
+| I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
 
 ---
 
@@ -216,9 +219,61 @@ Paths are relative to the codebase root.
 - **Fix (later, user's intention):** use one value (`meters_per_mile`, 1.60934 km) everywhere and remove the two other
   keys. This changes results: make and document a new reference in `docs/reference_results/`.
 
+### I-22: The path search can miss the least-cost path when a transfer discount applies
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
+- **What:** in `network_algorithms.generalized_cost_dijsktra_OD_heap` the cost of a link depends on the path before
+  it: after a microtransit leg the FRT fare is multiplied by `Micro2FixedFactor`, after an FRT leg the microtransit
+  distance fare by `Fixed2MicroFactor`, and a boarding right after an alighting (shared walk node) pays no FRT fare.
+  The search keeps one path per node (Dijkstra), so at a node it keeps the cheapest path so far and drops a dearer
+  one that would make the rest of the trip cheaper, e.g. a microtransit leg that makes the following FRT ride free.
+- **Impact:** checked on the reference run's final networks (AM-PM, 3,472 travelers) against an exact search with
+  one label per (node, microtransit used, FRT used, previous link FRT waiting) and the same link costs: with the
+  reference factors (`fixed2micro_factor` 1, `micro2fixed_factor` 0) the model's transit path is not the least-cost
+  one for **405 travelers (11.7 %)**; mostly an FRT-only path where microtransit + FRT is cheaper (275). With both
+  factors 0.5: 49 travelers. Paths, costs, mode choice and all results depend on it.
+- **Fix:** search over the states (node, microtransit used, FRT used, previous link FRT waiting) instead of nodes
+  (up to 8 labels per node; slower). Changes results: make and document a new reference in
+  `docs/reference_results/`; together with the other changes that need one (I-19, I-21).
+
+### I-24: Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged
+- **Status:** Open (to decide). **Severity:** Low. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
+- **What:** the fare rules of `network_algorithms.generalized_cost_dijsktra_OD_heap` at an FRT boarding (walk node ->
+  stop, link type 2; since I-23 the discount is set only there):
+  1. **The discount holds for the rest of the trip.** The condition is `IsMicroLink`: the path has used microtransit
+     *anywhere before*, not just before this boarding. In microtransit -> FRT -> walk -> FRT, the second FRT boarding
+     is also discounted (`transit_fare_set * Micro2FixedFactor`), although the rider comes from a bus. Likewise
+     `IsFixedLink`: after any FRT leg, every later microtransit link gets `Fixed2MicroFactor`.
+  2. **Re-boarding at a shared walk node.** A boarding right after an alighting at the same walk node
+     (`link_type_pre == 2`) pays no FRT fare: a free FRT -> FRT transfer. After a microtransit leg the discounted
+     fare is charged on that re-boarding instead, so the rider pays more than a rider without microtransit
+     (unless `Micro2FixedFactor` is 0). Transferring by walking to another stop pays the full fare again.
+- **Impact:** none in the reference run (`micro2fixed_factor` 0, `fixed2micro_factor` 1). Affects the optimizer's
+  candidates with other factors: the price of trips with more than one FRT boarding after microtransit, or with
+  microtransit after FRT.
+- **To decide:** (1) is the discount meant for the whole trip, or only for the boarding right after the other mode
+  (then the condition is the previous leg's mode, not "used before")? (2) Should a re-boarding after an alighting
+  stay free also after microtransit (move the discount inside `if link_type_pre != 2:`)? Neither changes the
+  reference, so a full run with `REPRODUCED` confirms the change; check the fares with factors other than 0 and 1
+  as for I-23. Related: I-19 (start fare), I-22 (search), the missing transfer links (`bt_f_trfer` has no effect;
+  docs/progress.md, "FRT <-> microtransit transfers checked").
+
 ---
 
 ## Closed
+
+### I-23: After a microtransit leg, the discounted FRT fare was also charged on alighting
+- **Status:** Closed (2026-11-11). **Severity:** Medium. **Found:** 2026-11-11 (checking the FRT <-> microtransit
+  transfers).
+- **What:** an FRT ride is boarding (walk node -> stop, link type 2, the fare), ride (type 1) and alighting
+  (stop -> walk node, also type 2, no fare). In `network_algorithms.generalized_cost_dijsktra_OD_heap` the transfer
+  discount `transit_fare = transit_fare_set * Micro2FixedFactor` was set for every type 2 link of a path that had
+  used microtransit, also on the alighting link, so the discounted fare was charged twice.
+- **Impact:** a microtransit -> FRT trip paid `2 x Micro2FixedFactor` times the FRT fare instead of `1 x` (at 0.5 the
+  full fare; above 0.5 more than without discount). None in the reference run (`micro2fixed_factor` 0); the
+  optimizer varies `micro2fixed_factor`, so its candidates with a factor above 0 had these trips priced wrong.
+- **Resolution:** the two lines moved into the boarding branch (walk node -> stop); alighting stays at 0. Checked
+  with both factors 0.5 on the final networks: the microtransit -> FRT paths pay 0.5 x the fare (1.0 x with two
+  FRT boardings), traveler 11539 $1.81 instead of $3.62. Full seed-0 run `REPRODUCED`.
 
 ### I-20: The skim modules and their functions in `network_algorithms.py` are not used by the run
 - **Status:** Closed (2026-11-11). **Severity:** Low. **Found:** 2026-11-09 (removing unused code from

@@ -314,11 +314,10 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                         if min_node <= last_walk_node and first_frt_stop <= edge <= last_frt_stop:
                             if link_type_pre != 2:
                                 transit_fare = transit_fare_set
+                            if IsMicroLink==True:  # transfer discount after a microtransit trip leg (on boarding only, I-23)
+                                transit_fare = transit_fare_set* Micro2FixedFactor
                         else:
                             transit_fare = 0
-
-                    if IsMicroLink==True:  # transfer discount after a microtransit trip leg
-                        transit_fare = transit_fare_set* Micro2FixedFactor
                     generalized_link_travel_time = bt_f_wt * link_travel_time / 60 + bt_t_fr * transit_fare
                 if link_type_ == 3:  # transfer link
                     generalized_link_travel_time = bt_f_trfer * link_travel_time / 60

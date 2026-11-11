@@ -35,6 +35,7 @@ earlier entries; commits before that date use the old names.
 | 2k | Move the helper modules from the root to `mtsm_model/helpers/` | Done 2026-11-10 |
 | 2l | One parameter file `mtsm_constant_configurations.csv` (replaces `input_parameter.csv` and the values in the code) | Done 2026-11-10 |
 | 2m | Delete the unused skim scripts and their five functions in `network_algorithms.py` (I-20) | Done 2026-11-11 |
+| 2n | Transfers FRT <-> microtransit checked: discounted FRT fare no longer charged on alighting (I-23) | Done 2026-11-11 (open: I-22, I-24) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -877,6 +878,23 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: README layout table, I-20 closed.
 - Verification (2026-11-11): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
   `REPRODUCED`**; `check_inputs.py` passes.
+
+## FRT <-> microtransit transfers checked (2026-11-11)
+
+- Checked with a read-only script on the reference run's final networks (AM-PM, 3,472 travelers): the model's path
+  search, rewritten with the same link costs (same costs as the model's function), against an exact search with one
+  label per (node, microtransit used, FRT used, previous link FRT waiting).
+- Any number of transfers is possible (they go through a walk node). Reference paths: walk 1597, FRT 1075,
+  microtransit 629, microtransit -> FRT 117, FRT -> microtransit 39, microtransit -> FRT -> microtransit 15. No
+  transfer penalty; the networks have no transfer links (type 3), so `bt_f_trfer` has no effect.
+- Found: the search can miss the least-cost path when a transfer discount applies (I-22, open; 405 travelers with
+  the reference factors); the discounted FRT fare after microtransit was also charged on alighting (I-23).
+- Fixed I-23 (`network_algorithms.py`): the discount is set only on boarding (walk node -> stop). With both factors
+  0.5, microtransit -> FRT paths now pay 0.5 x the FRT fare instead of 1.0 x.
+- Fare rules to decide (I-24): the discount holds for the whole trip after the other mode, and a re-boarding
+  after an alighting is free without microtransit but charged the discounted fare after it.
+- Verification (2026-11-11): passed. Full seed-0 run under the I/O tracer: `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes (the reference has `micro2fixed_factor` 0, so the fix changes nothing in it).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
