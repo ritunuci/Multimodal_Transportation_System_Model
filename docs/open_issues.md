@@ -22,7 +22,7 @@ Paths are relative to the codebase root.
 
 | ID | Title | Severity | Status | Found |
 |---|---|---|---|---|
-| I-01 | Gurobi license expired | High | Open | 2026-10-23 |
+| I-01 | Gurobi license expired | High | Closed (2026-11-12) | 2026-10-23 |
 | I-02 | The optimizer overwrites the frozen parameter file | Medium | Closed (2026-11-10) | 2026-10-23 |
 | I-03 | The optimizer has not been run since the changes | Medium | Open | 2026-10-23 |
 | I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Decision needed | 2026-10-23 |
@@ -48,21 +48,11 @@ Paths are relative to the codebase root.
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
 | I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (reminder) | 2026-11-11 |
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
+| I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
 
 ---
 
 ## Open
-
-### I-01: Gurobi license expired
-- **Status:** Open. **Severity:** High. **Found:** 2026-10-23 (Phase 2b, step 3).
-- **What:** the academic Gurobi 12 license on the reference machine expired on 2026-10-21. Starting a Gurobi
-  environment fails with `GurobiError: License expired 2026-10-21`.
-- **Impact:** AlonsoMora repositioning starts Gurobi only after a request is rejected. The reference run has no
-  rejections, so it still reproduces. Any parameter set with rejections, which includes most optimizer sessions,
-  stops with the license error. Since commit `09e0684` the optimizer then stops too, instead of recording stale results.
-- **Fix:** renew the academic license at gurobi.com and install it with `grbgetkey` (the user's action). Then run
-  `python tools/export_env.py --write` to update `env/fleetpy.system.txt` with the new expiry date, and check that the
-  three lock files are unchanged.
 
 ### I-03: The optimizer has not been run since the changes
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phases 1c and 2b).
@@ -74,6 +64,10 @@ Paths are relative to the codebase root.
 - **Fix:** after I-01 is fixed, run a short session (a few candidates) into a throwaway `folder_name`. Check that
   `per_call_results.csv` matches the evaluation files and the copies in `candidate_configs/`, and that a
   deliberately failed run stops the optimizer.
+- **Update 2026-11-12:** a short session was run (5 Sobol samples, 2 optimization iterations, throwaway folder, deleted
+  afterwards): after the fix of I-27 it ran to the end; 7 model runs, one with headway 20, no rejected requests (Gurobi
+  not started); `check_inputs.py` passes. Not yet checked: `per_call_results.csv` against the evaluation files and
+  `candidate_configs/`, a deliberately failed run, and a candidate with rejected requests.
 
 ### I-04: Rows 1 and 2 of the evaluation CSV are identical
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1).
@@ -289,6 +283,39 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-27: The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env)
+- **Status:** Closed (2026-11-12). **Severity:** High. **Found:** 2026-11-12 (first optimizer session since the changes:
+  5 Sobol samples and 2 optimization iterations).
+- **What:** in the `fleetpy` env, any LAPACK call of numpy or scipy (even `np.linalg.cholesky` of a 5x5 matrix) ends the
+  process with the Windows exception `0xc06d007f` (exit code 127, no Python traceback): the Intel threading layer of MKL
+  2024.2.2 asks `libiomp5md.dll` for a function that the one of `llvm-openmp` 21.1.3 does not have. Both packages are in
+  the locked environment (`env/fleetpy.conda-explicit.txt`). The optimizer died after the Sobol samples, in the first
+  Gaussian-process fit (`Models.BOTORCH_MODULAR` -> `scipy.optimize` L-BFGS-B).
+- **Impact:** no optimizer session could get past the Sobol samples. The model is not affected: it never calls LAPACK
+  (all runs and the reference were made in this env).
+- **Resolution:** `Bayesian_optimization_script.py` sets `MKL_THREADING_LAYER=SEQUENTIAL` before numpy is imported
+  (`os.environ.setdefault`; user's decision, option 1 of 3; the environment is unchanged). The model runs it starts
+  inherit the variable. Checked 2026-11-12: with the variable, a session of 5 Sobol samples and 2 optimization
+  iterations ran to the end (7 model runs, all result files written, `check_inputs.py` passes); a full seed-0 run with
+  the variable set: `compare_reference.py` **32 identical, `REPRODUCED`**; after the change, the optimizer's
+  Ax/BoTorch part (model runs replaced by fixed values) ran to the end without the variable set outside.
+  Left open: the cause in the environment (another `llvm-openmp` build would remove it; that changes `env/`).
+
+### I-01: Gurobi license expired
+- **Status:** Closed (2026-11-12). **Severity:** High. **Found:** 2026-10-23 (Phase 2b, step 3).
+- **What:** the academic Gurobi 12 license on the reference machine expired on 2026-10-21. Starting a Gurobi
+  environment fails with `GurobiError: License expired 2026-10-21`.
+- **Impact:** AlonsoMora repositioning starts Gurobi only after a request is rejected. The reference run has no
+  rejections, so it still reproduces. Any parameter set with rejections, which includes most optimizer sessions,
+  stops with the license error. Since commit `09e0684` the optimizer then stops too, instead of recording stale results.
+- **Fix:** renew the academic license at gurobi.com and install it with `grbgetkey` (the user's action). Then run
+  `python tools/export_env.py --write` to update `env/fleetpy.system.txt` with the new expiry date, and check that the
+  three lock files are unchanged.
+- **Resolution:** the user installed a new named-user academic license on 2026-11-12 (`TYPE=ACADEMIC`, `VERSION=14`,
+  expires 2027-11-12; it works with the installed `gurobipy` 12.0.3). Checked: `gurobipy.Model()` starts in the
+  `fleetpy` env; `python tools/export_env.py --write` changed only the license line of `env/fleetpy.system.txt`, the
+  three lock files are unchanged. The license has to be requested again before 2027-11-12.
 
 ### I-26: A run with `--config` failed at once: the command line was handed to FleetPy
 - **Status:** Closed (2026-11-11). **Severity:** High. **Found:** 2026-11-11 (a full run with the transfer penalty

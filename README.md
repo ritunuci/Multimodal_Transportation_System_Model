@@ -70,7 +70,9 @@ FRT headway, FRT fare, microtransit fares, peak fare factor and transfer discoun
 and the increase in travelers' mobility logsum due to microtransit. For each candidate it writes a copy of the frozen
 parameter file with the candidate's values (`<folder_name>/candidate_configs/config_call_NNNN.csv`), runs the model
 with `--config <copy>` and reads the evaluation file; results go to `mtsm_data/lemon_grove/optimization_output/`.
-The frozen parameter file is never changed.
+The frozen parameter file is never changed. The script sets `MKL_THREADING_LAYER=SEQUENTIAL` for itself and the model
+runs it starts: without it, numpy's linear algebra crashes in the `fleetpy` env (`docs/open_issues.md`, I-27); the
+model's results do not depend on it.
 
 ## Repository layout
 

@@ -6,6 +6,11 @@ import subprocess
 import sys
 import logging
 
+# numpy/scipy's linear algebra crashes in the fleetpy env with MKL's default threading (exit code 127, no traceback;
+# docs/open_issues.md I-27), so MKL runs sequentially. Must be set before numpy is imported. The model runs started
+# below inherit it; their results do not change. A value already set in the environment is kept.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import numpy
 import pandas as pd
 import torch

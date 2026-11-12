@@ -39,6 +39,7 @@ earlier entries; commits before that date use the old names.
 | 2o | Transfer penalty `bt_f_trfer` per transfer behind a switch (off); link type 3 removed | Done 2026-11-11 (open: I-25) |
 | 2p | Runs with `--config` (the optimizer's candidates) work again: FleetPy no longer gets the command line (I-26) | Done 2026-11-11 |
 | 2q | Representative super-network script `pre_process/build_super_network.py` (not used by the model yet) | Done 2026-11-11 |
+| 2r | Optimizer runs again: MKL threading set to sequential in `Bayesian_optimization_script.py` (I-27) | Done 2026-11-12 (open: I-03) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -444,6 +445,7 @@ file was renamed, so the code still builds the same file names. The folder const
 ## Phase 2b: open issues found
 - **Gurobi license expired (2026-10-21).** Renew it before any optimizer session or any scenario with rejections.
   The user will renew it.
+  Renewed 2026-11-12 (expires 2027-11-12; I-01 closed, `env/fleetpy.system.txt` updated).
 - ~~**Optimizer uses stale results when a model run fails.**~~ **Fixed 2026-10-23** (below). `run_script()` ignored the
   model's exit code, and `collect_output()` then read `lemon_grove_evaluation_zonal_partition_False.csv`. If a run
   stopped before writing it (e.g. the Gurobi license error), that file still held the **previous candidate's**
@@ -968,6 +970,25 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   the car network equals `initial_network/auto_edges.csv` byte for byte; `micro_only` equals the frozen micro
   network (hw 10, 75 %) without its type 1 and 2 links, after the same renumbering (there is no frozen
   `micro_only` network). The four checks above still pass.
+
+## Optimizer: first session since the changes, MKL crash fixed (2026-11-12)
+
+- Test session (user's request): `Bayesian_optimization_script.py` with 5 Sobol samples and 2 optimization iterations,
+  through a scratch launcher that replaces `N_BATCH`, `n_samples` and `folder_name` in memory (the script's own values,
+  390 / 170 / `LG_submission_results_R2`, are unchanged).
+- First try: the 5 Sobol candidates ran (parameter files written, model started with `--config`, results collected);
+  then the process ended with exit code 127 at the first Gaussian-process fit. Cause: numpy/scipy LAPACK calls crash in
+  the `fleetpy` env with MKL's default threading (I-27). The model never calls LAPACK.
+- Fix (user's decision): the optimizer sets `MKL_THREADING_LAYER=SEQUENTIAL` before importing numpy; a value already
+  set in the environment is kept. The environment in `env/` is unchanged.
+- Verification (2026-11-12): with the variable, the session ran to the end in 58 min: 7 model runs (fleet 2-6,
+  headway 12-30, one with headway 20), all converged, no rejected requests; `per_call_results.csv`, the candidate
+  parameter files, the hypervolumes and the non-dominated set written; `check_inputs.py` passes. Full seed-0 run with
+  the variable set: `compare_reference.py` **32 identical, `REPRODUCED`**. After the change to the script, its
+  Ax/BoTorch part ran to the end without the variable set outside (model runs replaced by fixed values). The test
+  folder was deleted (results not needed). I-03 stays open for the checks not made (see there).
+- Also 2026-11-12: Gurobi license renewed (I-01 closed). `aggregation=census_track` tested with a `--config` copy:
+  the run converged (7:17 min); results differ from the reference, as expected (not recorded as a reference).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
