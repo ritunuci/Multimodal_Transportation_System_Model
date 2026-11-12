@@ -49,6 +49,7 @@ Paths are relative to the codebase root.
 | I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (reminder) | 2026-11-11 |
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 | I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
+| I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
 
 ---
 
@@ -283,6 +284,36 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-28: The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway
+- **Status:** Closed (2026-11-12). **Severity:** High (it changes the optimizer's subsidy objective). **Found:**
+  2026-11-12 (the user's question why a larger subsidy objective did not come with a larger logsum increase).
+- **What:** the base case (FRT only, no microtransit) is defined by `base_frt_headway` (20 min) and `base_frt_fare`
+  ($2.50): its travelers are routed on that network with that fare. But `results.py` computed its subsidy as
+  `F_oper_cost - off_micro_F_revenue`, with `F_oper_cost` at the scenario's headway (`frt_headway`), although
+  `F_oper_cost_base` existed and was printed in the same row. The base rows of the evaluation file also showed the
+  scenario's headway in `hdwy (min)` and its FRT vehicle miles in `F_VMT (mi)`, `tt_VMT (mi)`, `F_PMT/F_VMT`.
+- **Impact:** in the optimizer's subsidy objective (`tot_sub` of the microtransit row minus `tot_sub` of the base
+  row) the FRT operating cost cancelled, so a shorter FRT headway cost nothing, while it raised the logsum increase
+  (which is measured against the base headway). The objective was almost only fleet size x cost per vehicle (13 runs:
+  correlation with fleet size 1.00, with the logsum increase 0.51).
+- **Resolution (user's decision: the base case uses the base headway and base fare):** in `results.py` the base
+  subsidy uses `F_oper_cost_base`; the base rows show `base_frt_headway` and the base headway's vehicle miles
+  (`transit_tt_VMT_base`), also in `tt_VMT`, `F_PMT/F_VMT`, `sub_per_F_VMT`, `sub_per_T_VMT`; the fallback FRT waiting
+  time for a base case without FRT trips uses the base headway. The fare was already right (`base_frt_fare` in the
+  revenue and in the path search). Checked: a full seed-0 run differed from the reference in 1 of 32 files, the
+  evaluation file, and there only in 13 columns of the two base rows, with the predicted values (`tot_sub` 4688.83 ->
+  2320.67 = 2368.17 - 47.50); the microtransit row is identical. A run with `frt_headway` 30 gave the same base row
+  except the two accessibility columns below. The reference was updated (`docs/reference_results/README.md`).
+- **Effect on the optimizer:** no change to how it reads the results. The subsidy objective now includes the FRT cost
+  difference to the base headway: -2368 at headway 10 (reference run: -3092.8 -> -5461.0), 0 at 20, +789 at 30.
+  Results of earlier sessions are not comparable; they can be converted from the saved `agg_sim_output` files (new
+  objective = old - (`F_oper_cost` of row 3 - `F_oper_cost` of row 2)). `ref_point` was widened from -15000 to
+  -18000 (user's decision), because fleet 7 with headway 10 is now near -15,200.
+- **Left as it is:** the base rows' `wghted_acc_emp_*` columns are still computed on the FRT network of the
+  scenario's headway (`all_scenario_fixed_acc_calculation(headway, ...)`; they need the base headway's network and
+  change a second output file, `debug_False_acc_super_network_non_micro_<headway>.csv`). The names of the base case's
+  output files keep `hw_<scenario headway>`. The base row is still written twice (the optimizer reads rows 2 and 3).
 
 ### I-27: The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env)
 - **Status:** Closed (2026-11-12). **Severity:** High. **Found:** 2026-11-12 (first optimizer session since the changes:

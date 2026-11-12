@@ -40,6 +40,7 @@ earlier entries; commits before that date use the old names.
 | 2p | Runs with `--config` (the optimizer's candidates) work again: FleetPy no longer gets the command line (I-26) | Done 2026-11-11 |
 | 2q | Representative super-network script `pre_process/build_super_network.py` (not used by the model yet) | Done 2026-11-11 |
 | 2r | Optimizer runs again: MKL threading set to sequential in `Bayesian_optimization_script.py` (I-27) | Done 2026-11-12 (open: I-03) |
+| 2s | Base case's subsidy at the base FRT headway (I-28); reference updated (evaluation file) | Done 2026-11-12 |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -989,6 +990,24 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   folder was deleted (results not needed). I-03 stays open for the checks not made (see there).
 - Also 2026-11-12: Gurobi license renewed (I-01 closed). `aggregation=census_track` tested with a `--config` copy:
   the run converged (7:17 min); results differ from the reference, as expected (not recorded as a reference).
+
+## Base case's subsidy at the base FRT headway; reference updated (2026-11-12)
+
+- Found through the user's question on the optimizer test results: a larger subsidy objective did not come with a
+  larger logsum increase. Cause (I-28): the base case's subsidy used the FRT operating cost of the scenario's headway,
+  so that cost cancelled in the subsidy objective, while the logsum increase is measured against the base headway.
+- User's decision: the base case uses `base_frt_headway` and `base_frt_fare`, whatever the candidate's values. This
+  fix gets its own new reference; the other result-changing changes (I-19, I-21, I-22, I-24, I-25) still wait.
+- Change (`mtsm_model/results.py` only): base subsidy from `F_oper_cost_base`; base rows show the base headway and its
+  FRT vehicle miles. The fare was already the base fare.
+- Comparison with the old reference: 31 of 32 files identical; the evaluation file differs only in 13 columns of the
+  two base rows, with the predicted values (base `tot_sub` 4688.83 -> 2320.67); the microtransit row is identical.
+  A run with `frt_headway` 30 (`--config` copy) gave the same base row, except two accessibility columns (left, I-28).
+- Reference re-established: the evaluation file in `docs/reference_results/lemon_grove_seed0/output/` was replaced by
+  the new one (`docs/reference_results/README.md`, "Changes to this reference"); a second, independent full run then
+  gave `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
+- Optimizer: its subsidy objective changes with the evaluation file (reference run: -3092.8 -> -5461.0); earlier
+  sessions are not comparable (conversion in I-28). `ref_point` widened from -15000 to -18000 (user's decision).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

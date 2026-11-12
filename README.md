@@ -67,7 +67,8 @@ for vehicle repositioning).
 
 `python Bayesian_optimization_script.py` runs a multi-objective Bayesian optimization (Ax/BoTorch) over fleet size,
 FRT headway, FRT fare, microtransit fares, peak fare factor and transfer discount. The two objectives are total subsidy
-and the increase in travelers' mobility logsum due to microtransit. For each candidate it writes a copy of the frozen
+and the increase in travelers' mobility logsum due to microtransit, both relative to the base case: FRT only, at
+`base_frt_headway` and `base_frt_fare` (so a candidate's shorter FRT headway adds to its subsidy). For each candidate it writes a copy of the frozen
 parameter file with the candidate's values (`<folder_name>/candidate_configs/config_call_NNNN.csv`), runs the model
 with `--config <copy>` and reads the evaluation file; results go to `mtsm_data/lemon_grove/optimization_output/`.
 The frozen parameter file is never changed. The script sets `MKL_THREADING_LAYER=SEQUENTIAL` for itself and the model

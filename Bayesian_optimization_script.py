@@ -362,7 +362,9 @@ N_BATCH = 390  # Number of iterations in optimization loop   # used 150 before
 BATCH_SIZE = 1  # Number of candidate points to be generated   # used 1 before
 n_samples = 170  # Initial sobol samples for training             # used 40 before
 # dimension = 3   # Number of input parameters
-ref_point = [-15000, 0]  # TODO: If -50000 is used then in 'metric_a': 'lower_is_better=False' to be used
+# -18000 since 2026-11-12 (was -15000): since I-28 the subsidy objective includes the FRT cost difference to the base
+# headway, so fleet 7 with headway 10 is near -15,200.
+ref_point = [-18000, 0]  # TODO: If -50000 is used then in 'metric_a': 'lower_is_better=False' to be used
 tkwargs = {
     "dtype": torch.double,
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),

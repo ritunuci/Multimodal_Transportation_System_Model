@@ -47,7 +47,8 @@ change in behavior starts. Not kept, because they differ on every run: `00_simul
 `3-0_op-dyn_atts.csv` (computation times).
 
 Key values (evaluation file, row 3 = microtransit scenario): `tot_sub ($)` 7781.654254,
-`tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22.
+`tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22. Row 2 = base case
+(FRT only): `tot_sub ($)` 2320.666326 (since 2026-11-12; before 4688.832653).
 
 ### Changes to this reference
 
@@ -61,3 +62,12 @@ Key values (evaluation file, row 3 = microtransit scenario): `tot_sub ($)` 7781.
 - **2026-11-10, one parameter file** (`docs/constant_config_plan.md`): `input_parameter.csv` and the parameters in
   the code moved into `mtsm_data/input_parameter/mtsm_constant_configurations.csv`, with the same values. No
   reference file changed; each of the four steps ended with a full run that printed `REPRODUCED`.
+- **2026-11-12, base case's subsidy at the base FRT headway** (`docs/open_issues.md` I-28; the first change of
+  reported values): the two base rows (FRT only) of `output/lemon_grove_evaluation_zonal_partition_False.csv` now use
+  the FRT cost and vehicle miles of `base_frt_headway` (20 min) instead of the run's `frt_headway` (10). A full run
+  after the change differed from the reference only in this file, and there only in 13 columns of the base rows:
+  `hdwy (min)` 10 -> 20, `tot_sub ($)` 4688.83 -> 2320.67, `sub_per_F_trip`, `sub_per_F_rider`, `sub_per_T_trip`,
+  `sub_per_T_rider` 246.78 -> 122.14, `sub_per_F_pax_mile`, `sub_per_T_pax_mile` 241.37 -> 119.46, `sub_per_F_VMT`,
+  `sub_per_T_VMT` 2.0394 -> 2.0187, `F_VMT (mi)` 2299.12 -> 1149.56, `F_PMT/F_VMT` 0.00845 -> 0.01690, `tt_VMT (mi)`
+  7201.90 -> 6052.34. The microtransit row and the other 31 files did not change. The file was replaced by the new
+  run's; a second full run was byte-identical (`REPRODUCED`). The old file is in git history (before this change).

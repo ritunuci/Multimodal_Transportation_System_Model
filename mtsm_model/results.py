@@ -203,6 +203,9 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
 
 
     #calculate the turn-off micro transit scenario
+    # I-28 (2026-11-12): the base case is FRT only at config.BASE_FRT_HEADWAY and config.BASE_FRT_FARE, whatever the
+    # scenario's headway and fare. Its rows use the base headway's cost, vehicle miles and headway label. Not yet:
+    # the wghted_acc_emp_* columns (the scenario headway's network) and the file names (hw_<scenario headway>).
     #under every different fixed route transit headway, we need to calculate the cost again
     if (num_virstop_scen==1) and (num_fleet_size_scen==1) and (num_operating_periods_scen==1) and (microtransit_run=="micro") and (repositioning==True):
         #calculate off_micro metrics
@@ -211,7 +214,9 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
             off_micro_F_sub_per_ridership=-999
             off_micro_tt_sub = -999
         else:
-            off_micro_tt_sub =(F_oper_cost - off_micro_F_revenue)
+            # the base case runs at the base FRT headway, so its subsidy uses that headway's cost (I-28);
+            # until 2026-11-12: F_oper_cost, the cost at the scenario's headway
+            off_micro_tt_sub =(F_oper_cost_base - off_micro_F_revenue)
             off_micro_F_sub_per_ridership = off_micro_tt_sub / base.off_micro_F_trips
 
         off_micro_w_trip_legs=0
@@ -246,10 +251,10 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
             off_micro_avg_F_wait_time = 0
         else:
             if off_micro_F_trip_legs==0:
-                off_micro_avg_F_wait_time = headway*60/2
+                off_micro_avg_F_wait_time = config.BASE_FRT_HEADWAY*60/2  # I-28: was headway
             else:
                 off_micro_avg_F_wait_time=off_micro_tot_F_wait_time/base.off_micro_F_trips # total waiting time/fixed transit trips
-        off_micro_tt_VMT = base.off_micro_VMT_auto + 0+ transit_tt_VMT
+        off_micro_tt_VMT = base.off_micro_VMT_auto + 0+ transit_tt_VMT_base  # I-28: was transit_tt_VMT
 
         microtransit_run_pre=microtransit_run
         microtransit_run="non_micro"
@@ -347,7 +352,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
 
         # Write the fixed only scenario
         writer.writerow({"test_scen": 0,"dscrptn": "FRT_only_scen", "study_area": study_area,"repositioning": str(False),
-                         "microtrasnit": "non_micro","hdwy (min)": headway,
+                         "microtrasnit": "non_micro","hdwy (min)": config.BASE_FRT_HEADWAY,
                          "vir_stop (%)": 0,"flt_sz": 0, "op_periods": 0,"tt_agents": tt_num_agents,
                          "car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips / tt_num_agents,
                          "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)": base.off_micro_T_trips / tt_num_agents,
@@ -364,8 +369,8 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
                          "sub_per_T_rider ($)": np.nan if pure_F_users==0 else off_micro_tt_sub / (pure_F_users),
                          "sub_per_M_pax_mile ($/mi)": 0,"sub_per_F_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,
                          "sub_per_T_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,"sub_per_M_VMT ($/mi)": 0,
-                         "sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
-                         "sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
+                         "sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT_base),
+                         "sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT_base),
                          "tt_auto_gas_cost ($)": off_micro_total_op_cost - off_micro_F_revenue,
                          "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_VMT_auto,
                          "avg_M_fare": 0,"avg_F_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
@@ -376,7 +381,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
                          "M_avg_wait_time (s)": 0,"F_avg_wait_time (s)": off_micro_avg_F_wait_time,
                          "avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)": off_micro_tot_walk_time / 3600,
                          "car_VMT (mi)": base.off_micro_VMT_auto,"M_VMT (mi)": 0,
-                         "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT,
+                         "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT_base,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT_base,
                          "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": base.off_micro_VMT_W,
                          "wghted_acc_emp_5_min": tot_weighted_5_min_F,"wghted_acc_emp_10_min": tot_weighted_10_min_F,
                          "wghted_acc_emp_15_min": tot_weighted_15_min_F,"M_util_rate (%)": 0,
@@ -390,7 +395,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
 
         # Write the fixed only scenario
 
-        writer.writerow({"test_scen":0,"dscrptn":"FRT_only_scen","study_area":study_area,"repositioning":str(False),"microtrasnit":"non_micro","hdwy (min)": headway, "vir_stop (%)": 0, "flt_sz": 0,"op_periods": 0,
+        writer.writerow({"test_scen":0,"dscrptn":"FRT_only_scen","study_area":study_area,"repositioning":str(False),"microtrasnit":"non_micro","hdwy (min)": config.BASE_FRT_HEADWAY, "vir_stop (%)": 0, "flt_sz": 0,"op_periods": 0,
                      "tt_agents": tt_num_agents,"car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips/tt_num_agents,
                      "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)":base.off_micro_T_trips/tt_num_agents,"pure_M_users":0, "M_trips": 0,"M_mode_share (%)":0/tt_num_agents,
                      "pure_F_users":pure_F_users,"F_trips": base.off_micro_F_trips,"F_mode_share (%)":base.off_micro_F_trips/tt_num_agents,"pure_walk_users": base.off_micro_W_trips,"W_mode_share (%)":base.off_micro_W_trips/tt_num_agents,
@@ -398,14 +403,14 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
                      "M_oper_cost ($)": 0,"F_revenue ($)": off_micro_F_revenue, "M_revenue ($)": 0,"Total_T_revenue ($)":off_micro_F_revenue, "tot_sub ($)":off_micro_tt_sub,
                      "sub_per_F_trip ($)": off_micro_F_sub_per_ridership,"sub_per_F_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),"sub_per_M_trip ($)": 0,"sub_per_M_rider ($)":0,"sub_per_T_trip ($)":off_micro_F_sub_per_ridership,"sub_per_T_rider ($)":np.nan if pure_F_users==0 else off_micro_tt_sub/(pure_F_users),
                      "sub_per_M_pax_mile ($/mi)":0,"sub_per_F_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,"sub_per_T_pax_mile ($/mi)":off_micro_tt_sub/base.off_micro_VMT_F,
-                     "sub_per_M_VMT ($/mi)": 0,"sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),"sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT),
+                     "sub_per_M_VMT ($/mi)": 0,"sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT_base),"sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT_base),
                      "tt_auto_gas_cost ($)":off_micro_total_op_cost-off_micro_F_revenue,"auto_gas_cost_per_mile ($/mi)":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_VMT_auto,
                      "avg_M_fare": 0, "avg_F_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users),"avg_T_fare":np.nan if pure_F_users==0 else off_micro_F_revenue/(pure_F_users), "avg_auto_gas_cost":(off_micro_total_op_cost-off_micro_F_revenue)/base.off_micro_auto_trips,
                     "tt_o_pckt_cost ($)": off_micro_total_op_cost,
                      "tt_mob_lgsm_inc_with_micro": 0,"tt_gen_cost":off_micro_tt_gen_cost,
                      "tt_mode_switch": 0,"M_avg_wait_time (s)": 0,
                      "F_avg_wait_time (s)": off_micro_avg_F_wait_time,"avg_walk_time (s)": off_micro_avg_walk_time,"tt_walk_time (h)":off_micro_tot_walk_time/3600,
-                     "car_VMT (mi)":base.off_micro_VMT_auto,"M_VMT (mi)":0,"M_PMT (mi)":0,"M_PMT/M_VMT":0,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":base.off_micro_VMT_F,"F_PMT/F_VMT":base.off_micro_VMT_F/transit_tt_VMT,"tt_VMT (mi)":off_micro_tt_VMT,"tt_walk_dist (mi)":base.off_micro_VMT_W,
+                     "car_VMT (mi)":base.off_micro_VMT_auto,"M_VMT (mi)":0,"M_PMT (mi)":0,"M_PMT/M_VMT":0,"F_VMT (mi)":transit_tt_VMT_base,"F_PMT (mi)":base.off_micro_VMT_F,"F_PMT/F_VMT":base.off_micro_VMT_F/transit_tt_VMT_base,"tt_VMT (mi)":off_micro_tt_VMT,"tt_walk_dist (mi)":base.off_micro_VMT_W,
                      "wghted_acc_emp_5_min":tot_weighted_5_min_F,
                      "wghted_acc_emp_10_min":tot_weighted_10_min_F,
                      "wghted_acc_emp_15_min":tot_weighted_15_min_F,
