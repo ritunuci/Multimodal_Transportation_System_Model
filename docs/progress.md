@@ -268,6 +268,10 @@ file was renamed, so the code still builds the same file names. The folder const
 - Remote: `https://github.uci.edu/rituns/Multimodal_Transportation_System_Model`, branch `main`.
 - Author for all commits: **Ritun Saha `<rituns@uci.edu>`**, set per repository (`git config user.name/user.email`).
   The machine's global git identity is a different user, so **set the identity again in every new clone**.
+- Moved 2026-11-11: the repository is now `https://github.com/ritunuci/Multimodal_Transportation_System_Model`
+  (clone `D:\Ritun\MTSM_project`), author **Ritun Saha `<ritunsaha95@gmail.com>`**. The old clone
+  `D:\Ritun\Multimodal_Transportation_System_Model` has no remote and is kept only as an archive. The new clone was
+  checked: all tracked files byte-identical to the old one, full seed-0 run **`REPRODUCED`**, `check_inputs.py` passes.
 - Two commits:
   1. **Baseline**: the codebase as found, before this reproducibility work. It still reads and writes folders outside the codebase.
   2. **Phases 1, 1b, 1c**: the current state, tagged **`v1-reproducible`**.
@@ -987,14 +991,16 @@ about half of the 5-minute run (152 of 310 s); FleetPy, the mode choice and writ
 
 ## Continuing work in a fresh clone
 
-1. Clone: `git clone https://github.uci.edu/rituns/Multimodal_Transportation_System_Model` (for example in `D:\Ritun`).
+1. Clone: `git clone https://github.com/ritunuci/Multimodal_Transportation_System_Model` (for example in `D:\Ritun`).
 2. Set the author **in the clone**:
-   `git config user.name "Ritun Saha"` and `git config user.email "rituns@uci.edu"`.
+   `git config user.name "Ritun Saha"` and `git config user.email "ritunsaha95@gmail.com"`.
 3. Python: the `fleetpy` conda env (`C:\Users\Autonomicity\.conda\envs\fleetpy\python.exe`; in VS Code:
    *Python: Select Interpreter*). Gurobi with a valid license must be installed (used by repositioning).
 4. Check that everything is in place: `python tools/check_inputs.py` must report that all frozen inputs match.
 5. Optional full check (about 5–7 min): `python run_examples_new_parking.py`, then `python tools/compare_reference.py`, which must print
-   `REPRODUCED`.
+   `REPRODUCED`. To also log every file the run opens or changes (the I/O tracer):
+   `python tools/trace_run.py run_examples_new_parking.py <log.tsv>`. The order matters: script first, then the log;
+   the other order overwrites the script.
 6. Working rules:
    - After **any** code change, do a full run with the reference inputs and seed; `compare_reference.py` must print `REPRODUCED`
      (unless the change is meant to change results, in which case make and document a new reference).
@@ -1042,7 +1048,7 @@ about half of the 5-minute run (152 of 310 s); FleetPy, the mode choice and writ
   This is a temp folder; copy it somewhere permanent if it is needed long term.
 - The same scratchpad folder holds the I/O traces (`io_trace.tsv`, `io_trace_callers.tsv` with calling lines,
   `io_trace_mtsm.tsv` from the restructured run), the output sets of each test run (`out_*`) and the helper scripts:
-  `trace_run.py` / `trace_run_callers.py` (I/O tracing), `snapshot_outputs.py`, `compare_runs.py`.
+  `trace_run.py` (copied to `tools/trace_run.py` on 2026-11-11) / `trace_run_callers.py` (I/O tracing), `snapshot_outputs.py`, `compare_runs.py`.
   The byte-for-byte comparison now lives in the repo as `tools/compare_reference.py`.
 - `Bayesian_Optimization\Input_parameter\input_parameter.csv.bak_before_seed`: the parameter file before the
   `random_seed` column was added (Phase 1).
