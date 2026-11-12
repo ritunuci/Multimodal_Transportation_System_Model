@@ -272,6 +272,8 @@ file was renamed, so the code still builds the same file names. The folder const
   (clone `D:\Ritun\MTSM_project`), author **Ritun Saha `<ritunsaha95@gmail.com>`**. The old clone
   `D:\Ritun\Multimodal_Transportation_System_Model` has no remote and is kept only as an archive. The new clone was
   checked: all tracked files byte-identical to the old one, full seed-0 run **`REPRODUCED`**, `check_inputs.py` passes.
+- Old clone deleted 2026-11-11 after a check: no commits, tags, stashes or untracked files were missing from the new
+  clone; its git-ignored outputs were identical to the new clone's, apart from FleetPy's last-run log, config and timings.
 - Two commits:
   1. **Baseline**: the codebase as found, before this reproducibility work. It still reads and writes folders outside the codebase.
   2. **Phases 1, 1b, 1c**: the current state, tagged **`v1-reproducible`**.
