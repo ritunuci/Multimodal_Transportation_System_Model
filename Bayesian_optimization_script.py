@@ -247,7 +247,7 @@ def run_script(values, config_file):
         problem = "the model run did not write " + ", ".join(p for p in output_files if not os.path.isfile(p))
     else:
         with open(output_files[0], newline='') as csvfile:
-            if len(list(csv.reader(csvfile))) < 4:  # collect_output() reads rows 2 and 3
+            if len(list(csv.reader(csvfile))) < 3:  # collect_output() reads rows 1 and 2 (row 0 = header)
                 problem = f"the evaluation file is incomplete: {output_files[0]}"
     if problem:
         raise RuntimeError(f"{problem}, for candidate {list(values)}. See the model's output above. "
@@ -299,24 +299,26 @@ def collect_output(iteration_type: str, values):
         reader = csv.reader(csvfile)
         rows = list(reader)
 
+        # rows: 0 = header, 1 = base case (FRT only), 2 = microtransit scenario. Until 2026-11-12 the model wrote the
+        # base row twice, and the rows read here were 2 and 3 (docs/open_issues.md I-28).
         # For Micro + FRT
-        x1 = rows[3][30]  # "tt_sub" ($) in .csv file
-        y1 = float(rows[3][50])  # "tt_mob_lgsm_inc_with_micro" in .csv file
+        x1 = rows[2][30]  # "tt_sub" ($) in .csv file
+        y1 = float(rows[2][50])  # "tt_mob_lgsm_inc_with_micro" in .csv file
         # For FRT only
-        x2 = rows[2][30]  # "tt_sub" ($) in .csv file
-        y2 = float(rows[2][50])  # "tt_mob_lgsm_inc_with_micro" in .csv file
-        # a1 = [float(val) for idx, val in enumerate(rows[3]) if idx not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 30, 50, 72]]
-        a1 = [float(val) for idx, val in enumerate(rows[3]) if idx not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 72]]  # For Lemon Grove
+        x2 = rows[1][30]  # "tt_sub" ($) in .csv file
+        y2 = float(rows[1][50])  # "tt_mob_lgsm_inc_with_micro" in .csv file
+        # a1 = [float(val) for idx, val in enumerate(rows[2]) if idx not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 30, 50, 72]]
+        a1 = [float(val) for idx, val in enumerate(rows[2]) if idx not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 72]]  # For Lemon Grove
 
         # USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING
-        # F_oper_cost_base = float(rows[2][25])
-        # F_revenue_base = float(rows[2][27])
+        # F_oper_cost_base = float(rows[1][25])
+        # F_revenue_base = float(rows[1][27])
         # subsidy_base = F_oper_cost_base - 4 * F_revenue_base
         #
-        # F_oper_cost = float(rows[3][25])
-        # M_oper_cost = float(rows[3][26])
-        # F_revenue = float(rows[3][27])
-        # M_revenue = float(rows[3][28])
+        # F_oper_cost = float(rows[2][25])
+        # M_oper_cost = float(rows[2][26])
+        # F_revenue = float(rows[2][27])
+        # M_revenue = float(rows[2][28])
         # subsidy_FRT_micro = F_oper_cost + M_oper_cost - 4 * F_revenue - 4 * M_revenue
         #
         # value_11 = -(subsidy_FRT_micro - subsidy_base)      # Subsidy delta

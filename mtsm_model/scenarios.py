@@ -144,7 +144,9 @@ def scenarios(cfg, area, log_f):
         num_headway_scen = 0
         for headway in area.headway_scenarios: #put bus design parameter in the most outer loop
             init_net.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
-            tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(headway,study_area,test_scenario)
+            # accessibility of the base case (FRT only): on the base headway's network, as the base travelers (I-28);
+            # until 2026-11-12 on the network of this scenario's headway
+            tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(config.BASE_FRT_HEADWAY,study_area,test_scenario)
             num_headway_scen+=1
             num_virstop_scen = 0
             for virstop in config.VIRTUAL_STOP_SCENARIOS: #virtual stops - not necessarily influence the cost, but will influence the mobility

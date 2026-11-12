@@ -46,8 +46,8 @@ The intermediate files are kept so that, when something differs, the earliest di
 change in behavior starts. Not kept, because they differ on every run: `00_simulation.log` (timestamps) and
 `3-0_op-dyn_atts.csv` (computation times).
 
-Key values (evaluation file, row 3 = microtransit scenario): `tot_sub ($)` 7781.654254,
-`tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22. Row 2 = base case
+Key values (evaluation file, line 3 = microtransit scenario; line 4 until 2026-11-12): `tot_sub ($)` 7781.654254,
+`tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22. Line 2 = base case
 (FRT only): `tot_sub ($)` 2320.666326 (since 2026-11-12; before 4688.832653).
 
 ### Changes to this reference
@@ -71,3 +71,13 @@ Key values (evaluation file, row 3 = microtransit scenario): `tot_sub ($)` 7781.
   `sub_per_T_VMT` 2.0394 -> 2.0187, `F_VMT (mi)` 2299.12 -> 1149.56, `F_PMT/F_VMT` 0.00845 -> 0.01690, `tt_VMT (mi)`
   7201.90 -> 6052.34. The microtransit row and the other 31 files did not change. The file was replaced by the new
   run's; a second full run was byte-identical (`REPRODUCED`). The old file is in git history (before this change).
+- **2026-11-12, base case's accessibility on the base network** (I-28, second part, step 1): the FRT-only
+  accessibility is computed on the network of `base_frt_headway` instead of the run's `frt_headway`. A full run
+  differed from the reference in two places: the base rows of the evaluation file (`wghted_acc_emp_10_min` 583.20 ->
+  402.64, `wghted_acc_emp_15_min` 1791.63 -> 1031.14; nothing else), and the per-zone file, which is now written as
+  `output/debug_False_acc_super_network_non_micro_20.csv` (the reference's `..._non_micro_10.csv` was renamed and
+  replaced). The other 30 files did not change.
+- **2026-11-12, base row written once** (I-28, second part, step 2): the evaluation file had the base row twice
+  (lines 2 and 3, identical); it now has 3 lines (header, base case, microtransit scenario). A full run differed from
+  the reference only in this file, and it was the reference's file without line 3, byte for byte. The file was
+  replaced; the final full run printed `REPRODUCED` (32 files).

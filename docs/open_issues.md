@@ -314,6 +314,25 @@ Paths are relative to the codebase root.
   scenario's headway (`all_scenario_fixed_acc_calculation(headway, ...)`; they need the base headway's network and
   change a second output file, `debug_False_acc_super_network_non_micro_<headway>.csv`). The names of the base case's
   output files keep `hw_<scenario headway>`. The base row is still written twice (the optimizer reads rows 2 and 3).
+- **Second part, 2026-11-12 (user's decision: do both; a second reference update the same day):**
+  - *Accessibility of the base case:* `scenarios.py` calls `all_scenario_fixed_acc_calculation` with
+    `config.BASE_FRT_HEADWAY`, and the function reads the frozen base network
+    `initial_network/initial_super_network_non_micro_hw_20.csv` (the one the base travelers are routed on) instead of
+    the scenario headway's copy in `initial_network_0719/`. Its output file is therefore now
+    `debug_False_acc_super_network_non_micro_20.csv` for every run (was `..._non_micro_<scenario headway>.csv`).
+    Checked: against the reference, only the base rows' `wghted_acc_emp_10_min` (583.20 -> 402.64) and
+    `wghted_acc_emp_15_min` (1791.63 -> 1031.14) changed (`wghted_acc_emp_5_min` 107.60 is the same on both
+    networks), plus the renamed file; the microtransit row is identical. A run with `frt_headway` 30 now gives
+    exactly the reference's base row, and its microtransit row did not change.
+  - *Base row written once:* `results.py` had the statement that writes the base row twice, back to back (the
+    second a reformatted copy; already so in the baseline commit; no reader needed two rows). The second copy was
+    removed. The evaluation file now has 3 lines: header, base case, microtransit scenario. The optimizer reads the
+    file by position, so `collect_output` now reads rows 1 and 2 (were 2 and 3) and `run_script` requires 3 lines
+    (was 4). `agg_sim_output_*.csv` files of earlier sessions keep the old layout. Checked: against the reference,
+    the evaluation file is the reference's without its line 3, byte for byte; the optimizer's own `collect_output`,
+    run on the new reference outputs, returns the objectives -5460.99 and 903.05, the values of before.
+  - Still as it is: the names of the base case's other output files keep `hw_<scenario headway>`
+    (`individual_results_non_micro_...`, `..._non_micro_..._transit_edges_rders_...`).
 
 ### I-27: The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env)
 - **Status:** Closed (2026-11-12). **Severity:** High. **Found:** 2026-11-12 (first optimizer session since the changes:

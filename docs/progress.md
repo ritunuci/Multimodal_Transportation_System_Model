@@ -1008,6 +1008,19 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   gave `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
 - Optimizer: its subsidy objective changes with the evaluation file (reference run: -3092.8 -> -5461.0); earlier
   sessions are not comparable (conversion in I-28). `ref_point` widened from -15000 to -18000 (user's decision).
+- Second part, same day (user's decision; two steps, a full run and a comparison after each; details in I-28):
+  1. The base case's accessibility is computed on the base headway's frozen network. Against the reference: two
+     accessibility columns of the base rows changed, and the file `debug_False_acc_super_network_non_micro_10.csv`
+     became `..._non_micro_20.csv`; everything else identical. With `frt_headway` 30 the base row is now exactly the
+     reference's: the base case no longer depends on the candidate.
+  2. The base row is written once (it was written twice by a duplicated statement). The evaluation file has 3 lines;
+     the optimizer reads rows 1 and 2 instead of 2 and 3. Against the reference: the evaluation file without its
+     line 3, byte for byte; everything else identical.
+  Reference updated after each step; final full run: `compare_reference.py` **32 identical, `REPRODUCED`**;
+  `check_inputs.py` passes.
+- Noticed: `compare_reference.py` reports `00_config.json` as differing when the run and the comparison are started
+  from shells that spell the drive letter differently (`D:\` / `d:\`): FleetPy's root folder is replaced as written.
+  Not a difference in results; run both from the same shell. Not changed.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

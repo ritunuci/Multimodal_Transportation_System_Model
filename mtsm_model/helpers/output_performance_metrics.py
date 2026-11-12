@@ -561,7 +561,10 @@ def all_scenario_fixed_acc_calculation(headway,study_area,test_scenario,debug=Fa
     demand_nodes_fleetpy = get_fleetpy_demand_nodes()
     if study_area == "lemon_grove":
         # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/demand_folder"
-        initial_network_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
+        # I-28 (2026-11-12): called with the base FRT headway; its network is the frozen file in initial_network/
+        # (the one the base travelers are routed on). Was mtsm.LG_INITIAL_NETWORK_0719_DIR, which holds only the
+        # networks of the scenario headways.
+        initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
         # initial_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/initial_network"
         # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/final_network"
         # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/example_network"
