@@ -41,6 +41,7 @@ earlier entries; commits before that date use the old names.
 | 2q | Representative super-network script `pre_process/build_super_network.py` (not used by the model yet) | Done 2026-11-11 |
 | 2r | Optimizer runs again: MKL threading set to sequential in `Bayesian_optimization_script.py` (I-27) | Done 2026-11-12 (open: I-03) |
 | 2s | Base case's subsidy at the base FRT headway (I-28); reference updated (evaluation file) | Done 2026-11-12 |
+| 2t | Evaluation file with one line per metric and the columns `FRT_only`, `FRT_and_micro`; the optimizer reads it by name (I-29); reference updated | Done 2026-11-12 (open: I-30) |
 | 3 | Per-run provenance: `run_manifest.json`, one output folder per run, guard against two runs at once | To do |
 | 4 | Check the results before reporting them (see "Open questions") | To do |
 | 5 | Regression test against reference outputs (tool and reference done in 1b); reproduce on a second machine | Partly done |
@@ -1021,6 +1022,23 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Noticed: `compare_reference.py` reports `00_config.json` as differing when the run and the comparison are started
   from shells that spell the drive letter differently (`D:\` / `d:\`): FleetPy's root folder is replaced as written.
   Not a difference in results; run both from the same shell. Not changed.
+
+## Evaluation file by metric; optimizer reads by name (2026-11-12)
+
+- User's request: write the evaluation file with one line per metric instead of one row per case, in three columns
+  (`metric_name`, `FRT_only`, `FRT_and_micro`); the optimizer reads it by name; remove `test_scen` and `dscrptn`
+  (and the text `"Ritun BO (...)"` set in `results.py`); correct `microtrasnit` to `microtransit`. Details: I-29.
+- User's decisions: the file holds one scenario, with no check at startup for scenario lists with more elements (an
+  architecture for several scenarios may come later); without a base case (`micro_only`, repositioning off) the
+  column `FRT_only` stays empty. Both are recorded as I-30 (open).
+- Code: `results.EvaluationTable` writes the file; `model.run_model` creates it; the optimizer has
+  `read_evaluation_file()` and `evaluation_value()`.
+- Comparison with the reference: 31 of 32 files identical. The new evaluation file, turned back into rows, equals the
+  reference text for text apart from the two removed columns and the corrected name. The optimizer's `collect_output`
+  returns the same objectives and the same 64 metric values as before. No optimizer session was run.
+- Reference re-established (third update of the evaluation file on 2026-11-12): second full run,
+  `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
+- I-04 (the duplicate base row, open since 2026-10-23) is closed: it was resolved by the second part of I-28.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

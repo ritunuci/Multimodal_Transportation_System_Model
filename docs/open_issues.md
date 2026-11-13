@@ -25,7 +25,7 @@ Paths are relative to the codebase root.
 | I-01 | Gurobi license expired | High | Closed (2026-11-12) | 2026-10-23 |
 | I-02 | The optimizer overwrites the frozen parameter file | Medium | Closed (2026-11-10) | 2026-10-23 |
 | I-03 | The optimizer has not been run since the changes | Medium | Open | 2026-10-23 |
-| I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Decision needed | 2026-10-23 |
+| I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Closed (2026-11-12) | 2026-10-23 |
 | I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Decision needed | 2026-10-23 |
 | I-06 | Accessibility uses a hard-coded network for its node list | Medium | Open | 2026-10-23 |
 | I-07 | `docs/progress.md` plan table is out of date | Low | Closed (2026-11-07) | 2026-11-07 |
@@ -50,6 +50,8 @@ Paths are relative to the codebase root.
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 | I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
 | I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
+| I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
+| I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 
 ---
 
@@ -69,22 +71,6 @@ Paths are relative to the codebase root.
   afterwards): after the fix of I-27 it ran to the end; 7 model runs, one with headway 20, no rejected requests (Gurobi
   not started); `check_inputs.py` passes. Not yet checked: `per_call_results.csv` against the evaluation files and
   `candidate_configs/`, a deliberately failed run, and a candidate with rejected requests.
-
-### I-04: Rows 1 and 2 of the evaluation CSV are identical
-- **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1).
-- **What:** `mtsm_data/lemon_grove/output/lemon_grove_evaluation_zonal_partition_False.csv` has 3 data rows. Rows 1 and 2
-  are identical `FRT_only_scen` / `non_micro` rows (the fixed-route-only baseline). Row 3 is the microtransit scenario.
-- **Impact:** none on the optimizer objectives, which come from row 3. The optimizer also reads values from row 2
-  (`rows[2][...]`), so if the duplicate is a mistake, it matters which of the two rows is meant to be there.
-- **Where (found 2026-11-09):** `run_examples_new_parking.py` writes the `FRT_only_scen` row twice in the same
-  pass, both under `if test_scenario == TRPartA_test_scenario_list[0]`: once inside the block that writes the
-  fixed-route-only individual results (line 1380), and once more right after that block (line 1427). The two
-  `writerow` calls are not identical in their source, but give identical rows here (line numbers as of
-  restructuring step 1, `docs/entry_script_refactor_plan.md`). Since step 7 both are in
-  `mtsm_model/results.py`, `write_converged_results()` (lines 330 and 377).
-- **To decide:** is the duplicate intended? If not, remove one of the two `writerow` calls.
-  Any change to the file's rows also changes the optimizer's row indices and the reference results, so it needs a new
-  reference.
 
 ### I-05: `FRT_headway = 20` overwrites a frozen network
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
@@ -281,9 +267,68 @@ Paths are relative to the codebase root.
   penalty depends on the path before the link, like the discounts, so the I-22 fix should cover it (state: also the
   current route).
 
+### I-30: The evaluation file holds one scenario; its base column is empty for runs without a base case
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-12 (I-29).
+- **What:** since I-29 the evaluation file has the columns `FRT_only` (base case) and `FRT_and_micro` (the scenario).
+  Two cases do not fit:
+  - *No base case:* the base case is computed only for a `micro` scenario with repositioning
+    (`results.write_converged_results`). With `microtransit_running_scenarios = micro_only`, or
+    `repositioning_list = False`, the column `FRT_only` stays empty, and the scenario's results are still written
+    under the header `FRT_and_micro` (user's decision 2026-11-12; the line `microtransit` shows `micro_only`). The
+    optimizer then stops with "the evaluation file is incomplete".
+  - *More than one scenario:* the scenario lists of the parameter file (`operating_periods_scenarios`,
+    `virtual_stop_scenarios`, `microtransit_running_scenarios`, `repositioning_list`) have one element each. With
+    more, each converged scenario replaces the column of the one before; only the last one stays in the file
+    (before I-29 each scenario added a row). There is no check at startup (user's decision: the one-element version
+    stays for now).
+- **To decide:** a design for runs with several scenarios (user: an architecture for this may come later), and what
+  the file should show when there is no base case.
+
 ---
 
 ## Closed
+
+### I-29: Evaluation file: one line per metric, read by name by the optimizer
+- **Status:** Closed (2026-11-12). **Severity:** Medium. **Found:** 2026-11-12 (user's request).
+- **What:** `lemon_grove_evaluation_zonal_partition_False.csv` had one row per case and 75 columns, and the optimizer
+  read it by position (`rows[2][30]`, "all columns except 0-9 and 72"). The columns `test_scen` (0 / 10) and
+  `dscrptn` (`FRT_only_scen` / a fixed text) no longer said anything.
+- **Resolution (user's decisions):**
+  - The file has one line per metric and three columns: `metric_name`, `FRT_only` (base case), `FRT_and_micro` (the
+    scenario); 74 lines. `test_scen` and `dscrptn` are gone, and with them the text
+    `"Ritun BO (time-based+intrmdl_trfr+Micro_start+dist_based_fr)"`, which was set in `results.py`. The metric
+    `microtrasnit` is now spelled `microtransit`. The other 72 metric names and their order are unchanged.
+  - Model: `results.EvaluationTable` (new) holds the two columns and writes the file: at the start of the run with
+    the metric names only, and again when a column is set. `model.run_model` no longer keeps the file open.
+  - Optimizer: `read_evaluation_file()` and `evaluation_value()` read by column header and metric name; the two
+    objectives are `tot_sub ($)` and `tt_mob_lgsm_inc_with_micro` of both columns; the 64 values for
+    `per_call_results.csv` are read by the names in `METRIC_COLS`. A missing column, metric or value stops the
+    optimizer with a message naming it (before: a check of the number of lines). `per_call_results.csv` keeps its
+    layout; the `agg_sim_output_*.csv` copies have the new one.
+  - Checked: a full run differed from the reference only in the evaluation file (31 of 32 identical). The new file,
+    turned back into rows, equals the reference text for text, apart from the two removed columns and the corrected
+    name. The optimizer's own `collect_output`, run on the new file, returns the same two objectives (-5460.99,
+    903.05) and the same 64 metric values as the reading by position on the old file. The reference file was
+    replaced; a second full run: 32 identical, `REPRODUCED`. No optimizer session was run.
+- **Not changed:** the scripts in `standalone_scripts/` that read the old layout. Left open: I-30.
+
+### I-04: Rows 1 and 2 of the evaluation CSV are identical
+- **Status:** Closed (2026-11-12). **Severity:** Medium. **Found:** 2026-10-23 (Phase 1).
+- **What:** `mtsm_data/lemon_grove/output/lemon_grove_evaluation_zonal_partition_False.csv` has 3 data rows. Rows 1 and 2
+  are identical `FRT_only_scen` / `non_micro` rows (the fixed-route-only baseline). Row 3 is the microtransit scenario.
+- **Impact:** none on the optimizer objectives, which come from row 3. The optimizer also reads values from row 2
+  (`rows[2][...]`), so if the duplicate is a mistake, it matters which of the two rows is meant to be there.
+- **Where (found 2026-11-09):** `run_examples_new_parking.py` writes the `FRT_only_scen` row twice in the same
+  pass, both under `if test_scenario == TRPartA_test_scenario_list[0]`: once inside the block that writes the
+  fixed-route-only individual results (line 1380), and once more right after that block (line 1427). The two
+  `writerow` calls are not identical in their source, but give identical rows here (line numbers as of
+  restructuring step 1, `docs/entry_script_refactor_plan.md`). Since step 7 both are in
+  `mtsm_model/results.py`, `write_converged_results()` (lines 330 and 377).
+- **To decide:** is the duplicate intended? If not, remove one of the two `writerow` calls.
+  Any change to the file's rows also changes the optimizer's row indices and the reference results, so it needs a new
+  reference.
+- **Resolution (2026-11-12, user's decision):** the second of the two `writerow` calls was removed (I-28, second
+  part): nothing needed two rows. Since I-29 the file has one column for the base case.
 
 ### I-28: The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway
 - **Status:** Closed (2026-11-12). **Severity:** High (it changes the optimizer's subsidy objective). **Found:**

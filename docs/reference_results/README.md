@@ -46,9 +46,10 @@ The intermediate files are kept so that, when something differs, the earliest di
 change in behavior starts. Not kept, because they differ on every run: `00_simulation.log` (timestamps) and
 `3-0_op-dyn_atts.csv` (computation times).
 
-Key values (evaluation file, line 3 = microtransit scenario; line 4 until 2026-11-12): `tot_sub ($)` 7781.654254,
-`tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22. Line 2 = base case
-(FRT only): `tot_sub ($)` 2320.666326 (since 2026-11-12; before 4688.832653).
+Key values (evaluation file, column `FRT_and_micro` = microtransit scenario): `tot_sub ($)` 7781.654254,
+`tt_mob_lgsm_inc_with_micro` 903.047435, car mode share 0.920363, `M_trips` 68, `F_trips` 22. Column `FRT_only` = base
+case: `tot_sub ($)` 2320.666326 (since 2026-11-12; before 4688.832653). Until 2026-11-12 the file had one row per
+case (lines 2 and 4; the base row twice).
 
 ### Changes to this reference
 
@@ -81,3 +82,9 @@ Key values (evaluation file, line 3 = microtransit scenario; line 4 until 2026-1
   (lines 2 and 3, identical); it now has 3 lines (header, base case, microtransit scenario). A full run differed from
   the reference only in this file, and it was the reference's file without line 3, byte for byte. The file was
   replaced; the final full run printed `REPRODUCED` (32 files).
+- **2026-11-12, evaluation file with one line per metric** (`docs/open_issues.md` I-29): the file changed from one
+  row per case (3 lines, 75 columns) to one line per metric (74 lines; columns `metric_name`, `FRT_only`,
+  `FRT_and_micro`). The columns `test_scen` and `dscrptn` were removed and `microtrasnit` was corrected to
+  `microtransit`. No value changed: the new file, turned back into rows, equals the old one text for text apart from
+  these three points. A full run differed from the reference only in this file; it was replaced, and a second full
+  run printed `REPRODUCED` (32 files).

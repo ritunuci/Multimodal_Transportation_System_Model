@@ -4,7 +4,6 @@ run_model() follows the framework diagram (docs/mtsm_framework.png): for each sc
 (iteration.run_iteration) and FleetPy (microtransit.run_fleetpy_and_update_networks) until the travelers' choices
 converge, then write the results (results.write_converged_results). Moved from run_examples_new_parking.py.
 """
-import csv
 import datetime
 import os
 from collections import OrderedDict
@@ -17,7 +16,7 @@ from mtsm_model.scenarios import load_study_area, scenarios
 from mtsm_model.networks import read_iteration_networks
 from mtsm_model.iteration import run_iteration
 from mtsm_model.microtransit import run_fleetpy_and_update_networks
-from mtsm_model.results import EVALUATION_FIELDNAMES, write_converged_results
+from mtsm_model.results import EvaluationTable, write_converged_results
 
 
 def run_model(cfg, start_time, log_f):
@@ -28,35 +27,32 @@ def run_model(cfg, start_time, log_f):
         area = load_study_area(cfg, study_area)
         scenario_count = 0
 
-        with open(area.evaluation_file, 'w+', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=EVALUATION_FIELDNAMES)
-            writer.writeheader()
+        # the evaluation file: written now with the metric names only, completed when the scenario has converged
+        evaluation = EvaluationTable(area.evaluation_file)
 
-            for scen in scenarios(cfg, area, log_f):
-                virstop, headway, fleet_size = scen.virstop, scen.headway, scen.fleet_size
-                operating_periods, microtransit_run = scen.operating_periods, scen.microtransit_run
-                num_headway_scen, num_virstop_scen = scen.num_headway_scen, scen.num_virstop_scen
-                num_fleet_size_scen, num_operating_periods_scen = scen.num_fleet_size_scen, scen.num_operating_periods_scen
-                print("Current Scenario:", scenario_count, "th senario", "....headway",headway, "(mins),", "scen", num_headway_scen,
-                      "; virtual_stop:", virstop, "(%),", "scen", num_virstop_scen,"; fleet_size:", fleet_size, "(veh),", "scen", num_fleet_size_scen,
-                      "; operating_periods:", operating_periods, "scen,",num_operating_periods_scen,"microtransit_scen:",microtransit_run,";")
+        for scen in scenarios(cfg, area, log_f):
+            virstop, headway, fleet_size = scen.virstop, scen.headway, scen.fleet_size
+            operating_periods, microtransit_run = scen.operating_periods, scen.microtransit_run
+            num_headway_scen, num_virstop_scen = scen.num_headway_scen, scen.num_virstop_scen
+            num_fleet_size_scen, num_operating_periods_scen = scen.num_fleet_size_scen, scen.num_operating_periods_scen
+            print("Current Scenario:", scenario_count, "th senario", "....headway",headway, "(mins),", "scen", num_headway_scen,
+                  "; virtual_stop:", virstop, "(%),", "scen", num_virstop_scen,"; fleet_size:", fleet_size, "(veh),", "scen", num_fleet_size_scen,
+                  "; operating_periods:", operating_periods, "scen,",num_operating_periods_scen,"microtransit_scen:",microtransit_run,";")
 
-                run_scenario(cfg, area, scen, writer, log_f)
-                scenario_count += 1
+            run_scenario(cfg, area, scen, evaluation, log_f)
+            scenario_count += 1
 
-                timeatfinished = datetime.datetime.now()
-                processingtime = timeatfinished - pre_timeatfinished
-                pre_timeatfinished = timeatfinished
-                print(scenario_count, "th scenario finished","...virtual_stop:", virstop, "(%)","headway", headway, "(mins)", "fleet_size", fleet_size, "(veh)", "operating_periods",operating_periods,"....... end time is:",timeatfinished,"run time is: ",processingtime)
-
-            csvfile.close()
+            timeatfinished = datetime.datetime.now()
+            processingtime = timeatfinished - pre_timeatfinished
+            pre_timeatfinished = timeatfinished
+            print(scenario_count, "th scenario finished","...virtual_stop:", virstop, "(%)","headway", headway, "(mins)", "fleet_size", fleet_size, "(veh)", "operating_periods",operating_periods,"....... end time is:",timeatfinished,"run time is: ",processingtime)
 
         timeatfinished = datetime.datetime.now()
         processingtime = timeatfinished - start_time
         print("Study_area",study_area,"integrated system model run finished....... end time is:", timeatfinished, "total run time is: ", processingtime)
 
 
-def run_scenario(cfg, area, scen, writer, log_f):
+def run_scenario(cfg, area, scen, evaluation, log_f):
     """Iterate the choice model and FleetPy until the travelers' choices converge (or MAXIMUM_ITERATION), then write
     the scenario's results."""
     repositioning, scs_path, study_area = scen.repositioning, scen.scs_path, area.study_area
@@ -157,7 +153,7 @@ def run_scenario(cfg, area, scen, writer, log_f):
 
                 print("Individual Level Convergence Test:","sum of square percentage difference ", sum_sq_per_diff, "converged",converged)
                 if converged == True:
-                    write_converged_results(cfg, area, scen, writer, state=state, base=base, totals=totals,
+                    write_converged_results(cfg, area, scen, evaluation, state=state, base=base, totals=totals,
                                             iter_sum_sq_per_diff=iter_sum_sq_per_diff, last_fleetpy_wait_time=last_fleetpy_wait_time,
                                             last_rejection_rate=last_rejection_rate)
         if converged == False:

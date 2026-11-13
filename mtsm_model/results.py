@@ -1,9 +1,9 @@
 """The results of a scenario after convergence (restructuring step 7, docs/entry_script_refactor_plan.md).
 
 Operating costs, revenues and subsidies; fixed-route link VMT files; accessibility; the individual-results files
-(with microtransit, and for the fixed-route-only base case); and the rows of the evaluation file (the
-fixed-route-only base case, written twice: docs/open_issues.md, I-04; and the scenario). Moved unchanged from
-run_examples_new_parking.py; the arguments are the values the code read from the surrounding loops.
+(with microtransit, and for the fixed-route-only base case); and the two columns of the evaluation file (the
+fixed-route-only base case and the scenario; EvaluationTable). Moved from run_examples_new_parking.py; the arguments
+are the values the code read from the surrounding loops.
 """
 import csv
 import os
@@ -14,8 +14,9 @@ from mtsm_model.helpers import output_performance_metrics as output_metrics
 from mtsm_model import config
 from mtsm_model import mtsm_global_parameters as gp
 
-# the columns of the evaluation file
-EVALUATION_FIELDNAMES = ["test_scen","dscrptn","study_area","repositioning","microtrasnit",'hdwy (min)', 'vir_stop (%)', 'flt_sz', 'op_periods',"tt_agents", "car_users", "car_mode_share (%)",
+# the metrics of the evaluation file, one line each (until 2026-11-12 they were its columns, after "test_scen" and
+# "dscrptn"; "microtransit" was spelled "microtrasnit"; docs/open_issues.md I-29)
+EVALUATION_FIELDNAMES = ["study_area","repositioning","microtransit",'hdwy (min)', 'vir_stop (%)', 'flt_sz', 'op_periods',"tt_agents", "car_users", "car_mode_share (%)",
                          "trsit_mode_users (W_M_F)","transit_mode_share (%)","pure_M_users","M_mode_share (%)","M_trips","pure_F_users","F_mode_share (%)","F_trips","pure_walk_users",
                          "W_mode_share (%)","walk_users","M_pls_F_users","M_pls_F_mode_share (%)","F_oper_cost ($)", "M_oper_cost ($)", "F_revenue ($)","M_revenue ($)","Total_T_revenue ($)","tot_sub ($)",
                          "sub_per_F_trip ($)","sub_per_F_rider ($)","sub_per_M_trip ($)","sub_per_M_rider ($)","sub_per_T_trip ($)","sub_per_T_rider ($)","sub_per_M_pax_mile ($/mi)","sub_per_F_pax_mile ($/mi)","sub_per_T_pax_mile ($/mi)",
@@ -27,13 +28,48 @@ EVALUATION_FIELDNAMES = ["test_scen","dscrptn","study_area","repositioning","mic
                          "car_VMT (mi)","M_VMT (mi)","M_PMT (mi)","M_PMT/M_VMT","F_VMT (mi)","F_PMT (mi)","F_PMT/F_VMT","tt_VMT (mi)",
                          "tt_walk_dist (mi)", "wghted_acc_emp_5_min","wghted_acc_emp_10_min","wghted_acc_emp_15_min", "M_util_rate (%)","M_veh_occ","M_avg_speed (mph)","cnvrg (iter, sm_sq_per_diff)", "fleetpy_wait", "rejection_rate"]
 
+EVALUATION_METRIC_HEADER = "metric_name"
+EVALUATION_BASE_COLUMN = "FRT_only"  # the base case: FRT only, at the base headway and base fare
+EVALUATION_SCENARIO_COLUMN = "FRT_and_micro"  # the scenario of the run
+EVALUATION_COLUMNS = [EVALUATION_BASE_COLUMN, EVALUATION_SCENARIO_COLUMN]
 
-def write_converged_results(cfg, area, scen, writer, *, state, base, totals, iter_sum_sq_per_diff,
+
+class EvaluationTable:
+    """The evaluation file of a study area: one line per metric (EVALUATION_FIELDNAMES), one column for the base case
+    and one for the scenario. The file is written when the table is created (metric names only) and again each time a
+    column is set. A column that was never set stays empty: the base case is computed only for a "micro" scenario
+    with repositioning. The table holds one scenario; a later scenario replaces the column of an earlier one
+    (docs/open_issues.md I-30)."""
+
+    def __init__(self, path):
+        self.path = path
+        self.columns = {name: {} for name in EVALUATION_COLUMNS}
+        self.write()
+
+    def set_column(self, name, values):
+        """values: {metric: value} with exactly the metrics of EVALUATION_FIELDNAMES."""
+        if name not in self.columns:
+            raise ValueError("unknown column of the evaluation file: %s" % name)
+        if set(values) != set(EVALUATION_FIELDNAMES):
+            raise ValueError("evaluation column %s: missing or unknown metrics: %s" % (
+                name, sorted(set(values) ^ set(EVALUATION_FIELDNAMES))))
+        self.columns[name] = values
+        self.write()
+
+    def write(self):
+        with open(self.path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([EVALUATION_METRIC_HEADER] + EVALUATION_COLUMNS)
+            for metric in EVALUATION_FIELDNAMES:
+                writer.writerow([metric] + [self.columns[name].get(metric, "") for name in EVALUATION_COLUMNS])
+
+
+def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals, iter_sum_sq_per_diff,
                             last_fleetpy_wait_time, last_rejection_rate):
     """Compute and write the results of the converged scenario (area: scenarios.StudyArea, scen:
-    scenarios.Scenario). writer: the DictWriter of the evaluation file.
+    scenarios.Scenario). evaluation: the EvaluationTable of the study area.
     headway and microtransit_run are changed only inside this function (for the base case and "micro_only").
-    test_scenario is the fare scenario number (10), used in file names and the evaluation rows."""
+    test_scenario is the fare scenario number (10), used in file names."""
     test_scenario, repositioning, microtransit_run, headway = config.FARE_SCENARIO, scen.repositioning, scen.microtransit_run, scen.headway
     virstop, fleet_size, M_operating_hrs, F_operating_hrs = scen.virstop, scen.fleet_size, scen.M_operating_hrs, scen.F_operating_hrs
     operating_periods = scen.operating_periods
@@ -351,8 +387,8 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
                     base.off_micro_T_trips - base.off_micro_W_trips)
 
         # Write the fixed only scenario (one row; until 2026-11-12 this row was written twice, by a second copy of this statement, I-28)
-        writer.writerow({"test_scen": 0,"dscrptn": "FRT_only_scen", "study_area": study_area,"repositioning": str(False),
-                         "microtrasnit": "non_micro","hdwy (min)": config.BASE_FRT_HEADWAY,
+        evaluation.set_column(EVALUATION_BASE_COLUMN, {"study_area": study_area,"repositioning": str(False),
+                         "microtransit": "non_micro","hdwy (min)": config.BASE_FRT_HEADWAY,
                          "vir_stop (%)": 0,"flt_sz": 0, "op_periods": 0,"tt_agents": tt_num_agents,
                          "car_users": base.off_micro_auto_trips,"car_mode_share (%)": base.off_micro_auto_trips / tt_num_agents,
                          "trsit_mode_users (W_M_F)": base.off_micro_T_trips,"transit_mode_share (%)": base.off_micro_T_trips / tt_num_agents,
@@ -408,8 +444,6 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
         PMT_VMT_ratio_F = totals.VMT_F / transit_tt_VMT
 
 
-    dscrptn = "Ritun BO (time-based+intrmdl_trfr+Micro_start+dist_based_fr)"
-
     if (totals.pure_F_user + totals.M_F_user)!=0:
         sub_per_F_rider = (F_oper_cost-F_revenue)/(totals.pure_F_user+totals.M_F_user)
     else:
@@ -441,7 +475,7 @@ def write_converged_results(cfg, area, scen, writer, *, state, base, totals, ite
         sub_per_F_pax_mile = 999
 
 
-    writer.writerow({"test_scen":test_scenario,"dscrptn":dscrptn,"study_area":study_area,"repositioning":repositioning,"microtrasnit":microtransit_run,"hdwy (min)": headway, "vir_stop (%)": virstop, "flt_sz": fleet_size, "op_periods": operating_periods,
+    evaluation.set_column(EVALUATION_SCENARIO_COLUMN, {"study_area":study_area,"repositioning":repositioning,"microtransit":microtransit_run,"hdwy (min)": headway, "vir_stop (%)": virstop, "flt_sz": fleet_size, "op_periods": operating_periods,
          "tt_agents": tt_num_agents,"car_users": totals.num_car_trips,  "car_mode_share (%)": totals.num_car_trips/tt_num_agents,
          "trsit_mode_users (W_M_F)": totals.num_transit_users ,"transit_mode_share (%)":totals.num_transit_users/tt_num_agents,"pure_M_users":totals.pure_M_user,"M_trips":totals.num_M_trips,"M_mode_share (%)":totals.pure_M_user/tt_num_agents,
           "pure_F_users":totals.pure_F_user,"F_trips":totals.num_F_trips,"F_mode_share (%)":totals.pure_F_user/tt_num_agents,"pure_walk_users":totals.num_W_trips,"W_mode_share (%)":totals.num_W_trips/tt_num_agents,

@@ -218,6 +218,33 @@ def append_per_call_row(param_values, objective_values, metric_values, iteration
 init_per_call_results_csv()
 
 
+# The model's evaluation file: one line per metric (first column), then one column per case.
+EVAL_METRIC_COL = "metric_name"
+EVAL_BASE_COL = "FRT_only"  # base case: FRT only, at the base headway and base fare
+EVAL_MICRO_COL = "FRT_and_micro"  # the candidate
+SUBSIDY_METRIC = "tot_sub ($)"
+LOGSUM_METRIC = "tt_mob_lgsm_inc_with_micro"
+
+
+def read_evaluation_file(path):
+    """The evaluation file as {column: {metric name: text}} for the columns EVAL_BASE_COL and EVAL_MICRO_COL."""
+    with open(path, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        missing = [col for col in (EVAL_METRIC_COL, EVAL_BASE_COL, EVAL_MICRO_COL) if col not in (reader.fieldnames or [])]
+        if missing:
+            raise RuntimeError(f"the evaluation file has no column {missing}: {path}")
+        rows = list(reader)
+    return {col: {row[EVAL_METRIC_COL]: row[col] for row in rows} for col in (EVAL_BASE_COL, EVAL_MICRO_COL)}
+
+
+def evaluation_value(evaluation, column, metric):
+    """The number of a metric in a column of the evaluation file; an error if it is missing or empty."""
+    text = evaluation[column].get(metric)
+    if text is None or text == "":
+        raise RuntimeError(f"the evaluation file has no value for '{metric}' in column '{column}'")
+    return float(text)
+
+
 def model_output_files(values):
     """the two model output files collect_output() reads for this candidate: (evaluation csv, individual results csv)"""
     a, b, c, d, e, h, f = values
@@ -246,9 +273,13 @@ def run_script(values, config_file):
     elif not all(os.path.isfile(path) for path in output_files):
         problem = "the model run did not write " + ", ".join(p for p in output_files if not os.path.isfile(p))
     else:
-        with open(output_files[0], newline='') as csvfile:
-            if len(list(csv.reader(csvfile))) < 3:  # collect_output() reads rows 1 and 2 (row 0 = header)
-                problem = f"the evaluation file is incomplete: {output_files[0]}"
+        try:  # collect_output() needs both objectives of both columns
+            evaluation = read_evaluation_file(output_files[0])
+            for column in (EVAL_BASE_COL, EVAL_MICRO_COL):
+                for metric in (SUBSIDY_METRIC, LOGSUM_METRIC):
+                    evaluation_value(evaluation, column, metric)
+        except (RuntimeError, ValueError) as error:
+            problem = f"the evaluation file is incomplete ({error}): {output_files[0]}"
     if problem:
         raise RuntimeError(f"{problem}, for candidate {list(values)}. See the model's output above. "
                            f"Results of the earlier candidates: {RESULTS_CSV_PATH}")
@@ -295,38 +326,35 @@ def collect_output(iteration_type: str, values):
     indv_res_df = pd.read_csv(indv_res_csv_path)
     indv_res_df.to_csv(os.path.join(indv_res_folder_path, f"indiv_res_{iteration_type}.csv"), index=False)
 
-    with open(output_csv_path, newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        rows = list(reader)
+    # The evaluation file is read by name: one line per metric, the columns EVAL_BASE_COL (FRT only) and EVAL_MICRO_COL
+    # (the candidate). Until 2026-11-12 it had one row per case and was read by position (docs/open_issues.md I-29).
+    evaluation = read_evaluation_file(output_csv_path)
 
-        # rows: 0 = header, 1 = base case (FRT only), 2 = microtransit scenario. Until 2026-11-12 the model wrote the
-        # base row twice, and the rows read here were 2 and 3 (docs/open_issues.md I-28).
-        # For Micro + FRT
-        x1 = rows[2][30]  # "tt_sub" ($) in .csv file
-        y1 = float(rows[2][50])  # "tt_mob_lgsm_inc_with_micro" in .csv file
-        # For FRT only
-        x2 = rows[1][30]  # "tt_sub" ($) in .csv file
-        y2 = float(rows[1][50])  # "tt_mob_lgsm_inc_with_micro" in .csv file
-        # a1 = [float(val) for idx, val in enumerate(rows[2]) if idx not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 30, 50, 72]]
-        a1 = [float(val) for idx, val in enumerate(rows[2]) if idx not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 72]]  # For Lemon Grove
+    # For Micro + FRT
+    x1 = evaluation_value(evaluation, EVAL_MICRO_COL, SUBSIDY_METRIC)
+    y1 = evaluation_value(evaluation, EVAL_MICRO_COL, LOGSUM_METRIC)
+    # For FRT only
+    x2 = evaluation_value(evaluation, EVAL_BASE_COL, SUBSIDY_METRIC)
+    y2 = evaluation_value(evaluation, EVAL_BASE_COL, LOGSUM_METRIC)
+    a1 = [evaluation_value(evaluation, EVAL_MICRO_COL, metric) for metric in METRIC_COLS]  # For Lemon Grove
 
-        # USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING
-        # F_oper_cost_base = float(rows[1][25])
-        # F_revenue_base = float(rows[1][27])
-        # subsidy_base = F_oper_cost_base - 4 * F_revenue_base
-        #
-        # F_oper_cost = float(rows[2][25])
-        # M_oper_cost = float(rows[2][26])
-        # F_revenue = float(rows[2][27])
-        # M_revenue = float(rows[2][28])
-        # subsidy_FRT_micro = F_oper_cost + M_oper_cost - 4 * F_revenue - 4 * M_revenue
-        #
-        # value_11 = -(subsidy_FRT_micro - subsidy_base)      # Subsidy delta
-        # value_21 = 4 * (y1 - y2)    # mobility logsum delta
+    # USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING
+    # F_oper_cost_base = evaluation_value(evaluation, EVAL_BASE_COL, "F_oper_cost ($)")
+    # F_revenue_base = evaluation_value(evaluation, EVAL_BASE_COL, "F_revenue ($)")
+    # subsidy_base = F_oper_cost_base - 4 * F_revenue_base
+    #
+    # F_oper_cost = evaluation_value(evaluation, EVAL_MICRO_COL, "F_oper_cost ($)")
+    # M_oper_cost = evaluation_value(evaluation, EVAL_MICRO_COL, "M_oper_cost ($)")
+    # F_revenue = evaluation_value(evaluation, EVAL_MICRO_COL, "F_revenue ($)")
+    # M_revenue = evaluation_value(evaluation, EVAL_MICRO_COL, "M_revenue ($)")
+    # subsidy_FRT_micro = F_oper_cost + M_oper_cost - 4 * F_revenue - 4 * M_revenue
+    #
+    # value_11 = -(subsidy_FRT_micro - subsidy_base)      # Subsidy delta
+    # value_21 = 4 * (y1 - y2)    # mobility logsum delta
 
-        # USE THIS PART WHEN THERE IS NO MICRO UPSCALING HAPPENING
-        value_11 = -(float(x1) - float(x2))        # Subsidy delta
-        value_21 = (y1 - y2)      # mobility logsum delta
+    # USE THIS PART WHEN THERE IS NO MICRO UPSCALING HAPPENING
+    value_11 = -(x1 - x2)        # Subsidy delta
+    value_21 = (y1 - y2)      # mobility logsum delta
 
     return [value_11, value_21], a1
 

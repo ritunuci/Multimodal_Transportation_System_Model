@@ -58,7 +58,8 @@ for vehicle repositioning).
 
    With `--config`, the run prints at startup which values differ from the frozen file.
    A run takes about 5–7 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
-   `lemon_grove_evaluation_zonal_partition_False.csv`.
+   `lemon_grove_evaluation_zonal_partition_False.csv`: one line per metric, with the columns `FRT_only` (the base
+   case: FRT only, at `base_frt_headway` and `base_frt_fare`) and `FRT_and_micro` (the scenario of the run).
 5. **Check reproducibility (optional).** With the reference parameters and seed listed in
    [`docs/reference_results/README.md`](docs/reference_results/README.md), `python tools/compare_reference.py` must
    print `REPRODUCED`: the same inputs and seed give byte-identical results.
@@ -70,7 +71,7 @@ FRT headway, FRT fare, microtransit fares, peak fare factor and transfer discoun
 and the increase in travelers' mobility logsum due to microtransit, both relative to the base case: FRT only, at
 `base_frt_headway` and `base_frt_fare` (so a candidate's shorter FRT headway adds to its subsidy). For each candidate it writes a copy of the frozen
 parameter file with the candidate's values (`<folder_name>/candidate_configs/config_call_NNNN.csv`), runs the model
-with `--config <copy>` and reads the evaluation file; results go to `mtsm_data/lemon_grove/optimization_output/`.
+with `--config <copy>` and reads the evaluation file by metric name; results go to `mtsm_data/lemon_grove/optimization_output/`.
 The frozen parameter file is never changed. The script sets `MKL_THREADING_LAYER=SEQUENTIAL` for itself and the model
 runs it starts: without it, numpy's linear algebra crashes in the `fleetpy` env (`docs/open_issues.md`, I-27); the
 model's results do not depend on it.
@@ -126,7 +127,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
 | `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
 | `microtransit.py` | Running FleetPy (through `helpers/fleetpy_runner.py`) and updating the super-networks with its results |
-| `results.py` | The results of a converged scenario: costs, subsidies, accessibility, individual results, evaluation rows |
+| `results.py` | The results of a converged scenario: costs, subsidies, accessibility, individual results, evaluation file |
 
 The helpers these modules call are in `mtsm_model/helpers/` (moved from the repository root on 2026-11-10; imported
 as `from mtsm_model.helpers import network_algorithms as n_a`, ...):
