@@ -4,6 +4,24 @@ A representative script, written 2026-11-11 from the frozen Lemon Grove super-ne
 (docs/progress.md, "Super-network script"). It replaces the network construction of process_network.py, which reads
 its inputs from outside folders.
 
+The idea (that of the old construction code: standalone_scripts/pre_process/process_network_trial_edit.py and its
+SacRT notebook): one network holds every way to travel without a car, so that a single least-cost path search finds
+a trip that can mix walking, FRT and microtransit. Each mode has its own copy of the nodes (a layer). A trip starts
+and ends on walk nodes, and the only way from one layer to another is a waiting link:
+    - Walking is possible on every road edge, at the walk speed.
+    - FRT runs only from stop to stop. A stop is entered and left at its nearest walk node. Boarding takes the
+      expected waiting time, half the headway (one headway for all routes); alighting takes 0 s. A change of route
+      at the same stop has no link of its own (the path search sees it from the route numbers of the two links).
+    - Microtransit can drive on every road edge, in the car travel time times a factor, but it can be boarded and
+      left only at a virtual stop (a walk node; 100 % of the nodes = door to door). The boarding time written here
+      is a starting value: after each FleetPy run the model writes FleetPy's waiting times into its final networks.
+    - The waiting links are also where the path search charges the fares and the transfer rules, so a transfer
+      (FRT to FRT at another stop, FRT to microtransit, microtransit to FRT) is always alighting, walking (possibly
+      0 m) and boarding again.
+The networks of a study area differ only in three things: the headway (the boarding time of type 2), the virtual
+stops (the links of type 5) and the modes present (the variant). The old code wrote one file per headway (10, 15,
+20, 30, 60) and share of virtual stops (50, 75, 100 %); here one call writes one network.
+
 The super-network has three layers on the same numbering:
     walk nodes          0 .. N-1                   the road nodes (FleetPy's node numbers)
     FRT stops           N .. N+S-1                 one per stop that has an FRT link, in stop_id order
@@ -23,6 +41,25 @@ microtransit link, followed by the waiting links of a virtual stop that appears 
 
 With --auto-out the car network is written too (the model reads it separately, as auto_edges.csv): every road edge
 with its distance and car travel time, link type 7, in road-edge order.
+
+Checked against the old code (2026-11-13): the notebook's own functions and this script, run on the same small
+network (walk speed 1.6, the notebook's virtual stops), give the same links in the same order for all 15 files. What
+is different here, on purpose:
+    - Only the stops that have an FRT link get a number (old: every stop of the stop file); see above for
+      "micro_only".
+    - A tie between two nearest walk nodes goes to the smaller node number (old: the later one in the file).
+    - The virtual stops of a share are drawn with a seed, so the same seed gives the same network, and with the same
+      seed a smaller share is a part of a larger one (old: no seed, each share drawn separately).
+    - The walk speed is an option, 1.251 m/s by default (old: 1.6 m/s in the walk links, then 1.251 m/s when the
+      initial networks were written from them).
+    - "non_micro" and "micro_only" are written directly (old: "non_micro" = the "micro" file cut at its first
+      microtransit link; no "micro_only"); the car network is new.
+Not done here, so the inputs must already have it (the old code did it in the same script):
+    - the road network in FleetPy's form: nodes numbered 0 .. N-1, every road segment as two edges (one per
+      direction), distance in m, car travel time = distance / speed limit;
+    - the FRT network of the study area: only its stops, only the links with both stops in it, distance in m (the
+      old inputs were in miles), one whole number as route per link (the old code took the first route of a link
+      that had several, and gave routes with a name a number).
 
 Inputs (CSV; other columns are ignored):
     road nodes   node_index,pos_x,pos_y                       node_index 0 .. N-1 (FleetPy's nodes.csv)

@@ -972,6 +972,14 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   the car network equals `initial_network/auto_edges.csv` byte for byte; `micro_only` equals the frozen micro
   network (hw 10, 75 %) without its type 1 and 2 links, after the same renumbering (there is no frozen
   `micro_only` network). The four checks above still pass.
+- 2026-11-13 (user's request): the script was compared with the old construction code, `process_network_trial_edit.py`
+  and its SacRT notebook (`standalone_scripts/Supernetwork_construction_SacRT_final.ipynb`, kept locally, in
+  `.gitignore`). The notebook's own functions and the script, run on the same small made-up network (30 road nodes,
+  7 stops, 2 routes; walk speed 1.6, the notebook's virtual stops), give the same links in the same order for all 15
+  files (5 headways x 3 shares; values compared as numbers: the notebook writes `0`, the script `0.0`). No code was
+  changed. The module docstring now states the idea of the super-network, what differs from the old code on purpose,
+  and what the inputs must already have (the road network in FleetPy's form, the study area's FRT network in m with
+  one route number per link). Not a model code change, so no reference run.
 
 ## Optimizer: first session since the changes, MKL crash fixed (2026-11-12)
 

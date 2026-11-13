@@ -26,6 +26,9 @@ mtsm_data/lemon_grove/initial_network/initial_super_network_*
 !mtsm_data/lemon_grove/initial_network/initial_super_network_non_micro_hw_20.csv
 mtsm_data/lemon_grove/initial_network_0719/initial_super_network_*
 !mtsm_data/lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv
+# SacRT super-network notebook: kept locally, not part of the repository (absolute paths to outside folders;
+# its saved outputs show rows of the request data)
+standalone_scripts/Supernetwork_construction_SacRT_final.ipynb
 # old evaluation outputs (2023), not produced by the current code
 eval_output_dir/
 *.log
