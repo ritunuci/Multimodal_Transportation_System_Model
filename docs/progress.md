@@ -1036,6 +1036,10 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Comparison with the reference: 31 of 32 files identical. The new evaluation file, turned back into rows, equals the
   reference text for text apart from the two removed columns and the corrected name. The optimizer's `collect_output`
   returns the same objectives and the same 64 metric values as before. No optimizer session was run.
+- Optimizer session afterwards (2026-11-12; 5 Sobol samples, 2 optimization iterations, throwaway folder): ran to the
+  end in 37 min; `per_call_results.csv` equals the saved evaluation files; the base case is the same for all 7
+  candidates; two candidates had rejected requests and ran (Gurobi). Over the 7 candidates the size of the subsidy
+  objective now goes with the logsum increase (correlation 0.85; before I-28: 0.51 over 13 runs). Details: I-03.
 - Reference re-established (third update of the evaluation file on 2026-11-12): second full run,
   `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
 - I-04 (the duplicate base row, open since 2026-10-23) is closed: it was resolved by the second part of I-28.

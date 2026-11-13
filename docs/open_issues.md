@@ -71,6 +71,13 @@ Paths are relative to the codebase root.
   afterwards): after the fix of I-27 it ran to the end; 7 model runs, one with headway 20, no rejected requests (Gurobi
   not started); `check_inputs.py` passes. Not yet checked: `per_call_results.csv` against the evaluation files and
   `candidate_configs/`, a deliberately failed run, and a candidate with rejected requests.
+- **Update 2026-11-12 (second session, after I-28 and I-29):** again 5 Sobol samples and 2 optimization iterations
+  into a throwaway folder (deleted afterwards): ran to the end in 37 min, 7 model runs (fleet 2-6, headway 12-29).
+  Checked: every row of `per_call_results.csv` (objectives and a sample of metrics) equals the values in that
+  candidate's saved evaluation file; no empty cells; the base case is the same in all 7 files (headway 20, `tot_sub`
+  2320.67). Two candidates had rejected requests (9 % and 15 %), so AlonsoMora repositioning started Gurobi with the
+  renewed license, and those runs finished. Afterwards a reference run: `REPRODUCED`, `check_inputs.py` passes.
+  Still not checked: `per_call_results.csv` against the files in `candidate_configs/`, and a deliberately failed run.
 
 ### I-05: `FRT_headway = 20` overwrites a frozen network
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
