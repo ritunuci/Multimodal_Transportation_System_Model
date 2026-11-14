@@ -36,7 +36,7 @@ earlier entries; commits before that date use the old names.
 | 2l | One parameter file `mtsm_constant_configurations.csv` (replaces `input_parameter.csv` and the values in the code) | Done 2026-11-10 |
 | 2m | Delete the unused skim scripts and their five functions in `network_algorithms.py` (I-20) | Done 2026-11-11 |
 | 2n | Transfers FRT <-> microtransit checked: discounted FRT fare no longer charged on alighting (I-23) | Done 2026-11-11 (open: I-22, I-24) |
-| 2o | Transfer penalty `bt_f_trfer` per transfer behind a switch (off); link type 3 removed | Done 2026-11-11 (open: I-25) |
+| 2o | Transfer penalty `bt_f_trfer` per transfer behind a switch (off); link type 3 removed | Done 2026-11-11 (open: I-25, I-31) |
 | 2p | Runs with `--config` (the optimizer's candidates) work again: FleetPy no longer gets the command line (I-26) | Done 2026-11-11 |
 | 2q | Representative super-network script `pre_process/build_super_network.py` (not used by the model yet) | Done 2026-11-11 |
 | 2r | Optimizer runs again: MKL threading set to sequential in `Bayesian_optimization_script.py` (I-27) | Done 2026-11-12 (open: I-03) |
@@ -929,6 +929,12 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   with the switch off under the I/O tracer: `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py`
   passes. A full run with the switch on stopped after 11 s in FleetPy, not because of the penalty: any run with
   `--config` did (`scenarios.py` handed the command line to FleetPy; fixed in the next section, I-26).
+- 2026-11-13: a full run with the switch on was compared with the reference (21 of 32 files differ; FRT trips with
+  microtransit 22 -> 10, microtransit + FRT users 6 -> 0, FRT-only users in the base case 19 -> 14; numbers in
+  I-25). User's decision: the switch stays off, because the route labels of the FRT links cannot be checked without
+  the raw transit file: routes 916, 917 and 936 each end at a stop in the middle of route 856, which may be the
+  effect of keeping only the first route of a shared link (new open item I-31). To be taken up when the
+  super-network is rebuilt from the raw files. Nothing in the code, the frozen inputs or the reference changed.
 
 ## Runs with `--config` fixed (2026-11-11)
 

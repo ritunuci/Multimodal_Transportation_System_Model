@@ -46,12 +46,13 @@ Paths are relative to the codebase root.
 | I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Open | 2026-11-11 |
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
-| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (reminder) | 2026-11-11 |
+| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (waits for I-31) | 2026-11-11 |
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 | I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
 | I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
 | I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
+| I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
 
 ---
 
@@ -251,6 +252,18 @@ Paths are relative to the codebase root.
   reference in `docs/reference_results/`, together with the other changes that need one (I-19, I-21, I-22). The
   penalty depends on the path before the link, like the discounts, so the I-22 fix should cover it (state: also the
   current route).
+- **Update 2026-11-13:** a full seed-0 run with the switch on (through `--config`; the frozen file and the reference
+  were not changed) was compared with the reference: 21 of 32 files differ; 5 iterations as before. Evaluation file,
+  base case / with microtransit: car users 3493 -> 3497 / 3444 -> 3451; transit-mode users 249 -> 245 / 298 -> 291;
+  pure FRT users 19 -> 14 / 15 -> 10; FRT trips 19 -> 14 / 22 -> 10; microtransit + FRT users 6 -> 0; pure
+  microtransit users 62 -> 66; `tot_sub ($)` 2320.67 -> 2333.17 / 7781.65 -> 7751.10;
+  `tt_mob_lgsm_inc_with_micro` 903.05 -> 929.81 (the penalty lowers the base case more); the optimizer's objectives
+  -5460.99 / 903.05 -> -5417.93 / 929.81. The same numbers as the trial of 2026-11-11. The accessibility with
+  microtransit also changed (5 min: 249.99 -> 294.88); not traced (probably FleetPy's waiting times in the final
+  networks, average microtransit wait 209 s -> 196 s).
+- **User's decision 2026-11-13:** the switch stays `False` for now, because the route labels cannot be checked (I-31;
+  the raw transit file is not at hand). Offered and not taken for now: a second switch, so that only the boardings
+  after a transit leg are charged (they do not read the route label) and the route changes at a shared stop wait.
 
 ### I-30: The evaluation file holds one scenario; its base column is empty for runs without a base case
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-12 (I-29).
@@ -268,6 +281,40 @@ Paths are relative to the codebase root.
     stays for now).
 - **To decide:** a design for runs with several scenarios (user: an architecture for this may come later), and what
   the file should show when there is no base case.
+
+### I-31: The route labels of the FRT links may not show which routes run on a link
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-13 (before turning on the transfer penalty, I-25).
+- **What:** every FRT link (type 1) of the super-networks has one route number. In the raw Lemon Grove transit file
+  a link served by several routes had a list (e.g. `[856, 936]`); the old preprocessing kept only the first number
+  (`pre_process/process_network.py`, `construct_super_network_transit_links`: `route_id_str_.split(',')[0]`; route
+  120 became 3). The raw file is not in the repository, and the user does not have it at hand (2026-11-13), so the
+  links that had a list cannot be found.
+- **What the frozen network shows** (`initial_super_network_non_micro_hw_20.csv`, 130 FRT links, routes 4, 520, 856,
+  916, 917, 936):
+  - Routes 916, 917 and 936 each end at a stop in the middle of route 856: 917 at stop 1115, 936 at stops 1119 and
+    1110 (the same walk node), 916 at stop 1160. These are the only stops served by more than one route. This is
+    what the first-number rule gives if these routes in fact run on along 856's street (856 is the smallest number,
+    so every shared link would be labelled 856); it is also what three routes that really end on 856 look like. The
+    network alone cannot tell.
+  - Routes 4, 520, 856 and 936 are each in two pieces without a link between them. For 856 and 936 the pieces have
+    the same length and lie on each other (most stops of one piece are at the walk node of a stop of the other), so
+    they are probably the two directions (stops on the two sides of the street); for 4 and 520 they lie less close.
+    Not a label problem. Every FRT link exists in both directions.
+- **Impact:** none on the reference: nothing reads the route label for a cost while `enable_num_transfer_penalty` is
+  `False`. With the switch on, a route change at a shared stop costs `bt_f_trfer`; if a label is only the first of a
+  list, a rider who stays on the same bus is charged a transfer (e.g. 917 -> 856 -> 936: two penalties, about 1.0, or
+  about 6.6 min of FRT waiting). 72 % of the AM paths that use FRT change route at the four shared stops (I-25), so
+  the labels decide most of the penalty's effect. If the labels are right, the opposite gap is there: a transfer at
+  a shared stop has no waiting time.
+- **To do:** when the raw transit and road network files are available and the super-network is rebuilt (user,
+  2026-11-13: possibly later), keep all routes of a link. `pre_process/build_super_network.py` takes one route number
+  per link, so it needs a way to carry several (and the path search a rule for "same bus"). Then decide I-25.
+  Other ways to check the labels: the operator's route maps.
+- **Also noticed, not checked further:** the distances of the FRT links look too short. For every route the sum of
+  its link distances is less than the straight line between its two end stops (walk-node coordinates in feet; e.g.
+  route 856: 1,836 against about 2,875 m; route 4: 1,205 against about 1,995 m); multiplied by 1.609 they fit. They
+  may be miles x 1,000, not metres. How the model uses this column (FRT passenger miles, the per-mile subsidy
+  values) was not checked. See also I-21.
 
 ---
 
