@@ -24,7 +24,7 @@ Paths are relative to the codebase root.
 |---|---|---|---|---|
 | I-01 | Gurobi license expired | High | Closed (2026-11-12) | 2026-10-23 |
 | I-02 | The optimizer overwrites the frozen parameter file | Medium | Closed (2026-11-10) | 2026-10-23 |
-| I-03 | The optimizer has not been run since the changes | Medium | Open | 2026-10-23 |
+| I-03 | The optimizer has not been run since the changes | Medium | Closed (2026-11-13) | 2026-10-23 |
 | I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Closed (2026-11-12) | 2026-10-23 |
 | I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Decision needed | 2026-10-23 |
 | I-06 | Accessibility uses a hard-coded network for its node list | Medium | Open | 2026-10-23 |
@@ -56,28 +56,6 @@ Paths are relative to the codebase root.
 ---
 
 ## Open
-
-### I-03: The optimizer has not been run since the changes
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phases 1c and 2b).
-- **What:** `Bayesian_optimization_script.py` was changed three times: the `mtsm_data/` paths (`d5aee47`), launching the model
-  with `sys.executable` (`da839b0`), and stopping on a failed model run (`09e0684`). Each change compiles, and the
-  failure handling was tested against a fake model process. The optimizer itself was never run, because a session
-  takes many model evaluations, overwrote the parameter file (I-02, closed 2026-11-10) and needs Gurobi (I-01).
-- **Impact:** an error in the optimizer's own code would only show up in the first real session.
-- **Fix:** after I-01 is fixed, run a short session (a few candidates) into a throwaway `folder_name`. Check that
-  `per_call_results.csv` matches the evaluation files and the copies in `candidate_configs/`, and that a
-  deliberately failed run stops the optimizer.
-- **Update 2026-11-12:** a short session was run (5 Sobol samples, 2 optimization iterations, throwaway folder, deleted
-  afterwards): after the fix of I-27 it ran to the end; 7 model runs, one with headway 20, no rejected requests (Gurobi
-  not started); `check_inputs.py` passes. Not yet checked: `per_call_results.csv` against the evaluation files and
-  `candidate_configs/`, a deliberately failed run, and a candidate with rejected requests.
-- **Update 2026-11-12 (second session, after I-28 and I-29):** again 5 Sobol samples and 2 optimization iterations
-  into a throwaway folder (deleted afterwards): ran to the end in 37 min, 7 model runs (fleet 2-6, headway 12-29).
-  Checked: every row of `per_call_results.csv` (objectives and a sample of metrics) equals the values in that
-  candidate's saved evaluation file; no empty cells; the base case is the same in all 7 files (headway 20, `tot_sub`
-  2320.67). Two candidates had rejected requests (9 % and 15 %), so AlonsoMora repositioning started Gurobi with the
-  renewed license, and those runs finished. Afterwards a reference run: `REPRODUCED`, `check_inputs.py` passes.
-  Still not checked: `per_call_results.csv` against the files in `candidate_configs/`, and a deliberately failed run.
 
 ### I-05: `FRT_headway = 20` overwrites a frozen network
 - **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
@@ -294,6 +272,50 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-03: The optimizer has not been run since the changes
+- **Status:** Closed (2026-11-13). **Severity:** Medium. **Found:** 2026-10-23 (Phases 1c and 2b).
+- **What:** `Bayesian_optimization_script.py` was changed three times: the `mtsm_data/` paths (`d5aee47`), launching the model
+  with `sys.executable` (`da839b0`), and stopping on a failed model run (`09e0684`). Each change compiles, and the
+  failure handling was tested against a fake model process. The optimizer itself was never run, because a session
+  takes many model evaluations, overwrote the parameter file (I-02, closed 2026-11-10) and needs Gurobi (I-01).
+- **Impact:** an error in the optimizer's own code would only show up in the first real session.
+- **Fix:** after I-01 is fixed, run a short session (a few candidates) into a throwaway `folder_name`. Check that
+  `per_call_results.csv` matches the evaluation files and the copies in `candidate_configs/`, and that a
+  deliberately failed run stops the optimizer.
+- **Update 2026-11-12:** a short session was run (5 Sobol samples, 2 optimization iterations, throwaway folder, deleted
+  afterwards): after the fix of I-27 it ran to the end; 7 model runs, one with headway 20, no rejected requests (Gurobi
+  not started); `check_inputs.py` passes. Not yet checked: `per_call_results.csv` against the evaluation files and
+  `candidate_configs/`, a deliberately failed run, and a candidate with rejected requests.
+- **Update 2026-11-12 (second session, after I-28 and I-29):** again 5 Sobol samples and 2 optimization iterations
+  into a throwaway folder (deleted afterwards): ran to the end in 37 min, 7 model runs (fleet 2-6, headway 12-29).
+  Checked: every row of `per_call_results.csv` (objectives and a sample of metrics) equals the values in that
+  candidate's saved evaluation file; no empty cells; the base case is the same in all 7 files (headway 20, `tot_sub`
+  2320.67). Two candidates had rejected requests (9 % and 15 %), so AlonsoMora repositioning started Gurobi with the
+  renewed license, and those runs finished. Afterwards a reference run: `REPRODUCED`, `check_inputs.py` passes.
+  Still not checked: `per_call_results.csv` against the files in `candidate_configs/`, and a deliberately failed run.
+- **Resolution (2026-11-13):** the two remaining checks were made; no code was changed.
+  - *Candidate files:* a session with 3 Sobol samples into a throwaway folder (deleted afterwards). For the two
+    candidates that ran, `config_call_0001.csv` and `config_call_0002.csv` differ from the frozen
+    `mtsm_constant_configurations.csv` in exactly the 7 candidate values (7 of 55 lines; names, descriptions and CRLF
+    unchanged), and these values are the ones in rows 1 and 2 of `per_call_results.csv`. The saved evaluation files
+    show the candidates' headway (22, 12) and, as average FRT fare of the first, its transit fare.
+  - *Failed run, real model:* the third candidate's file was given a text as fleet size (in the launcher's memory;
+    the repo file was not edited). The model stopped with `fleet_size = 'not_a_number' is not a int`; the optimizer
+    stopped one second later with exit code 1 and the message "the model run failed (exit code 1), for candidate
+    [...]. ... Results of the earlier candidates: ...per_call_results.csv". `per_call_results.csv` kept the two good
+    rows and got no row for the third. A second session, in which the first of three candidates failed, started no
+    model run for the other two (exit code 1).
+  - *The other failure checks, with a stand-in for the model* (the optimizer's own `run_script`, output folder in a
+    scratch folder): exit code 3; no output files; no output files while complete files of an earlier candidate are
+    lying there (they are deleted first); an evaluation file with the metric names only; one with an empty
+    `FRT_only` column; one without the `FRT_and_micro` column. Each stopped with its own message; a complete
+    evaluation file was accepted.
+  - Afterwards a reference run: `REPRODUCED` (32 files); `check_inputs.py` passes.
+  - Noticed, not changed: `per_call_results.csv` shows the candidate values with 7-8 digits (`3.8201945`), the
+    candidate file has all digits (`3.8201944828033447`); they are the same single-precision number (relative
+    difference up to 3e-8). The exact values of a candidate are in `candidate_configs/`. The stop message comes inside
+    a long Ax traceback (Ax wraps the error); the model's own error line stands above it.
 
 ### I-29: Evaluation file: one line per metric, read by name by the optimizer
 - **Status:** Closed (2026-11-12). **Severity:** Medium. **Found:** 2026-11-12 (user's request).

@@ -1051,6 +1051,12 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Reference re-established (third update of the evaluation file on 2026-11-12): second full run,
   `compare_reference.py` **32 identical, `REPRODUCED`**; `check_inputs.py` passes.
 - I-04 (the duplicate base row, open since 2026-10-23) is closed: it was resolved by the second part of I-28.
+- I-03 closed (2026-11-13): a session with 3 Sobol samples in which the third candidate's parameter file was made
+  invalid. The candidate files of the two good runs differ from the frozen file only in the 7 candidate values, which
+  equal `per_call_results.csv`; the failed model run stopped the optimizer (exit code 1, the two good rows kept, no
+  further model run; also when the first candidate fails). The checks for missing output files and an incomplete
+  evaluation file were tested with a stand-in for the model. No code changed; reference run afterwards
+  `REPRODUCED`. Details and two things noticed: I-03.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
