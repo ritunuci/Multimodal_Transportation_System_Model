@@ -203,6 +203,10 @@ Paths are relative to the codebase root.
 - **Fix:** search over the states (node, microtransit used, FRT used, previous link FRT waiting) instead of nodes
   (up to 8 labels per node; slower). Changes results: make and document a new reference in
   `docs/reference_results/`; together with the other changes that need one (I-19, I-21, I-25).
+- **Update 2026-11-14:** the fix was tried and taken back (user's decision: not now; nothing of it is in the code).
+  Record of the trial: `docs/pathfinding_code_update.md`. The label search gave a cheaper path for the 405 travelers
+  and changed the totals little, but it shows a loophole of the fare rules (very short microtransit rides that make
+  the FRT fare free; I-24). To be decided together with the fare rules.
 
 ### I-24: Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged
 - **Status:** Open (to decide). **Severity:** Low. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
