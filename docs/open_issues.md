@@ -53,6 +53,7 @@ Paths are relative to the codebase root.
 | I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
+| I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Open | 2026-11-16 |
 
 ---
 
@@ -319,6 +320,56 @@ Paths are relative to the codebase root.
   route 856: 1,836 against about 2,875 m; route 4: 1,205 against about 1,995 m); multiplied by 1.609 they fit. They
   may be miles x 1,000, not metres. How the model uses this column (FRT passenger miles, the per-mile subsidy
   values) was not checked. See also I-21.
+
+### I-32: Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-16 (user's question).
+- **What:** `synthesize_requests_with_trend_time` (`pre_process/generate_demand_files.py`) writes the new requests
+  after the old ones (`pd.concat([df, new_df])`), not merged in time order. The new block is not in time order
+  either: the times come from the random sampler in the order they are drawn. The only caller is the commented-out
+  "Ritun added" block in `mtsm_model/microtransit.py`. That block adds 3 x the microtransit users of the iteration as
+  synthetic local requests to FleetPy's demand file before FleetPy runs.
+- **How FleetPy reads the file** (`fleetpy/src/demand/demand.py`, `load_demand_file` and `get_new_travelers`): it
+  rounds `rq_time` down to the time step (60 s in the Lemon Grove config) and groups the rows by it; the groups are
+  sorted by time. So every request enters the simulation at its own minute, wherever its row is. Within one minute
+  the requests keep the file order, and `ImmediateDecisionsSimulation.step` handles them one after the other (each
+  is inserted into the vehicle plans before the next one is looked at). So only the order within a minute matters.
+- **Checked 2026-11-16** (scripts in the session scratchpad; nothing in the repo changed; FleetPy demand files and
+  result folders made for the check under their own names and removed afterwards):
+  - The FleetPy demand file of the last iteration of the reference run (68 requests) is not in time order itself
+    (35 rows step back in time; MTSM writes it in the order of the agent list). FleetPy handles this already.
+  - The commented-out call, repeated on a copy of that file: 204 new rows, 272 in all. A second file held the same
+    rows sorted by `rq_time` (stable sort). Loaded with FleetPy's own `Demand.load_demand_file`, every request enters
+    at the same minute in both files; the order differs in 29 of the 49 minutes that hold more than one request
+    (23 minutes hold an old and a new request).
+  - FleetPy runs with the reference's config (repositioning, fleet 2, seed 0). The 68-request file gives the
+    reference's `standard_eval.csv` byte-identical (check of the method). Appended against sorted:
+
+    | | appended | sorted |
+    |---|---|---|
+    | users served (of 272) | 234 | 238 |
+    | waiting time, mean / median (s) | 498.2 / 526.1 | 490.1 / 490.0 |
+    | waiting time, 90 % quantile (s) | 858.3 | 846.4 |
+    | the 68 MTSM users: served / mean wait (s) | 61 / 564.7 | 58 / 516.7 |
+    | shared rides | 17.5 % | 15.1 % |
+    | total vkm | 735.0 | 738.9 |
+
+    The first difference is at 07:02: two new requests in the same minute, the later one (by second) first in the
+    appended file. From there the two runs go apart.
+- **Impact:** none on the reference (the call is commented out). If the block is switched on, the share served and
+  the waiting times that MTSM reads back from FleetPy (`modal split rq` for the rejection rate, the waiting times in
+  the final networks) depend on the row order within a minute. This is not a wrong entry time; it is FleetPy's
+  sensitivity to the order of requests in the same minute, and any change of that order moves the results like this
+  (one different insertion changes the vehicle plans for all later requests).
+- **To do (when the block is switched on):** sort the combined rows by `rq_time` (stable) before writing, so the
+  order is the order of the request times and does not depend on how the rows were made. Sorting MTSM's own FleetPy
+  demand file the same way would also remove the order of the agent list as a factor, but it can change FleetPy's
+  results, so it belongs to a new reference (not tested).
+- **Also noticed, not changed:** the time sampler of the function is built from the requests of the input file only,
+  i.e. the microtransit users of the iteration (68 in the reference). With 180 five-minute bins and a smoothing of
+  0.5 per bin (90 in all) against 68 observed requests, 57 % of the new times are drawn uniformly over 5:00-20:00;
+  the "trend" is mostly flat. The new request ids start at 60005; the largest id in the demand data is 15047, so
+  they do not clash. Whether `update_network_files` mixes the synthetic requests into the waiting times it writes
+  to the final networks was not checked.
 
 ---
 
