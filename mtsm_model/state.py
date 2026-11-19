@@ -27,7 +27,8 @@ class BaseCase:
     off_micro_auto_trips: int = 0  # travelers who choose car
     off_micro_agent_tot_walk_time: OrderedDict = _od()
     off_micro_agent_F_tot_wait_time: OrderedDict = _od()
-    off_micro_agent_op_cost: OrderedDict = _od()  # out-of-pocket cost
+    off_micro_agent_op_cost: OrderedDict = _od()  # out-of-pocket cost (car: gas + parking)
+    off_micro_agent_parking_cost: OrderedDict = _od()  # car parking cost (0 for transit); new 2026-11-19
     off_micro_VMT_F: float = 0  # FRT passenger miles
     off_micro_VMT_W: float = 0  # walk miles
     off_micro_VMT_auto: float = 0
@@ -82,7 +83,8 @@ class TravelerState:
     agent_tot_walk_time: OrderedDict = _od()
     agent_travel_time: OrderedDict = _od()
     agent_travel_dist: OrderedDict = _od()  # in meters
-    agent_op_cost: OrderedDict = _od()  # agent_out-of-pocket cost
+    agent_op_cost: OrderedDict = _od()  # agent_out-of-pocket cost (car: gas + parking)
+    agent_parking_cost: OrderedDict = _od()  # car parking cost (0 for transit); new 2026-11-19
     agent_op_cost_Fix: OrderedDict = _od()  # FRT fare
     agent_op_cost_Micro: OrderedDict = _od()  # microtransit fare
 

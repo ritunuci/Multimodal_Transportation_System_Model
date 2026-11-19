@@ -1064,6 +1064,39 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   evaluation file were tested with a stand-in for the model. No code changed; reference run afterwards
   `REPRODUCED`. Details and two things noticed: I-03.
 
+## Parking in the car's out-of-pocket cost; parking rates (2026-11-19)
+
+- User's request: include the parking charge in the car's out-of-pocket cost, and add a parking rate parameter for
+  the peak and the off-peak periods. Until now the charge was only in the car's generalized cost
+  (`choice.trip_costs`: `bt_c_gas` x started 30-min intervals of half the parking duration x `parking_factor_*`), so
+  it was $1 per interval implicitly; the out-of-pocket cost was the gas cost of the path search alone.
+- New parameters in `mtsm_constant_configurations.csv`: `parking_rate_peak` and `parking_rate_offpeak` (1 $ per
+  started interval each). The car's parking cost is rate x factor x intervals. It is added to the generalized cost as
+  before (the rate multiplies last, so a rate of 1 changes no digit) and now also to the out-of-pocket cost.
+- Reporting (user chose the recommendation): the gas lines of the evaluation file (`tt_auto_gas_cost ($)`,
+  `auto_gas_cost_per_mile ($/mi)`, `avg_auto_gas_cost`) stay gas only; they now also subtract the parking total. New
+  lines `tt_auto_parking_cost ($)` and `avg_auto_parking_cost` (after `avg_auto_gas_cost`); new column
+  `parking_cost ($)` in both individual-results files (after `out_of_pock_cost ($)`). `tt_o_pckt_cost ($)` and
+  `out_of_pock_cost ($)` now include parking. Code: `choice.py` (`TripCosts.parking_cost_auto`), `state.py`
+  (`agent_parking_cost`, `off_micro_agent_parking_cost`), `iteration.py`, `results.py`, `config.py`,
+  `mtsm_global_parameters.py`.
+- Not changed: the optimizer. Its objectives (subsidy, logsum) do not use the out-of-pocket cost, and the new lines
+  are not in its `METRIC_COLS`, so `per_call_results.csv` does not record them. Its candidate files are copies of the
+  frozen file and carry the new parameters.
+- The demand file has `parking_dur_min` = 0 for all 3,742 travelers, so the parking cost is 0 and no value changed.
+  Full run against the reference: 29 of 32 files identical; the evaluation file and the two individual-results
+  files differ only by the new lines / column (without them, byte for byte the reference; all new values 0.0). The
+  three reference files were replaced (`docs/reference_results/README.md`, "Changes to this reference"). The
+  parameter file is a frozen input, so `mtsm_data/MANIFEST.csv` was rewritten (`check_inputs.py --write`; only its
+  line for the parameter file changed).
+- Reference re-established: a second, independent full run gave `compare_reference.py` **32 identical,
+  `REPRODUCED`**; `check_inputs.py` passes.
+- Same day, user's decision: the factors `parking_factor_peak` (1) and `parking_factor_offpeak` (0.5) are removed;
+  the rates hold the dollars: `parking_rate_peak` 1 and `parking_rate_offpeak` 0.5, $ per started 30 min (the
+  interval `parking_charge_interval_min`). The parking cost is rate x started intervals; the charges are the same
+  as before ($1 / $0.5 per 30 min), and the generalized cost is the same to the last digit (x 1 and x 0.5 are exact).
+  `MANIFEST.csv` rewritten again.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

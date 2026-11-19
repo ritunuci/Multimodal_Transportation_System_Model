@@ -19,7 +19,8 @@ class TripCosts:
     gen_cost_auto: float
     travel_time_auto: float
     travel_dist_auto: float
-    agent_op_cost_auto: float
+    agent_op_cost_auto: float  # gas + parking (until 2026-11-19 gas only)
+    parking_cost_auto: float  # $, part of agent_op_cost_auto
     gen_cost_T: float
     gen_cost_F: float
     travel_time_T: float
@@ -89,17 +90,23 @@ def trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_ga
         agent_F_fare = micro.F_fare_visited_temp[dest]
         agent_M_fare = micro.M_fare_visited_temp[dest]
 
-    # parking charge per started interval (30 min) of half the parking duration: full in the peak periods, half otherwise
+    # parking charge per started interval (30 min) of half the parking duration, at the rate of the period ($1 peak,
+    # $0.5 off-peak). Until 2026-11-19 the factors PARKING_FACTOR_PEAK (1) / _OFFPEAK (0.5) stood where the rates are,
+    # in the generalized cost only; the values are the same to the last digit.
     parking_dur_trip = parking_dur / 2
     parking_dur_30_min_count = math.ceil(parking_dur_trip / config.PARAMETERS[gp.G_PARKING_CHARGE_INTERVAL_MIN])
     if time_period in ["AM","PM"]:  # Ritun added for parking fee
-        gen_cost_auto = auto.visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * config.PARKING_FACTOR_PEAK
+        gen_cost_auto = auto.visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * config.PARKING_RATE_PEAK
+        parking_cost_auto = parking_dur_30_min_count * config.PARKING_RATE_PEAK
     else:
-        gen_cost_auto = auto.visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * config.PARKING_FACTOR_OFFPEAK
+        gen_cost_auto = auto.visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * config.PARKING_RATE_OFFPEAK
+        parking_cost_auto = parking_dur_30_min_count * config.PARKING_RATE_OFFPEAK
 
+    # the car's out-of-pocket cost: gas (from the path search) + parking (until 2026-11-19 gas only)
     return TripCosts(gen_cost_auto, auto.time_visited_temp[dest], auto.dist_visited_temp[dest],
-                     auto.fare_visited_temp[dest], gen_cost_T, gen_cost_F, travel_time_T, travel_time_F, travel_dist_T,
-                     travel_dist_F, agent_op_cost_T, agent_op_cost_F, agent_F_fare, agent_M_fare)
+                     auto.fare_visited_temp[dest] + parking_cost_auto, parking_cost_auto, gen_cost_T, gen_cost_F,
+                     travel_time_T, travel_time_F, travel_dist_T, travel_dist_F, agent_op_cost_T, agent_op_cost_F,
+                     agent_F_fare, agent_M_fare)
 
 
 def choice_probabilities(microtransit_run, in_operating_period, costs):

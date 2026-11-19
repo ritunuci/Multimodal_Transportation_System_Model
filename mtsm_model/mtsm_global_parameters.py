@@ -57,9 +57,11 @@ G_DAY_END_H = "day_end_h"
 G_FRT_OPERATING_HOURS = "frt_operating_hours"  # F_operating_hrs = 19
 
 # ---- parking ----
-G_PARKING_FACTOR_PEAK = "parking_factor_peak"  # PARKING_FACTOR_PEAK
-G_PARKING_FACTOR_OFFPEAK = "parking_factor_offpeak"  # PARKING_FACTOR_OFFPEAK
 G_PARKING_CHARGE_INTERVAL_MIN = "parking_charge_interval_min"  # choice.py: per started 30 min
+# $ per started interval; new 2026-11-19, replacing parking_factor_peak (1) and parking_factor_offpeak (0.5), which
+# were the charge per interval in $ (rate 1 implied)
+G_PARKING_RATE_PEAK = "parking_rate_peak"  # PARKING_RATE_PEAK
+G_PARKING_RATE_OFFPEAK = "parking_rate_offpeak"  # PARKING_RATE_OFFPEAK
 
 # ---- path search ----
 G_ENABLE_NUM_TRANSFER_PENALTY = "enable_num_transfer_penalty"  # new 2026-11-11; to be turned on with a new reference (I-25)
@@ -130,9 +132,9 @@ PARAMETER_TYPES = {
     G_PM_END_H: INT,
     G_DAY_END_H: INT,
     G_FRT_OPERATING_HOURS: INT,
-    G_PARKING_FACTOR_PEAK: INT,
-    G_PARKING_FACTOR_OFFPEAK: FLOAT,
     G_PARKING_CHARGE_INTERVAL_MIN: INT,
+    G_PARKING_RATE_PEAK: FLOAT,
+    G_PARKING_RATE_OFFPEAK: FLOAT,
     G_ENABLE_NUM_TRANSFER_PENALTY: BOOL,
     G_NUM_WALK_NODES: INT,
     G_MICROTRANSIT_NODE_OFFSET: INT,

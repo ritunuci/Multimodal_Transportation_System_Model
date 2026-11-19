@@ -132,6 +132,7 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
 
                         base.off_micro_agent_gen_cost[rq_id]=costs.gen_cost_F
                         base.off_micro_agent_op_cost[rq_id] = costs.agent_op_cost_F
+                        base.off_micro_agent_parking_cost[rq_id] = 0.0
                         legs_F = trip_legs.split_time_path(frt.time_path_all_[1:-1], rq_time, iteration)
                         base.off_micro_F_trips += len(legs_F.F_legs)
                         for F_wait_time in legs_F.F_wait:
@@ -157,7 +158,8 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                         base.off_micro_ag_tot_tt[rq_id]= costs.travel_time_auto
                         base.off_micro_ag_tot_dist[rq_id] = costs.travel_dist_auto/config.MILE_METER
                         base.off_micro_auto_trips+=1
-                        base.off_micro_agent_op_cost[rq_id] = costs.agent_op_cost_auto  # agent_out-of-pocket
+                        base.off_micro_agent_op_cost[rq_id] = costs.agent_op_cost_auto  # agent_out-of-pocket (gas + parking)
+                        base.off_micro_agent_parking_cost[rq_id] = costs.parking_cost_auto
                         base.off_micro_VMT_auto += (costs.travel_dist_auto/config.MILE_METER)
                         base.off_micro_agent_gen_cost[rq_id]=costs.gen_cost_auto
 
@@ -204,6 +206,7 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                         state.agent_travel_time[rq_id]=costs.travel_time_T
                         state.agent_travel_dist[rq_id] =costs.travel_dist_T
                         state.agent_op_cost[rq_id] = costs.agent_op_cost_T  # agent_out-of-pocket cost
+                        state.agent_parking_cost[rq_id] = 0.0
 
                         state.agent_op_cost_Fix[rq_id] = costs.agent_F_fare
                         state.agent_op_cost_Micro[rq_id] = costs.agent_M_fare
@@ -279,7 +282,8 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                         totals.num_car_trips += 1
                         state.agent_travel_time[rq_id] = costs.travel_time_auto
                         state.agent_travel_dist[rq_id] = costs.travel_dist_auto
-                        state.agent_op_cost[rq_id] = costs.agent_op_cost_auto  # agent_out-of-pocket cost
+                        state.agent_op_cost[rq_id] = costs.agent_op_cost_auto  # agent_out-of-pocket cost (gas + parking)
+                        state.agent_parking_cost[rq_id] = costs.parking_cost_auto
                         state.agent_op_cost_Fix[rq_id] = 0
                         state.agent_op_cost_Micro[rq_id] = 0
                         totals.VMT_auto+=(costs.travel_dist_auto/config.MILE_METER)

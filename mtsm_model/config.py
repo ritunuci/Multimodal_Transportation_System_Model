@@ -173,9 +173,11 @@ AM_END = PARAMETERS[gp.G_AM_END_H] * 3600
 MD_END = PARAMETERS[gp.G_MD_END_H] * 3600
 PM_END = PARAMETERS[gp.G_PM_END_H] * 3600
 
-# ---- parking: share of the parking charge in the generalized cost of a car trip ----
-PARKING_FACTOR_PEAK = PARAMETERS[gp.G_PARKING_FACTOR_PEAK]  # AM and PM
-PARKING_FACTOR_OFFPEAK = PARAMETERS[gp.G_PARKING_FACTOR_OFFPEAK]  # MD and EV
+# ---- parking: the charge per started interval ($); the car's parking cost rate x started intervals is in its
+# generalized cost (x bt_c_gas) and its out-of-pocket cost (choice.py). Until 2026-11-19 PARKING_FACTOR_PEAK (1) and
+# PARKING_FACTOR_OFFPEAK (0.5), in the generalized cost only ----
+PARKING_RATE_PEAK = PARAMETERS[gp.G_PARKING_RATE_PEAK]  # AM and PM, $ per started interval
+PARKING_RATE_OFFPEAK = PARAMETERS[gp.G_PARKING_RATE_OFFPEAK]  # MD and EV, $ per started interval
 
 # ---- Lemon Grove super-network: walk node i (0..NUM_WALK_NODES-1) is microtransit node MICROTRANSIT_NODE_OFFSET + i,
 # and FleetPy node i ----

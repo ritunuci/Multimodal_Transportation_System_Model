@@ -88,3 +88,13 @@ case (lines 2 and 4; the base row twice).
   `microtransit`. No value changed: the new file, turned back into rows, equals the old one text for text apart from
   these three points. A full run differed from the reference only in this file; it was replaced, and a second full
   run printed `REPRODUCED` (32 files).
+- **2026-11-19, parking in the car's out-of-pocket cost** (`docs/progress.md`): two new parameters,
+  `parking_rate_peak` and `parking_rate_offpeak` (1 $ per started interval); the car's parking cost is now part of
+  its out-of-pocket cost. Three output files got new entries: the evaluation file two lines, `tt_auto_parking_cost ($)`
+  and `avg_auto_parking_cost` (after `avg_auto_gas_cost`; 76 lines), and both `individual_results_*` files the column
+  `parking_cost ($)` (after `out_of_pock_cost ($)`). Every parking duration in the demand file is 0, so all new values
+  are 0.0 and no value changed: a full run differed from the reference only in these three files, and without the
+  new lines / column each was the reference file byte for byte. The three files were replaced by the run's; the
+  other 29 did not change. The parameter file (a frozen input) has the two new lines; `mtsm_data/MANIFEST.csv` was
+  rewritten for it. Same day: `parking_factor_peak` (1) and `parking_factor_offpeak` (0.5) were removed and the rates
+  set to 1 and 0.5 ($ per started 30 min), the same charges; no reference file changed.

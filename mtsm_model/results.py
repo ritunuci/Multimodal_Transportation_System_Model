@@ -23,6 +23,7 @@ EVALUATION_FIELDNAMES = ["study_area","repositioning","microtransit",'hdwy (min)
                          "sub_per_M_VMT ($/mi)","sub_per_F_VMT ($/mi)","sub_per_T_VMT ($/mi)",
                          "tt_auto_gas_cost ($)","auto_gas_cost_per_mile ($/mi)",
                          "avg_M_fare", "avg_F_fare", "avg_T_fare", "avg_auto_gas_cost",
+                         "tt_auto_parking_cost ($)", "avg_auto_parking_cost",  # new 2026-11-19
                          "tt_o_pckt_cost ($)","tt_mob_lgsm_inc_with_micro", "tt_gen_cost",
                          "tt_mode_switch", "M_avg_wait_time (s)", "F_avg_wait_time (s)","avg_walk_time (s)","tt_walk_time (h)",
                          "car_VMT (mi)","M_VMT (mi)","M_PMT (mi)","M_PMT/M_VMT","F_VMT (mi)","F_PMT (mi)","F_PMT/F_VMT","tt_VMT (mi)",
@@ -125,7 +126,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
     with open(individual_result_dir, 'w+', newline='', encoding='utf-8') as csvfile_indiv:
         fieldnames = ["rq_id", "origin", "dest","dp_time", "mode","switch_mode", "tt (s)","dist (mi)", "tt_C (s)",
                       "dist_C (mi)", "tt_M (s)","dist_M (mi)", "tt_F (s)","dist_F (mi)", "tt_W (s)",
-                      "dist_W (mi)","agent_M_tot_wait_time (s)","agent_F_tot_wait_time (s)","out_of_pock_cost ($)","tt_saved_with_micro (s)",
+                      "dist_W (mi)","agent_M_tot_wait_time (s)","agent_F_tot_wait_time (s)","out_of_pock_cost ($)","parking_cost ($)","tt_saved_with_micro (s)",
                       "gen_cost_saved_with_micro","mob_logsum_increased_with_micro",
                       "agent_prob (auto,transit)","agent_ran_num","income (USD)","agent_transit_15min_acc"]
 
@@ -133,6 +134,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
         writer_indiv.writeheader()
 
         total_op_cost=0
+        total_parking_cost = 0  # car parking, part of total_op_cost (2026-11-19)
         total_T_revenue = 0
         total_F_revenue = 0
         total_M_revenue = 0
@@ -188,6 +190,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
             dp_time=state.agent_rq_time[rq_id]
 
             total_op_cost+=state.agent_op_cost[rq_id]
+            total_parking_cost += state.agent_parking_cost[rq_id]
             total_mob_increase+=state.mob_logsum_delta[rq_id]
             total_switch_mode+=state.agent_switch_mode[rq_id]
             total_M_wait_time += m_waiting_time
@@ -207,7 +210,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                  "tt_C (s)": c_tt_travel_time,"dist_C (mi)": c_tt_travel_dist,"tt_M (s)":state.agent_M_tot_travel_time[rq_id],
                  "dist_M (mi)": state.ag_VMT_M[rq_id],"tt_F (s)":state.agent_F_tot_travel_time[rq_id],"dist_F (mi)": state.ag_VMT_F[rq_id],
                   "agent_M_tot_wait_time (s)": m_waiting_time,"agent_F_tot_wait_time (s)": f_waiting_time,
-                 "out_of_pock_cost ($)":state.agent_op_cost[rq_id],"tt_saved_with_micro (s)": tt_saved_with_micro,"gen_cost_saved_with_micro": state.gen_cost_delta[rq_id],
+                 "out_of_pock_cost ($)":state.agent_op_cost[rq_id],"parking_cost ($)": state.agent_parking_cost[rq_id],"tt_saved_with_micro (s)": tt_saved_with_micro,"gen_cost_saved_with_micro": state.gen_cost_delta[rq_id],
                  "mob_logsum_increased_with_micro":state.mob_logsum_delta[rq_id],"agent_prob (auto,transit)":state.agent_choice_prob[rq_id],
                  "agent_ran_num": state.agent_ran_num[rq_id],
                  "tt_W (s)": T_walking_time,"dist_W (mi)": state.ag_VMT_W[rq_id],"income (USD)":state.agent_income[rq_id],"agent_transit_15min_acc":state.agent_transit_15min_acc[rq_id]})
@@ -262,10 +265,12 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
         off_micro_tot_F_wait_time=0
         off_micro_avg_F_wait_time=0
         off_micro_total_op_cost=0
+        off_micro_total_parking_cost = 0  # car parking, part of off_micro_total_op_cost (2026-11-19)
         off_micro_tt_gen_cost = 0
 
         for rq_id in state.travel_time_delta:
             off_micro_total_op_cost += base.off_micro_agent_op_cost[rq_id]
+            off_micro_total_parking_cost += base.off_micro_agent_parking_cost[rq_id]
             off_micro_tt_gen_cost += base.off_micro_agent_gen_cost[rq_id]
 
         for rq_id in base.off_micro_agent_tot_walk_time:
@@ -301,7 +306,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
             fieldnames = ["rq_id", "origin","dest", "dp_time","mode","switch_mode","tt (s)","dist (mi)",
                           "tt_C (s)","dist_C (mi)","tt_M (s)","dist_M (mi)",
                           "tt_F (s)","dist_F (mi)","tt_W (s)","dist_W (mi)","agent_M_tot_wait_time (s)",
-                          "agent_F_tot_wait_time (s)","out_of_pock_cost ($)",
+                          "agent_F_tot_wait_time (s)","out_of_pock_cost ($)","parking_cost ($)",
                           "tt_saved_with_micro (s)","gen_cost_saved_with_micro","mob_logsum_increased_with_micro",
                           "agent_prob (auto,transit)","agent_ran_num"]
             writer_indiv_fixed_only = csv.DictWriter(
@@ -361,6 +366,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                      "out_of_pock_cost ($)":
                          base.off_micro_agent_op_cost[
                              rq_id],
+                     "parking_cost ($)": base.off_micro_agent_parking_cost[rq_id],
                      "tt_saved_with_micro (s)": 0,
                      "gen_cost_saved_with_micro": 0,
                      "mob_logsum_increased_with_micro": 0,
@@ -407,11 +413,14 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                          "sub_per_T_pax_mile ($/mi)": off_micro_tt_sub / base.off_micro_VMT_F,"sub_per_M_VMT ($/mi)": 0,
                          "sub_per_F_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT_base),
                          "sub_per_T_VMT ($/mi)": (off_micro_tt_sub) / (transit_tt_VMT_base),
-                         "tt_auto_gas_cost ($)": off_micro_total_op_cost - off_micro_F_revenue,
-                         "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_VMT_auto,
+                         # gas only: the out-of-pocket total without the FRT fares and (since 2026-11-19) parking
+                         "tt_auto_gas_cost ($)": off_micro_total_op_cost - off_micro_F_revenue - off_micro_total_parking_cost,
+                         "auto_gas_cost_per_mile ($/mi)": (off_micro_total_op_cost - off_micro_F_revenue - off_micro_total_parking_cost) / base.off_micro_VMT_auto,
                          "avg_M_fare": 0,"avg_F_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
                          "avg_T_fare": np.nan if pure_F_users==0 else off_micro_F_revenue / (pure_F_users),
-                         "avg_auto_gas_cost": (off_micro_total_op_cost - off_micro_F_revenue) / base.off_micro_auto_trips,
+                         "avg_auto_gas_cost": (off_micro_total_op_cost - off_micro_F_revenue - off_micro_total_parking_cost) / base.off_micro_auto_trips,
+                         "tt_auto_parking_cost ($)": off_micro_total_parking_cost,
+                         "avg_auto_parking_cost": off_micro_total_parking_cost / base.off_micro_auto_trips,
                          "tt_o_pckt_cost ($)": off_micro_total_op_cost,"tt_mob_lgsm_inc_with_micro": 0,
                          "tt_gen_cost": off_micro_tt_gen_cost,"tt_mode_switch": 0,
                          "M_avg_wait_time (s)": 0,"F_avg_wait_time (s)": off_micro_avg_F_wait_time,
@@ -484,8 +493,10 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
           "sub_per_F_trip ($)":F_sub_per_ridership,"sub_per_F_rider ($)":sub_per_F_rider, "sub_per_M_trip ($)":M_sub_per_ridership,"sub_per_M_rider ($)":sub_per_M_rider,"sub_per_T_trip ($)":tt_sub_per_ridership,
           "sub_per_T_rider ($)":tt_sub/(totals.pure_F_user+totals.pure_M_user+totals.M_F_user),"sub_per_M_pax_mile ($/mi)":(M_mode_operating_cost-M_revenue)/(totals.VMT_M),"sub_per_F_pax_mile ($/mi)":sub_per_F_pax_mile,"sub_per_T_pax_mile ($/mi)":(tt_sub)/(totals.VMT_M+totals.VMT_F),
           "sub_per_M_VMT ($/mi)": (M_mode_operating_cost - M_revenue) / (total_vmt),"sub_per_F_VMT ($/mi)": (F_oper_cost - F_revenue)/(transit_tt_VMT),"sub_per_T_VMT ($/mi)": (tt_sub) / (total_vmt + transit_tt_VMT),
-          "tt_auto_gas_cost ($)":total_op_cost-(F_revenue+M_revenue),"auto_gas_cost_per_mile ($/mi)":(total_op_cost-(F_revenue+M_revenue))/totals.VMT_auto,
-           "avg_M_fare": avg_M_fare, "avg_F_fare":avg_F_fare,"avg_T_fare":avg_T_fare, "avg_auto_gas_cost":(total_op_cost-(F_revenue+M_revenue))/totals.num_car_trips,
+          # gas only: the out-of-pocket total without the transit fares and (since 2026-11-19) parking
+          "tt_auto_gas_cost ($)":total_op_cost-(F_revenue+M_revenue)-total_parking_cost,"auto_gas_cost_per_mile ($/mi)":(total_op_cost-(F_revenue+M_revenue)-total_parking_cost)/totals.VMT_auto,
+           "avg_M_fare": avg_M_fare, "avg_F_fare":avg_F_fare,"avg_T_fare":avg_T_fare, "avg_auto_gas_cost":(total_op_cost-(F_revenue+M_revenue)-total_parking_cost)/totals.num_car_trips,
+          "tt_auto_parking_cost ($)": total_parking_cost, "avg_auto_parking_cost": total_parking_cost / totals.num_car_trips,
           "tt_o_pckt_cost ($)": total_op_cost,"tt_mob_lgsm_inc_with_micro": total_mob_increase,"tt_gen_cost":tt_gen_cost,
           "tt_mode_switch": total_switch_mode, "M_avg_wait_time (s)": avg_M_wait_time,
           "F_avg_wait_time (s)": avg_F_wait_time, "avg_walk_time (s)":avg_walk_time,"tt_walk_time (h)":total_walk_time/3600,
