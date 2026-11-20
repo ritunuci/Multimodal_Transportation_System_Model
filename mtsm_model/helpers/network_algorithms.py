@@ -76,10 +76,36 @@ class Agent(object):
         self.parking_dur = parking_dur
 
 
+# Optional columns of the demand file (2026-11-19). If a column is missing, every traveler gets the default and one
+# notice is printed; if it is there, every value must be a number. (The demand generator in pre_process/ writes no
+# parking_dur_min column.)
+OPTIONAL_DEMAND_COLUMNS = {
+    # column: (default, what the default means)
+    "parking_dur_min": (0.0, "parking duration 0 for every traveler (no parking cost)"),
+    "transit_15min_acc": (None, "agent_transit_15min_acc is left empty in the individual results"),
+    "transit_pass": (None, "not set (the model does not use it)"),
+}
+
+
+def demand_value(data, column, convert, request_file, line_number):
+    """The value of an optional demand column in one row (data: a csv.DictReader row): the default if the file has no
+    such column, else the converted value; stops with the row's line number if the value is empty or not a number."""
+    if column not in data:
+        return OPTIONAL_DEMAND_COLUMNS[column][0]
+    value = data[column]
+    try:
+        return convert(value)
+    except (TypeError, ValueError):
+        raise ValueError("%s, line %d: %s = '%s' is not a number" % (request_file, line_number, column, value))
+
+
 def read_request(request_file):
     with open(request_file) as f:
         csvreader = csv.DictReader(f)
         agent_list = []
+        for column, (default, meaning) in OPTIONAL_DEMAND_COLUMNS.items():
+            if column not in (csvreader.fieldnames or []):
+                print("Note: the demand file has no column %s: %s (%s)" % (column, meaning, request_file))
 
         #rq_time	start	end	request_id	bt_0	bt_wk	bt_wt	bt_m_ivt	bt_f_ivt	bt_f_trfer	bt_fr
 
@@ -107,9 +133,10 @@ def read_request(request_file):
             bt_t_fr = float(data["bt_t_fr"])
 
             income = int(float(data["income"]))
-            transit_15min_acc = float(data["transit_15min_acc"])
-            transit_pass = int(float(data["transit_pass"]))
-            parking_dur = float(data["parking_dur_min"])
+            # optional columns (OPTIONAL_DEMAND_COLUMNS); csvreader.line_num: the file line of this row
+            transit_15min_acc = demand_value(data, "transit_15min_acc", float, request_file, csvreader.line_num)
+            transit_pass = demand_value(data, "transit_pass", lambda v: int(float(v)), request_file, csvreader.line_num)
+            parking_dur = demand_value(data, "parking_dur_min", float, request_file, csvreader.line_num)
 
             agent_ = Agent(rq_id=request_id, rq_O=start, rq_D=end, rq_time=rq_time, bt_c_0=bt_c_0, bt_c_ivt=bt_c_ivt,
                            bt_c_gas=bt_c_gas,bt_t_0=bt_t_0, bt_t_wk=bt_t_wk, bt_m_wt=bt_m_wt,bt_f_wt=bt_f_wt,bt_m_ivt=bt_m_ivt,

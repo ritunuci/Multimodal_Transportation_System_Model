@@ -91,7 +91,7 @@ class TravelerState:
     agent_gen_cost: OrderedDict = _od()  # generalized cost of the chosen mode
 
     agent_income: OrderedDict = _od()
-    agent_transit_15min_acc: OrderedDict = _od()
+    agent_transit_15min_acc: OrderedDict = _od()  # None (written empty) if the demand file has no such column
 
 
 @dataclass

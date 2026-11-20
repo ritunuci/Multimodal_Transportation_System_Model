@@ -1097,6 +1097,21 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   as before ($1 / $0.5 per 30 min), and the generalized cost is the same to the last digit (x 1 and x 0.5 are exact).
   `MANIFEST.csv` rewritten again.
 
+## Optional demand columns (2026-11-19)
+
+- User's request: a demand file may lack the parking duration column (the demand generator in `pre_process/` writes
+  none); then the parking duration is 0. `transit_15min_acc` (only copied to the individual results) and
+  `transit_pass` (read, not used) stay (user's decision), but may also be missing.
+- `network_algorithms.read_request`: `OPTIONAL_DEMAND_COLUMNS` lists the three columns with their defaults:
+  `parking_dur_min` 0.0, `transit_15min_acc` and `transit_pass` None (`agent_transit_15min_acc` is then written empty
+  in the individual results). A missing column prints one notice; a column that is there must have a number in every
+  row, otherwise the run stops with the file line (user agreed: an empty cell is an error, not 0). The other columns
+  are still required.
+- Checked on copies of the demand file: without each column, and without all three, every traveler gets the default
+  and all other attributes equal those from the frozen file; an empty or non-numeric value stops with the line.
+- Full run with the frozen inputs: no notice (the frozen demand file has all three columns); `compare_reference.py`
+  **32 identical, `REPRODUCED`**.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
