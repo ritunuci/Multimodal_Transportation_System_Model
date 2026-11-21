@@ -54,6 +54,7 @@ Paths are relative to the codebase root.
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Open | 2026-11-16 |
+| I-33 | Walking, virtual stops and FRT stops are not kept off the freeways | Medium | Open | 2026-11-20 |
 
 ---
 
@@ -370,6 +371,50 @@ Paths are relative to the codebase root.
   the "trend" is mostly flat. The new request ids start at 60005; the largest id in the demand data is 15047, so
   they do not clash. Whether `update_network_files` mixes the synthetic requests into the waiting times it writes
   to the final networks was not checked.
+
+### I-33: Walking, virtual stops and FRT stops are not kept off the freeways
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-20 (user: the walk mode needs to stay off the freeways).
+- **What:** the walk links (type 0) are a copy of every road edge (`pre_process/build_super_network.py`, `build`:
+  `add(a, b, dist, dist / walk_speed, WALK)` for each edge; it rebuilds the frozen networks with the same links, so
+  the old notebook did the same).
+  Nothing removes the freeways, so a walk path can run along a freeway or its ramps. In the same way the virtual
+  stops (microtransit boarding, `virtual_stops`: drawn from all walk nodes or read from a file) and the walk node an
+  FRT stop is joined to (`nearest_walk_nodes`: the nearest of all walk nodes) can be a node on a freeway.
+- **User's requirement 2026-11-20:** a future road network will mark which links are freeways. With it, no one
+  walks on a freeway link, and neither the virtual stops nor the FRT stops are at freeway nodes.
+- **What the frozen inputs show** (checked 2026-11-20 with a read-only script in the session scratchpad):
+  - The road network (FleetPy's `edges.csv`, 2,816 edges) has no road type, only distance and car travel time. The
+    car speed is the only clue: 90 edges at 60 mph (22.2 km) and 14 at 50 mph (4.5 km); the next speed down is
+    45 mph (28 edges). 102 edges (26.3 km) are at 50 mph or more.
+  - All 102 are walk links in the super-networks (e.g. `base_super_network_lemon_grove_micro_hw_10_virstop_75.csv`:
+    2,808 walk links = the 2,816 edges less 8 duplicate pairs).
+  - 62 nodes lie on these edges; 52 of them also lie on slower roads (where a walker can get on and off). No trip
+    starts or ends at one of the other 10, and no FRT stop is joined to any of the 62. 83 trip starts and 74 trip
+    ends (of 3,742) are at nodes that touch a fast edge.
+  - Virtual stops: each microtransit super-network (`base_...micro_hw_10_virstop_75.csv` and the 16
+    `initial_super_network_micro_hw_*_virstop_75.csv`) has the same 815; 48 are at nodes that touch a fast edge, 8 of
+    them at nodes that lie only on fast edges (a rider set down there can leave only along the freeway).
+  - `edges_all_infos.geojson` in the same folder has a `road_type` column, but it is not the Lemon Grove network:
+    11,366 features in EPSG:32632 with German stop names; none matches an edge of `edges.csv`. It looks like a
+    leftover of FleetPy's example data (see I-10).
+- **Impact:** not known. The outputs do not show which walk links the reference's paths use (the ridership files
+  have FRT links only), so it was not checked whether any traveler walks on these edges. If one does, the walk time
+  and the transit generalized cost of that traveler are too low (a freeway is a short, direct line), and so is the
+  transit share. The same walk links are in the accessibility networks. A microtransit ride to or from one of the 8
+  virtual stops above ends where only a freeway walk leads on.
+- **To do (when the road network with freeway links is there; I-31 also waits for the raw files):**
+  - `build_super_network.py` reads the freeway mark from the road edges (e.g. a column `is_freeway`, 0/1).
+  - No walk link for a freeway edge. The car links and the microtransit links (the vehicles) keep them.
+  - A freeway node: a node whose links are all freeway links (it has no walk link left). It is never a virtual stop
+    (left out of the share draw; a virtual stop file that names one stops the run with an error) and never the walk
+    node of an FRT stop (the nearest walk node that is not a freeway node).
+  - To decide: nodes where a freeway link meets a street (ramp ends; 52 in the frozen network if the fast edges are
+    the freeways, 40 of them virtual stops). They keep their street walk links; whether they may be virtual stops or
+    FRT stop nodes is open.
+  - Also check: no trip of the demand file starts or ends at a freeway node (`pre_process/generate_demand_files.py`,
+    `map_mgra_to_nodes`, maps the zones to nodes), the walk network stays connected, and every trip end and stop can be reached on foot.
+  - Changes the networks and so the results: belongs to a new reference. Until the new network exists, the car
+    speed (e.g. 50 mph or more) is the only way to find the freeways in the frozen inputs.
 
 ---
 
