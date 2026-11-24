@@ -63,6 +63,7 @@ Paths are relative to the codebase root.
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Open | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
+| I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
 
 ---
 
@@ -385,6 +386,13 @@ Paths are relative to the codebase root.
   network that reaches every street node.
   - Lemon Grove: 2,574 of 2,601 edges; 1,047 street nodes + 20 freeway nodes.
   - Downtown: 2,154 of 2,255 edges; 730 street nodes + 70 freeway nodes.
+- **Found 2026-11-24** (Phase 7 of `docs/study_area_plan.md`, reading `TRA_input_data_prep`'s README for the
+  README section "Add your own study area"): the networks built with freeways do not run in MTSM yet. Their freeway
+  nodes keep their numbers but have no microtransit link (type 4), and `config.derive_node_numbering` requires the
+  type-4 nodes to be exactly `M..M+N-1` (and takes `M` as the smallest of them); the run stops at startup. Taking in
+  the new networks therefore also means relaxing that rule (type-4 nodes a subset of `M..M+N-1`, `M` found another
+  way) and the checker's node rules with it. Until then the README tells users of `TRA_input_data_prep` to build the
+  streets-only network (`--no-freeways`). Not run: no `TRA_input_data_prep` outputs are in this repository.
 - **Closes when** the new builder is in MTSM's `pre_process/` and the networks built with it are in use (a new
   reference; see I-34 and I-35).
 
@@ -670,6 +678,21 @@ Paths are relative to the codebase root.
 - **Impact:** none on results; changing an operator setting needs a code change, and the values are in two places.
 - **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
   from one place.
+
+### I-42: The optimizer works only on the study area of the frozen model file
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 7 of `docs/study_area_plan.md`, writing the README
+  section "Add your own study area"). Recorded on the user's decision (Phase 7 decision 6): documented now, fixed later.
+- **What:** `Bayesian_optimization_script.py` takes the study area from the frozen model file
+  (`STUDY_AREA = config.PARAMETERS[gp.G_STUDY_AREA]`) and writes each candidate's parameter file as a copy of the
+  frozen file (`config.FROZEN_CONSTANT_CONFIG_FILE`), so a candidate's `study_area` is always the frozen file's
+  (`lemon_grove`). Its output folder name is fixed: `folder_name = "LG_submission_results_R2"`, inside
+  `mtsm_data/<area>/optimization_output/`.
+- **Impact:** none on results. To optimize another area, a user sets `study_area` in the frozen model file and rewrites
+  the manifests (README, "Add your own study area"); Lemon Grove then no longer reproduces the reference until the
+  value is set back. Another area's results go to a folder named `LG_submission_results_R2`.
+- **Fix (later):** an optimizer option `--config <file>`: the base file of the candidates' copies (and so the study
+  area); the output folder named after the area or by an option. A code change: full run `REPRODUCED` and a short
+  optimizer run.
 
 ---
 

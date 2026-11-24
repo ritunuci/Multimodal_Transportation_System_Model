@@ -1448,6 +1448,20 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `study_area_inputs.md` (consistency rules), `README.md` (tools), the plan.
 - Full run: **`REPRODUCED`** (26 files). Phase 4 is complete.
 
+## Phase 7: README section "Add your own study area" (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 7 decisions (user, 2026-11-24). Docs only; no code changed, no run.
+- `README.md`: new section "Add your own study area" (seven steps: inputs, area parameters, FleetPy settings, input
+  check, manifest, run with a copy of the model file, results; how to optimize another area; tested with Lemon Grove
+  only) with a subsection on `TRA_input_data_prep` (its outputs mapped to this model's files, what it does not write,
+  its streets-only network until I-33). The introduction presents Lemon Grove as the shipped example; output paths
+  written as `mtsm_data/<area>/...`; the documentation list names the two study-area documents.
+- `docs/study_area_inputs.md`: marked final; the old-name column of "The files", the Lemon Grove values once in the
+  code, decisions A-G and the draft status moved unchanged to "History" at the end; manifest count corrected (16
+  files, not 40).
+- `docs/open_issues.md`: new I-42 (the optimizer works only on the frozen file's study area; fixed folder name); I-33:
+  `TRA_input_data_prep`'s networks with freeways do not fit the node-numbering rule yet (found reading its README).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

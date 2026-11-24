@@ -325,3 +325,24 @@ Done 2026-11-24 (`docs/progress.md`, "Phase 4: input checker"). Phase 4 complete
 The user skips the synthetic test area for now. The decisions listed for it (how the files are made, shape, traveler
 attributes, name, how it is run, its parameters, reference, optimizer) are not taken. Downtown San Diego (I-34) stays
 open.
+
+### Phase 7: decisions (user, 2026-11-24)
+
+1. (a) A short README section "Add your own study area" with numbered steps; the details stay in
+   `docs/study_area_inputs.md`.
+2. The steps as proposed: inputs, area parameters, FleetPy settings, `check_study_area.py`, manifest (optional), run
+   with a copy of the model file, results.
+3. Yes: point to `TRA_input_data_prep`, with its outputs mapped to this model's files and what it does not write.
+4. Yes: the README presents Lemon Grove as the shipped example; output paths written as `mtsm_data/<area>/...`.
+5. (a) The README says the steps were tested with Lemon Grove only (Phase 6 skipped).
+6. As recommended: document now how to optimize another area (set `study_area` in the frozen model file, rewrite the
+   manifests); the optimizer's `--config` base file and its fixed folder name later: I-42.
+7. (a) `docs/study_area_inputs.md` marked final; its history moved unchanged to a "History" section at the end; the
+   manifest count corrected (16 files, not 40).
+8. Docs only: one commit, no run.
+
+Found while writing: `TRA_input_data_prep`'s networks with freeways give the freeway nodes no microtransit link, which
+the node-numbering rule does not allow yet; recorded in I-33; the README points to its streets-only network.
+
+Done 2026-11-24 (`docs/progress.md`, "Phase 7: README section Add your own study area"). Phase 7 complete. Of the plan,
+Phase 5 was dropped (decision 1) and Phase 6 is skipped for now.

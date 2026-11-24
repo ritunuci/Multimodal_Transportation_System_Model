@@ -9,8 +9,10 @@ searches the design parameters for the trade-off between operator subsidy and tr
 The microtransit service is simulated with [FleetPy](https://github.com/TUM-VT/FleetPy) (TU Munich), which is
 included in `fleetpy/`.
 
-**Study area of this repository: Lemon Grove (San Diego County).** An earlier downtown San Diego configuration was
-removed on 2026-11-08; the last version that has it is tagged `last-with-downtown-sd`. The one-time preprocessing in
+**Study areas.** The model runs any study area whose inputs follow
+[`docs/study_area_inputs.md`](docs/study_area_inputs.md) (see [Add your own study area](#add-your-own-study-area)).
+The repository ships one, Lemon Grove (San Diego County), as the worked example. An earlier downtown San Diego
+configuration was removed on 2026-11-08; the last version that has it is tagged `last-with-downtown-sd`. The one-time preprocessing in
 `pre_process/` still mentions it ([`docs/open_issues.md`](docs/open_issues.md), I-14).
 
 ![MTSM framework](docs/mtsm_framework.png)
@@ -45,7 +47,7 @@ for vehicle repositioning).
 1. **Environment.** Create the locked conda environment as described in [`env/README.md`](env/README.md).
    Do not use `requirements.txt` or FleetPy's own install instructions; they do not match the verified environment.
 2. **Check the inputs.** `python tools/check_inputs.py` must report that all frozen inputs match their manifests
-   (`mtsm_data/MANIFEST.csv`, `mtsm_data/lemon_grove/MANIFEST.csv`).
+   (`mtsm_data/MANIFEST.csv` and one per study area, e.g. `mtsm_data/lemon_grove/MANIFEST.csv`).
 3. **Set the parameters.** They are in two files, one row per parameter,
    `parameter_name,parameter_value,description` (the description is for people; no code reads it):
    - the model file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: the study area (`study_area`),
@@ -62,8 +64,9 @@ for vehicle repositioning).
        python run_examples_new_parking.py --config <file>    # another parameter file
 
    With `--config`, the run prints at startup which values differ from the frozen file.
-   A run takes about 5–7 minutes. Results are written to `mtsm_data/lemon_grove/output/`; the main one is
-   `lemon_grove_evaluation_zonal_partition_False.csv`: one line per metric, with the columns `FRT_only` (the base
+   A Lemon Grove run takes about 5–7 minutes. Results are written to `mtsm_data/<area>/output/` (`<area>`: the
+   parameter `study_area`; Lemon Grove: `mtsm_data/lemon_grove/output/`); the main one is
+   `<area>_evaluation_zonal_partition_False.csv`: one line per metric, with the columns `FRT_only` (the base
    case: FRT only, at `base_frt_headway` and `base_frt_fare`) and `FRT_and_micro` (the scenario of the run).
 5. **Check reproducibility (optional).** With the reference parameters and seed listed in
    [`docs/reference_results/README.md`](docs/reference_results/README.md), `python tools/compare_reference.py` must
@@ -76,10 +79,90 @@ FRT headway, FRT fare, microtransit fares, peak fare factor and transfer discoun
 and the increase in travelers' mobility logsum due to microtransit, both relative to the base case: FRT only, at
 `base_frt_headway` and `base_frt_fare` (so a candidate's shorter FRT headway adds to its subsidy). For each candidate it writes a copy of the frozen
 parameter file with the candidate's values (`<folder_name>/candidate_configs/config_call_NNNN.csv`), runs the model
-with `--config <copy>` and reads the evaluation file by metric name; results go to `mtsm_data/lemon_grove/optimization_output/`.
+with `--config <copy>` and reads the evaluation file by metric name; results go to
+`mtsm_data/<area>/optimization_output/LG_submission_results_R2/` (`<area>`: the frozen file's `study_area`; the
+folder name is fixed in the script, I-42).
 The frozen parameter file is never changed. The script sets `MKL_THREADING_LAYER=SEQUENTIAL` for itself and the model
 runs it starts: without it, numpy's linear algebra crashes in the `fleetpy` env (`docs/open_issues.md`, I-27); the
 model's results do not depend on it.
+
+## Add your own study area
+
+Lemon Grove is the worked example: every file named below exists in `mtsm_data/lemon_grove/`, and copying it is the
+easiest start. [`docs/study_area_inputs.md`](docs/study_area_inputs.md) is the specification: each file's columns
+and units, the node numbering, the link types and the rules that tie the files together. So far these steps have
+been tested with Lemon Grove only; no second study area has been run yet.
+
+1. **Inputs.** Create the folder `mtsm_data/<area>/`, where `<area>` is the study area's name (e.g. `my_city`), with:
+   - `demand/demand.csv`: one row per traveler, with the departure time, the origin and destination walk node, and
+     the traveler's travel coefficients;
+   - in `networks/`: the super-network with microtransit (`super_network_micro_virstop_<v>.csv`), the FRT-only
+     super-network (`super_network_frt.csv`) and the same at the base FRT headway
+     (`super_network_frt_base_headway.csv`), the car network (`car_network.csv`), the FRT links (`frt_links.csv`)
+     and the FRT route table (`frt_routes.csv`); a node file (`nodes.csv`) only with `aggregation = census_track`;
+   - in `fleetpy/data/`: FleetPy's road network (`networks/<area>_example_network/base/` with `nodes.csv`,
+     `edges.csv`, `crs.info`) and the vehicles' start positions
+     (`fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv`).
+
+   All network files use one node numbering (walk nodes `0` to `N - 1`, then the FRT stops, then one microtransit
+   node per walk node): [Node numbering](docs/study_area_inputs.md#node-numbering). Most of these files can be built
+   with `TRA_input_data_prep` (below).
+2. **Area parameters.** Copy `mtsm_data/lemon_grove/area_parameters.csv` into the area folder and set the area's
+   values: base FRT headway and fare, FRT line data, operating costs, fuel and parking prices.
+   `virtual_stop_scenarios` must be the `<v>` in the microtransit super-network's file name.
+3. **FleetPy settings.** Copy Lemon Grove's vehicle type and its two FleetPy constant configs to the same places in
+   the area folder, with `lemon_grove` replaced by `<area>` in the file names:
+   - `fleetpy/data/vehicles/<area>_vehtype.csv`: vehicle capacity and costs (set `vtype_name_full` to
+     `<area>_vehtype`);
+   - `fleetpy/studies/example_study/scenarios/<area>_constant_config_ir_repo.csv` and
+     `<area>_constant_config_ir.csv`: set `network_name` to `<area>_example_network` and `demand_name` to
+     `<area>_example_demand`. FleetPy simulates from `start_time` to `end_time` (s).
+4. **Check the inputs:** `python tools/check_study_area.py <area>` checks the files against the specification and
+   must report no error. Every run does the same at startup and stops on an error.
+5. **Manifest (optional):** `python tools/check_inputs.py --write <area>` records the checksums of the area's inputs
+   in `mtsm_data/<area>/MANIFEST.csv`; a run then warns when an input has changed since.
+6. **Run.** Copy the model file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`, set `study_area` to
+   `<area>` in the copy, and run `python run_examples_new_parking.py --config <copy>` (as in
+   [Running the model](#running-the-model)). The run creates the folders it writes into.
+7. **Results:** `mtsm_data/<area>/output/<area>_evaluation_zonal_partition_False.csv`, the individual results and the
+   FRT ridership files in the same folder.
+
+The optimizer works on the study area of the frozen model file. To optimize another area, set `study_area` in
+`mtsm_data/input_parameter/mtsm_constant_configurations.csv` itself and rewrite the manifests with
+`python tools/check_inputs.py --write <area>`; Lemon Grove then no longer reproduces the reference until the value is
+set back. Not supported yet for any area: `micro_only` (microtransit without FRT) and networks per time period
+([`docs/study_area_inputs.md`](docs/study_area_inputs.md#not-supported-for-a-new-study-area-for-now)).
+
+### Building the inputs with TRA_input_data_prep
+
+[`TRA_input_data_prep`](https://github.com/ritunuci/TRA_input_data_prep) builds the road, FRT and demand inputs from
+SANDAG ABM3 (ActivitySim) outputs in the formats this model reads; for another region its scripts show how. Its
+outputs and the files of this model:
+
+| `TRA_input_data_prep` output (`outputs_MGRA15/<area>/`) | File in `mtsm_data/<area>/` |
+|---|---|
+| `super_network/initial_super_network_micro_hw_<h>_virstop_<v>_<P>.csv` | `networks/super_network_micro_virstop_<v>.csv` |
+| `super_network/initial_super_network_non_micro_hw_<h>_<P>.csv` | `networks/super_network_frt.csv` |
+| the same with `<h>` = `base_frt_headway` | `networks/super_network_frt_base_headway.csv` |
+| `super_network/auto_edges_<P>.csv` | `networks/car_network.csv` |
+| `frt/frt_routes.csv` | `networks/frt_routes.csv` (as it is) |
+| `demand/<area>_trips_nodes_study_area_with_beta.csv` | `demand/demand.csv` (extra columns are ignored) |
+| `fleetpy_network/base/` (`nodes.csv`, `edges.csv`, `crs.info`) | `fleetpy/data/networks/<area>_example_network/base/` |
+| `fleetpy_initial_vehicle_distribution/imbalanced.csv` | `fleetpy/data/fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv` |
+
+- `<P>`: `TRA_input_data_prep` writes one set per time period; this model uses one network for the whole day, so take
+  one period's set (I-35). The headway `<h>` of the first two files does not matter: the run sets the FRT boarding
+  times for each scenario's headway.
+- Not written by `TRA_input_data_prep`: `area_parameters.csv` (step 2), the FleetPy vehicle type and constant configs
+  (step 3), the node file (only for `census_track`) and `networks/frt_links.csv`: the FRT in-vehicle links (type 1)
+  of the microtransit super-network, with the column `distance` named `distance (meters)`
+  ([`docs/study_area_inputs.md`](docs/study_area_inputs.md#6-frt-links-networksfrt_linkscsv)).
+- Freeways: with freeways, `TRA_input_data_prep` keeps walking and microtransit off them, so the freeway nodes have no
+  microtransit link. This model's node numbering does not allow that yet (I-33): use its streets-only network
+  (`--no-freeways`).
+- The model derives the node counts from the files; `super_network_info.csv` is not needed. Lemon Grove's demand
+  from `TRA_input_data_prep` has no `parking_dur_min`; without it the car has no parking cost.
+- Not tested yet: a run on `TRA_input_data_prep`'s outputs (Lemon Grove's inputs were built before it).
 
 ## Repository layout
 
@@ -155,6 +238,9 @@ this structure, and what was checked to keep the results identical, is in
 - [`docs/progress.md`](docs/progress.md): what was changed to make the model reproducible and self-contained, and
   how to continue work in a fresh clone. Read this first.
 - [`docs/open_issues.md`](docs/open_issues.md): known open issues.
+- [`docs/study_area_inputs.md`](docs/study_area_inputs.md): what a study area must supply (the input specification);
+  [`docs/study_area_plan.md`](docs/study_area_plan.md): how the model was made to run any study area, and the
+  decisions.
 - [`docs/reference_results/README.md`](docs/reference_results/README.md): the reference run and how to compare with it.
 - [`env/README.md`](env/README.md): the environment, and what it cannot pin (OS, CPU, Gurobi license).
 

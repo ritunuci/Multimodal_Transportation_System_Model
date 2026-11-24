@@ -1,7 +1,8 @@
 # Study-area inputs: what a study area must supply
 
-Status: **draft** (Phase 0 of `docs/study_area_plan.md`; written 2026-11-24 against the code after step A, the
-accessibility removal). Decisions A-G made 2026-11-24 (section "Decisions (user, 2026-11-24)" at the end).
+Status: **final** (2026-11-24, Phase 7 of `docs/study_area_plan.md`): the inputs the code reads after Phases 1-4.
+How this file came about (the Phase 0 draft, the Lemon Grove file names until 2026-11-24, decisions A-G) is in
+"History" at the end.
 
 This file is the contract between a user and the model: the files a study area supplies, their columns and units, and
 the rules that tie them together. It follows the user's decisions of 2026-11-24 (`docs/study_area_plan.md`): the user
@@ -9,32 +10,30 @@ supplies **finished super-networks** (decision 1), the node counts are **derived
 files have **generic names inside the area folder** (decision 4), and there is **one network for the whole day**
 (decision 8; per-period networks come with I-35).
 
-The names below are the **target names** (after Phases 1-3 of the plan). Since 2026-11-24 (Phase 1 step 2) Lemon
-Grove's inputs have them, except the area file (step 3); the table "The files" also gives the names they had until
-then. Lemon Grove is the worked example throughout.
+Lemon Grove is the worked example throughout.
 
 ## The files
 
 A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's name, e.g. `lemon_grove`.
 
-| # | Target file in `mtsm_data/<area>/` | Lemon Grove file until 2026-11-24 | Required |
-|---|---|---|---|
-| 1 | `area_parameters.csv` | (part of `input_parameter/mtsm_constant_configurations.csv`) | yes |
-| 2 | `demand/demand.csv` | `demand_data/lemon_grove_trips_nodes_study_area_with_beta.csv` | yes |
-| 3 | `networks/super_network_micro_virstop_<v>.csv` | `initial_network/base_super_network_lemon_grove_micro_hw_10_virstop_75.csv` | yes |
-| 4 | `networks/super_network_frt.csv` | `initial_network/base_super_network_lemon_grove_non_micro_hw_10.csv` | yes |
-| 5 | `networks/car_network.csv` | `initial_network/auto_edges.csv` | yes |
-| 6 | `networks/frt_links.csv` | `transit/super_network_transit_edges.csv` | yes (decision B) |
-| 7 | `networks/nodes.csv` | `transit/network_folder/pre_nodes.csv` | only with `aggregation = census_track` (decision G) |
-| 8 | `fleetpy/...` (FleetPy's own folder layout) | `fleetpy_inputs/...` | yes |
-| 9 | `networks/super_network_frt_base_headway.csv` | `initial_network/initial_super_network_non_micro_hw_20.csv` | yes (decision C) |
-| 10 | `networks/frt_routes.csv` | (new 2026-11-24; the line lengths were computed from file 6) | yes (Phase 3) |
+| # | File in `mtsm_data/<area>/` | Required |
+|---|---|---|
+| 1 | `area_parameters.csv` | yes |
+| 2 | `demand/demand.csv` | yes |
+| 3 | `networks/super_network_micro_virstop_<v>.csv` | yes |
+| 4 | `networks/super_network_frt.csv` | yes |
+| 5 | `networks/car_network.csv` | yes |
+| 6 | `networks/frt_links.csv` | yes (decision B) |
+| 7 | `networks/nodes.csv` | only with `aggregation = census_track` (decision G) |
+| 8 | `fleetpy/...` (FleetPy's own folder layout) | yes |
+| 9 | `networks/super_network_frt_base_headway.csv` | yes (decision C) |
+| 10 | `networks/frt_routes.csv` | yes (Phase 3) |
 
 Shared by all study areas: the model parameter file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`
 (decision 2: one shared model file plus the small area file 1; the split is decision A).
 
 Optional: `MANIFEST.csv` in the area folder, the checksums of the area's inputs (`python tools/check_inputs.py --write
-<area>`). When it exists, a run warns if an input has changed since. Lemon Grove has one (40 files).
+<area>`). When it exists, a run warns if an input has changed since. Lemon Grove has one (16 files).
 
 Each file is a comma-separated text file with a header row. Column names must be exactly as given.
 
@@ -289,7 +288,40 @@ In `mtsm_data/<area>/`: the scenario networks (`initial_super_network_micro_hw_<
 statistics per iteration (`indiv_output/`), and the results (`output/`: the evaluation file, the individual results
 and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and FleetPy's results.
 
-## Lemon Grove values in the code (not inputs; removed in Phases 1-3)
+## Not supported for a new study area (for now)
+
+- `micro_only` (microtransit without FRT): it needs a network `initial_super_network_micro_only_virstop_<v>.csv`
+  that no study area has (I-13).
+- Networks per time period (I-35).
+
+## History
+
+Moved here unchanged on 2026-11-24 (Phase 7, decision 7), when the file was marked final.
+
+- Status line until then: Status: **draft** (Phase 0 of `docs/study_area_plan.md`; written 2026-11-24 against the code
+  after step A, the accessibility removal). Decisions A-G made 2026-11-24 (section "Decisions (user, 2026-11-24)" at
+  the end).
+- Until then the introduction said: The names below are the **target names** (after Phases 1-3 of the plan). Since
+  2026-11-24 (Phase 1 step 2) Lemon Grove's inputs have them, except the area file (step 3); the table "The files"
+  also gives the names they had until then. Lemon Grove is the worked example throughout.
+- The manifest count above said 40 files until 2026-11-24; Lemon Grove's manifest has 16.
+
+### The files, with the Lemon Grove names until 2026-11-24
+
+| # | Target file in `mtsm_data/<area>/` | Lemon Grove file until 2026-11-24 | Required |
+|---|---|---|---|
+| 1 | `area_parameters.csv` | (part of `input_parameter/mtsm_constant_configurations.csv`) | yes |
+| 2 | `demand/demand.csv` | `demand_data/lemon_grove_trips_nodes_study_area_with_beta.csv` | yes |
+| 3 | `networks/super_network_micro_virstop_<v>.csv` | `initial_network/base_super_network_lemon_grove_micro_hw_10_virstop_75.csv` | yes |
+| 4 | `networks/super_network_frt.csv` | `initial_network/base_super_network_lemon_grove_non_micro_hw_10.csv` | yes |
+| 5 | `networks/car_network.csv` | `initial_network/auto_edges.csv` | yes |
+| 6 | `networks/frt_links.csv` | `transit/super_network_transit_edges.csv` | yes (decision B) |
+| 7 | `networks/nodes.csv` | `transit/network_folder/pre_nodes.csv` | only with `aggregation = census_track` (decision G) |
+| 8 | `fleetpy/...` (FleetPy's own folder layout) | `fleetpy_inputs/...` | yes |
+| 9 | `networks/super_network_frt_base_headway.csv` | `initial_network/initial_super_network_non_micro_hw_20.csv` | yes (decision C) |
+| 10 | `networks/frt_routes.csv` | (new 2026-11-24; the line lengths were computed from file 6) | yes (Phase 3) |
+
+### Lemon Grove values in the code (not inputs; removed in Phases 1-3)
 
 - `microtransit.py`: FleetPy's result check `{"number users": 88}`.
 - `fleetpy_runner.create_config_files`: the vehicle type name `lemon_grove_vehtype`.
@@ -297,13 +329,7 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
 - 2026-11-24: all three removed (paths in Phase 1 step 1; the branches, the vehicle type name and the check of 88
   users in Phase 2 step 1).
 
-## Not supported for a new study area (for now)
-
-- `micro_only` (microtransit without FRT): it needs a network `initial_super_network_micro_only_virstop_<v>.csv`
-  that no study area has (I-13).
-- Networks per time period (I-35).
-
-## Decisions needed
+### Decisions needed
 
 - **A. Parameter split** (decision 2). Proposed above for the area file: the study area's name, its virtual-stop
   share, its base FRT service (headway, fare) and its FRT line data (operating hours, speed, dwell, dead-end time).
@@ -338,7 +364,7 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
   - (a) Require only `node_in_fleetpy` and `census_tract` (recommended; the other columns may be there).
   - (b) Keep requiring all of Lemon Grove's columns.
 
-## Decisions (user, 2026-11-24)
+### Decisions (user, 2026-11-24)
 
 - **A:** yes; the local prices and costs go to the area file too (section 1).
 - **B:** (a) keep the FRT links file (6) as an input.
