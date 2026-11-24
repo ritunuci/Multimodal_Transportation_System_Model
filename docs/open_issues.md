@@ -54,8 +54,9 @@ Paths are relative to the codebase root.
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Open | 2026-11-16 |
-| I-33 | Walking, virtual stops and FRT stops are not kept off the freeways | Medium | Open | 2026-11-20 |
+| I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Open | 2026-11-23 |
+| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | Open | 2026-11-23 |
 
 ---
 
@@ -373,8 +374,10 @@ Paths are relative to the codebase root.
   they do not clash. Whether `update_network_files` mixes the synthetic requests into the waiting times it writes
   to the final networks was not checked.
 
-### I-33: Walking, virtual stops and FRT stops are not kept off the freeways
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-20 (user: the walk mode needs to stay off the freeways).
+### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
+- **Status:** In progress (since 2026-11-23: decided; the builder change and the networks built with it are not in
+  MTSM yet). **Severity:** Medium. **Found:** 2026-11-20 (user: the walk mode needs to stay off the freeways).
+  Title until 2026-11-23: "Walking, virtual stops and FRT stops are not kept off the freeways".
 - **What:** the walk links (type 0) are a copy of every road edge (`pre_process/build_super_network.py`, `build`:
   `add(a, b, dist, dist / walk_speed, WALK)` for each edge; it rebuilds the frozen networks with the same links, so
   the old notebook did the same).
@@ -403,7 +406,8 @@ Paths are relative to the codebase root.
   and the transit generalized cost of that traveler are too low (a freeway is a short, direct line), and so is the
   transit share. The same walk links are in the accessibility networks. A microtransit ride to or from one of the 8
   virtual stops above ends where only a freeway walk leads on.
-- **To do (when the road network with freeway links is there; I-31 also waits for the raw files):**
+- **To do as written 2026-11-20** (superseded by the decisions of 2026-11-23 below; microtransit now also stays off
+  the freeways, and the ramp-end nodes are decided):
   - `build_super_network.py` reads the freeway mark from the road edges (e.g. a column `is_freeway`, 0/1).
   - No walk link for a freeway edge. The car links and the microtransit links (the vehicles) keep them.
   - A freeway node: a node whose links are all freeway links (it has no walk link left). It is never a virtual stop
@@ -416,6 +420,41 @@ Paths are relative to the codebase root.
     `map_mgra_to_nodes`, maps the zones to nodes), the walk network stays connected, and every trip end and stop can be reached on foot.
   - Changes the networks and so the results: belongs to a new reference. Until the new network exists, the car
     speed (e.g. 50 mph or more) is the only way to find the freeways in the frozen inputs.
+- **The new road networks (2026-11-23):** the road, FRT and demand inputs of Lemon Grove and downtown San Diego are
+  being rebuilt in the input-preparation repository `TRA_input_data_prep` (MGRA15 zones, SANDAG ABM3). Every edge is
+  marked in `<prefix>_edge_kind.csv`: `link_kind` is `street`, `alley` or `driveway` (from SANDAG's Bike_Net), or
+  `freeway`, `fwy_connector` or `ramp` (from SANDAG's TNED network). Freeway and ramp edges are one-way. Every node
+  is marked in `<prefix>_node_kind.csv`: `kind` is `street` or `freeway`.
+- **Decisions (user, 2026-11-23):**
+  - Freeways, freeway-to-freeway connectors and ramps are **car only**: only the car network (`auto_edges.csv`, link
+    type 7) uses them.
+  - **Walking (type 0) and microtransit (type 4) do not use them** (new: the To do of 2026-11-20 kept the
+    microtransit links on the freeways). Both use only the street, alley and driveway edges, which are all two-way.
+  - FleetPy's microtransit network is rebuilt without the freeway edges as well, so that FleetPy and the
+    super-network agree. All nodes are kept, so the node numbers do not change.
+  - Virtual stops are drawn from **all street nodes** (any node with a street, alley or driveway edge), never from
+    freeway nodes. This settles the "To decide" of 2026-11-20: street nodes where a ramp ends keep their walk links
+    and may be virtual stops and FRT stop nodes.
+    - For reference: the old code drew virtual stops from all road nodes, demand node or not. The frozen Lemon Grove
+      75 % networks have 815 virtual stops among the 1,099 walk nodes; 593 of them are demand nodes
+      (`is_demand_node` in `pre_nodes.csv`). 70 % of the trip ends in the demand file are at a virtual stop.
+  - FRT stops are joined only to street nodes. The FRT files written in `TRA_input_data_prep` already give each stop
+    the coordinates of its street node.
+  - Freeway nodes stay in every layer, to keep the numbering (walk node i = microtransit node offset + i = FleetPy
+    node i). They have no walk or microtransit links and no boarding.
+  - How:
+    - `pre_process/build_super_network.py` gets an optional input, e.g. `--local-edges FILE`
+      (`from_node,to_node`): the edges that get walk and microtransit links.
+    - Virtual stops and FRT stop joins are only at nodes on these edges. Car links are on every edge.
+    - Without the option the builder behaves as now, so the frozen networks still reproduce.
+    - The change is written in `TRA_input_data_prep`, which keeps a copy of the builder identical to MTSM `008c6ac`,
+      and is then copied back into MTSM's `pre_process/`.
+- **Checked in `TRA_input_data_prep` (2026-11-23):** the street, alley and driveway edges form one connected two-way
+  network that reaches every street node.
+  - Lemon Grove: 2,574 of 2,601 edges; 1,047 street nodes + 20 freeway nodes.
+  - Downtown: 2,154 of 2,255 edges; 730 street nodes + 70 freeway nodes.
+- **Closes when** the new builder is in MTSM's `pre_process/` and the networks built with it are in use (a new
+  reference; see I-34 and I-35).
 
 ### I-34: Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove
 - **Status:** Open. **Severity:** High (blocks a planned run: downtown San Diego). **Found:** 2026-11-23 (planning the
@@ -436,6 +475,15 @@ Paths are relative to the codebase root.
     one stop in the area (Coaster 398, 598, airport 994) have no link and drop out.
   - **Each stop is joined to a street node** of the new road network (never a freeway node; I-33). The stop's
     `pos_x/pos_y` are that node's coordinates, so `nearest_walk_nodes` finds it at 0 m.
+- **FRT plan, update (2026-11-23, later the same day):**
+  - The stop rule is now "a stop counts if it lies within 50 ft of the study area", so stops on boundary streets
+    count.
+  - As a result the airport route 994 (downtown) and route 851 (Lemon Grove) have links. Only 398 and 598 drop out.
+  - A route's line past its last stop inside the area is not in the network (e.g. the Lemon Grove trolley, route
+    520, west of Massachusetts Av station). Trips inside the area are not affected.
+  - Built 2026-11-23:
+    - Lemon Grove: routes 4, 520, 851, 856, 916, 917, 936; 12 variants, 122 stop nodes, 110 links.
+    - Downtown: 21 routes; 41 variants, 354 stop nodes, 326 links.
 - **What in the model is Lemon Grove only or assumes the old FRT network** (checked at `008c6ac`):
   1. **FRT line length, duration, operating cost, VMT and ridership output.**
      `output_performance_metrics.get_transit_line_dist`, `get_transit_line_duration`, `get_transit_link_info` and
@@ -456,6 +504,8 @@ Paths are relative to the codebase root.
   3. **Parallel links are lost without a message.** `read_super_network` builds an `nx.DiGraph`. A second link with
      the same `(from_node, to_node)` overwrites the first (route, time, link type). The planned FRT network has no
      such pairs. Still, a check that stops on duplicate pairs would catch any input that has them.
+     - 2026-11-23: a test build in `TRA_input_data_prep` with the new inputs has no duplicate `(from_node, to_node)`
+       pairs. The duplicate-link check is still worth adding.
   4. **A route change becomes a transfer.** With stop nodes per route, a change at the same stop is alighting (type
      2, 0 s) and boarding (type 2, half the headway). The boarding pays no new fare, because `transit_fare` is not
      set when the previous link is a waiting link. It adds `bt_f_trfer` when the transfer penalty is on
@@ -470,15 +520,98 @@ Paths are relative to the codebase root.
      - `num_walk_nodes`, `microtransit_node_offset` and `micro_only_max_walk_node` in
        `mtsm_constant_configurations.csv` (I-13);
      - the FleetPy network and staged inputs (`fleetpy_runner.LG_STAGED_INPUTS`).
+  6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
+     - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
+       keep.
+     - Even so, `update_network_files.update_network_files` calls `get_microtransit_skims.get_node_ct(study_area)`.
+       That function reads `pre_nodes.csv` (columns `census_tract`, `node_in_fleetpy`) only from the Lemon Grove
+       folder (`LG_TRANSIT_NETWORK_DIR`; there is no path for other areas), and it looks up a tract for every type-5
+       link.
+     - The new networks' `pre_nodes.csv` (`TRA_input_data_prep`) has these columns, with `census_tract = 0` for every
+       node. The whole-region branch therefore works on them once the path is per area. No census tract data is
+       needed.
+     - In the "micro" branch, the type-5 links are updated only `if study_area == "lemon_grove"`
+       (`update_network_files.py:340`). In any other area they keep the initial 180 s. The micro_only branch uses
+       `micro_only_max_walk_node` (I-13).
 - **Impact:** a downtown San Diego run cannot start (item 1). Once it starts, its FRT and microtransit fares are 0
-  (item 2). In both areas the new FRT network changes transfers (item 4) and needs the line cost fixed (item 1).
+  (item 2), and its microtransit waiting times stay at the initial 180 s (item 6). In both areas the new FRT network
+  changes transfers (item 4) and needs the line cost fixed (item 1).
 - **To do:**
   - make the study area a setting that selects the paths, the node ranges and the FleetPy inputs;
   - remove the `if study_area == "lemon_grove"` branches (fares for every area);
   - compute line length and duration from the new FRT network;
   - add a duplicate-link check to `read_super_network`;
+  - microtransit waiting times for every area (item 6): the `pre_nodes.csv` path per area in `get_node_ct`, and the
+    type-5 update in `update_network_files` without the Lemon Grove condition;
   - rebuild the Lemon Grove reference with the new road and FRT networks;
-  - see also I-14 (downtown code in the old preprocessing), I-24 (transfer fare rules) and I-33 (freeways).
+  - see also I-14 (downtown code in the old preprocessing), I-24 (transfer fare rules), I-33 (freeways) and I-35
+    (one super-network per time period).
+
+### I-35: One super-network for the whole day; MTSM is to use one per time period
+- **Status:** Open. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
+  the input-preparation repository `TRA_input_data_prep`).
+- **Plan (user, 2026-11-23):** MTSM is to use one super-network per time period. `TRA_input_data_prep` builds them,
+  per area and per period, with the modified `build_super_network.py` (I-33):
+  - Periods: the five of SANDAG's ABM3 assignment, EA 3:00-6:00, AM 6:00-9:00, MD 9:00-15:30, PM 15:30-19:00,
+    EV 19:00-3:00. The road link times per period come from ABM3's loaded link times (hwyload files).
+  - What changes between periods:
+    - the microtransit in-vehicle links (type 4 = the period's car time x 1.4);
+    - the car network (`auto_edges`, type 7 = the period's car time).
+  - What does not change: walk (0), FRT in-vehicle (1) and FRT waiting (2) are the same in every period.
+    Microtransit waiting (5) starts at 180 s, as now.
+  - Full grid per period and area, 24 files:
+    - micro: headways 10/15/20/30/60 x virtual-stop shares 50/75/100 (15 files);
+    - non_micro: the 5 headways;
+    - micro_only: the 3 shares;
+    - `auto_edges`.
+  - Walk speed 1.6 m/s (the builder's default is 1.251).
+  - Virtual stops drawn with seed 42. Every period and headway gets the same stops, and a smaller share is a subset
+    of a larger one.
+  - The node numbering (`num_walk_nodes`, `microtransit_node_offset`) is the same in every period.
+  - File names (proposed, to agree): MTSM's current names with the period appended, e.g.
+    `initial_super_network_micro_hw_10_virstop_75_AM.csv` and `auto_edges_AM.csv`.
+- **What in MTSM assumes one network for all periods** (checked at `a912056`):
+  1. **Periods.**
+     - MTSM has four: `time_periods = ["AM", "MD", "PM", "EV"]` in `scenarios.py` and `update_network_files.py`, with
+       the boundaries `config.AM_END` / `MD_END` / `PM_END`. Currently AM runs to 10:00, MD to 15:00, PM to 20:00,
+       then EV.
+     - ABM3 has five, with other boundaries.
+     - The new demand files have requests from 3:00 (Lemon Grove: 281 in EA) and after midnight (`rq_time` past
+       86,400 s).
+     - To decide: switch MTSM to the five ABM3 periods, or map them.
+     - Also found while checking (2026-11-23): `config.PERIOD_HOURS` takes the period lengths from `day_start_h` (5)
+       and `day_end_h` (24), and `output_performance_metrics.all_scenario_micro_acc_calculation` picks its own period
+       list from the microtransit operating hours (10 h: AM, PM; 15 h: AM, MD, PM; else all four). Both name the four
+       periods and need the same decision.
+  2. **Initial networks are keyed by variant, headway and virtual-stop share, not by period.**
+     - `testing_scenario_creation.scen_create` builds the file names.
+     - `paths.networks_for_traveler` uses `initial_super_network["micro"][headway][virstop][M_operating_hrs]` in
+       iteration 0.
+     - It uses the FRT-only network `initial_super_network["non_micro"][BASE_FRT_HEADWAY]` for every period.
+  3. **The car network is one file.** `scenarios.py:108-109` reads `auto_edges.csv` once, and `paths.auto_path` and
+     the micro_only fallback use it in every period.
+  4. **Final networks.** `update_network_files.update_network_files` writes one final network per period, each copied
+     from the same initial network (type 5 = FleetPy's waiting time for the period; type 4 x the period's detour
+     ratio).
+     - With period networks, each final network must start from that period's initial network.
+     - Check whether the detour ratio is still wanted on top of period times. FleetPy's direct route time comes from
+       its own network, which loads period times when `nw_dynamic_f` is set.
+  5. **Headway update.** `update_initial_network.py` sets the headway in the Lemon Grove base networks only (Lemon
+     Grove file names). It must do so in every period's file.
+  6. **Related, FleetPy period times.** `TRA_input_data_prep` writes a FleetPy network folder with period subfolders
+     plus `network_dynamics.csv`.
+     - `fleetpy_runner.LG_STAGED_INPUTS` copies only `base/`.
+     - `fleetpy/src/routing/NetworkBasic.py:249` uses `Series.iteritems()`, which pandas 2 removed.
+- **Impact:** until this is done, MTSM uses one network for the whole day, so car and microtransit times do not vary
+  over the day. Downtown AM link times are about 2.15 x free flow.
+- **To do:**
+  - a period key in the network loaders and in `networks_for_traveler`;
+  - a car network per period;
+  - the period definitions;
+  - final networks per period from the period's initial network;
+  - the headway update in every period file;
+  - a new reference.
+  - See also I-33 and I-34.
 
 ---
 
