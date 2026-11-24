@@ -23,6 +23,9 @@ data files restored from upstream on 2026-11-08 keep upstream's LF.
 edits to `run_examples.py`, one line in `README.md`, and old files added for MTSM that nothing reads (I-11). It
 holds no model parameter or input of MTSM.
 
+**Since 2026-11-23:** the old MTSM files are removed (I-11, closed); `data/` and `studies/` hold only upstream files
+(tracked), plus the git-ignored files that MTSM stages or writes during a run.
+
 ## How MTSM uses FleetPy
 
 - Only `fleetpy_runner.py` (repository root) imports FleetPy. It puts this folder on `sys.path`, because FleetPy
@@ -34,7 +37,8 @@ holds no model parameter or input of MTSM.
   files of the run. The copies are git-ignored. Model inputs belong there, not in this folder.
 - In every iteration, MTSM writes the demand for FleetPy into
   `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` and reads FleetPy's results from
-  `studies/example_study/results/`. Both are git-ignored.
+  `studies/example_study/results/`. Both are git-ignored. The demand folder holds no tracked file; the run creates
+  it at its start (`config.check_run_config`, since 2026-11-23).
 - FleetPy runs in the same Python process as MTSM (see `fleetpy_runner.py` for why).
 
 ## Local changes to code
@@ -64,10 +68,15 @@ FleetPy's original `requirements.txt` (numpy 1.19.5, pandas 1.2.0, ...) is not i
 
 ## Local changes to data
 
-Current state (2026-11-08): `data/` and `studies/` match upstream, except for files added for MTSM that the run
-does not read:
+Current state (2026-11-23): `data/` and `studies/` match upstream; the 91 files below were removed (`git rm`; they
+are in the git history, the last commit that has them is `91c7486`). Before their removal, every tracked file in the
+repository was searched for their names: only the 13 configs (which name the old demand files) and old scripts in
+`standalone_scripts/` refer to them; nothing the model run, the optimizer or `tools/` uses.
 
-- **Added files still here** (not in upstream; none of them is read by the Lemon Grove run; I-11):
+State on 2026-11-08: `data/` and `studies/` matched upstream, except for files added for MTSM that the run does not
+read:
+
+- **Added files** (not in upstream; none of them is read by the Lemon Grove run; I-11; removed 2026-11-23):
   - `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`: 69 old files;
   - `data/demand/example_demand/matched/example_network/`: 9 `lemon_grove_zonal_partition's effect on ...` plots;
   - `studies/example_study/scenarios/`: 13 old scenario configs whose study area is unknown,

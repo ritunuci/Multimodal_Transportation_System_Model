@@ -1112,6 +1112,21 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Full run with the frozen inputs: no notice (the frozen demand file has all three columns); `compare_reference.py`
   **32 identical, `REPRODUCED`**.
 
+## Old MTSM files removed from `fleetpy/` (I-11, 2026-11-23)
+
+- Removed with `git rm` (user's choice: delete; they stay in the git history, last in `91c7486`): 69 old demand files
+  in `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`, 9 Lemon Grove plots in
+  `fleetpy/data/demand/example_demand/matched/example_network/`, and 13 old scenario configs in
+  `fleetpy/studies/example_study/scenarios/` (`example_ir_only_{5,...,50}_veh.csv`, `debug_example_ir_only*.csv`).
+- Checked first: no tracked file the run, the optimizer or `tools/` uses names any of them (only the 13 configs and
+  old scripts in `standalone_scripts/`, left untouched).
+- The run writes FleetPy's demand into the first folder but never created it; with no tracked file left there,
+  `config.check_run_config` now creates `mtsm.LG_FLEETPY_DEMAND_DIR` at the start of a run.
+- `fleetpy/LOCAL_CHANGES.md`: `data/` and `studies/` now match upstream.
+- Full run with `fleetpy/data/demand/lemon_grove_example_demand/` moved away (as in a fresh clone): the folder was
+  recreated; `compare_reference.py` **32 identical, `REPRODUCED`**. The older git-ignored run files of that folder were
+  put back afterwards.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

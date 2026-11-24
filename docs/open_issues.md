@@ -32,7 +32,7 @@ Paths are relative to the codebase root.
 | I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Closed (2026-11-07) | 2026-10-23 |
 | I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | Closed (2026-11-08) | 2026-11-07 |
 | I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | Closed (2026-11-08) | 2026-11-07 |
-| I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Open | 2026-11-07 |
+| I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Closed (2026-11-23) | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
@@ -87,17 +87,6 @@ Paths are relative to the codebase root.
   silently wrong accessibility numbers.
 - **Fix:** take the node list from the network the scenario actually uses. If the node set is unchanged, the reference
   still reproduces; check with a full run and `compare_reference.py`.
-
-### I-11: Old, unused MTSM files inside `fleetpy/`
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-07 (comparison with upstream FleetPy).
-- **What:** files added for MTSM that the current run does not read (updated 2026-11-08, after the downtown San
-  Diego files were deleted): 69 old files in
-  `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`, 9 Lemon Grove plots in
-  `fleetpy/data/demand/example_demand/matched/example_network/`, and 13 old scenario configs of unknown study area
-  (`example_ir_only_N_veh.csv`, `debug_example_ir_only*.csv`). Full list: `fleetpy/LOCAL_CHANGES.md`.
-- **Impact:** none on results; `fleetpy/` is not yet only FleetPy.
-- **Fix:** decided not to do it in the FleetPy separation (D4). Later: move them to an archive (or delete them; they
-  stay in the git history), after checking that no script still needs them.
 
 ### I-12: FleetPy's example a) serves 90 users; its check expects 88
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 1).
@@ -653,6 +642,29 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-11: Old, unused MTSM files inside `fleetpy/`
+- **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-07 (comparison with upstream FleetPy).
+- **What:** files added for MTSM that the current run does not read (updated 2026-11-08, after the downtown San
+  Diego files were deleted): 69 old files in
+  `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/`, 9 Lemon Grove plots in
+  `fleetpy/data/demand/example_demand/matched/example_network/`, and 13 old scenario configs of unknown study area
+  (`example_ir_only_N_veh.csv`, `debug_example_ir_only*.csv`). Full list: `fleetpy/LOCAL_CHANGES.md`.
+- **Impact:** none on results; `fleetpy/` is not yet only FleetPy.
+- **Fix:** decided not to do it in the FleetPy separation (D4). Later: move them to an archive (or delete them; they
+  stay in the git history), after checking that no script still needs them.
+- **Checked 2026-11-23:** every tracked file in the repository was searched for the 91 file names. Only the 13
+  configs (they name the old demand files `fleetpy_demand.csv` and `debug_fleetpy_demand.csv`) and old scripts in
+  `standalone_scripts/` refer to them; nothing the model run, the optimizer or `tools/` uses. The run writes its own
+  FleetPy config (`rq_file = lemon_grove_debug_False_fleetpy_demand.csv`). But the run also writes its FleetPy demand
+  into the first folder and never created it: in a fresh clone the folder existed only because the old files were
+  tracked in it.
+- **Resolution:** the 91 files were removed with `git rm` (user's choice: delete, not archive; the last commit that
+  has them is `91c7486`). `config.check_run_config` now also creates `mtsm.LG_FLEETPY_DEMAND_DIR` at the start of a
+  run. `fleetpy/LOCAL_CHANGES.md` updated. Checked as in a fresh clone: with the whole
+  `fleetpy/data/demand/lemon_grove_example_demand/` folder moved away, a full run recreated it and
+  `compare_reference.py` printed `REPRODUCED` (32 identical). `standalone_scripts/` still names some of the files
+  (left untouched on purpose).
 
 ### I-03: The optimizer has not been run since the changes
 - **Status:** Closed (2026-11-13). **Severity:** Medium. **Found:** 2026-10-23 (Phases 1c and 2b).
