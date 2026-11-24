@@ -2,7 +2,8 @@
 (restructuring step 6, docs/entry_script_refactor_plan.md).
 
 Moved unchanged from run_examples_new_parking.py, including the commented-out "Ritun added" block, which adds
-synthetic microtransit demand (syn_rq) before FleetPy runs; it is kept on purpose, with its import.
+synthetic microtransit demand (syn_rq) before FleetPy runs; it is kept on purpose, with its import (from
+mtsm_model/helpers/synthetic_demand.py since 2026-11-23; before from pre_process/generate_demand_files.py, I-14).
 
 """
 import os
@@ -14,7 +15,7 @@ from mtsm_model.helpers import fleetpy_runner as fleetpy
 import mtsm_paths as mtsm
 from mtsm_model.helpers import update_network_files as update
 from mtsm_model import config
-from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq
+from mtsm_model.helpers.synthetic_demand import synthesize_requests_with_trend_time as syn_rq
 
 
 def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, iteration):

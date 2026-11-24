@@ -1139,6 +1139,23 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - So upstream's check value is stale. User's choice: docs only. `fleetpy/LOCAL_CHANGES.md` records 90 as the expected
   value; `run_examples.py` keeps 88 and prints a mismatch. I-12 closed.
 
+## The run imports nothing from `pre_process/` (I-14, 2026-11-23)
+
+- User's request: move `synthesize_requests_with_trend_time` into `mtsm_model/` (downtown San Diego is not taken up
+  now; I-14 stays open for it).
+- New `mtsm_model/helpers/synthetic_demand.py`: `make_time_sampler` and `synthesize_requests_with_trend_time` (the
+  "Ritun added" block of `pre_process/generate_demand_files.py`), moved byte for byte, with the three imports they
+  need. `mtsm_model/microtransit.py` imports it from there (still as `syn_rq`; the call stays commented out).
+- `pre_process/generate_demand_files.py`: the block replaced by a two-line note; `colorama` and `typing` imports
+  removed (only the block used them); the header comment updated. It still imports and compiles.
+- Before, the run loaded `pre_process.generate_demand_files` and through it `pre_process.process_network` (and
+  `pyproj`); now no `pre_process` module and no `pyproj`.
+- Checked: moved lines identical; old (from git `HEAD`) and new function write byte-identical files on the
+  reference's FleetPy demand file in four parameter cases.
+- User's choice: `standalone_scripts/` untouched; four of its scripts now fail at their old import of the function.
+- README code map: `synthetic_demand.py` added.
+- Full run: `compare_reference.py` **32 identical, `REPRODUCED`**.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

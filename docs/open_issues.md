@@ -112,6 +112,20 @@ Paths are relative to the codebase root.
   `__main__`, with a note that the preprocessing has not been re-run since; the original stays at tag
   `last-with-downtown-sd`. Alternatively, bring the source data into the repository first, so that the
   preprocessing can be re-run and checked.
+- **2026-11-23 (user's request; the downtown parts are not changed):** `synthesize_requests_with_trend_time` and its
+  helper `make_time_sampler` (the "Ritun added" block, the only part of `pre_process/` the run imported) moved
+  unchanged to `mtsm_model/helpers/synthetic_demand.py`; `mtsm_model/microtransit.py` imports it from there (still as
+  `syn_rq`, call still commented out). `generate_demand_files.py` lost the block and its two imports used only by it
+  (`colorama`, `typing`). The run now loads nothing from `pre_process/` (checked: no `pre_process` module in
+  `sys.modules` after importing the entry script; `pyproj` is no longer loaded by the run either).
+  - Checked: the moved lines are byte-identical to the old ones; old and new function give byte-identical output
+    files on the reference's FleetPy demand file (seed 42, 204 new requests; defaults, ordered, undirected, independent
+    marginals). Full run: `compare_reference.py` printed `REPRODUCED` (32 identical).
+  - User's choice: `standalone_scripts/` is left untouched, so the four scripts in `standalone_scripts/New folder/`
+    that import the function from `pre_process.generate_demand_files` (`run_examples_new.py`,
+    `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
+    that import.
+  - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
 
 ### I-16: The aggregate convergence test is unfinished
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).
@@ -302,7 +316,8 @@ Paths are relative to the codebase root.
 
 ### I-32: Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-16 (user's question).
-- **What:** `synthesize_requests_with_trend_time` (`pre_process/generate_demand_files.py`) writes the new requests
+- **What:** `synthesize_requests_with_trend_time` (`pre_process/generate_demand_files.py`; since 2026-11-23 in
+  `mtsm_model/helpers/synthetic_demand.py`, unchanged, I-14) writes the new requests
   after the old ones (`pd.concat([df, new_df])`), not merged in time order. The new block is not in time order
   either: the times come from the random sampler in the order they are drawn. The only caller is the commented-out
   "Ritun added" block in `mtsm_model/microtransit.py`. That block adds 3 x the microtransit users of the iteration as

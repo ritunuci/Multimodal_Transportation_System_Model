@@ -139,6 +139,7 @@ as `from mtsm_model.helpers import network_algorithms as n_a`, ...):
 | `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
 | `update_network_files.py`, `get_microtransit_skims.py`, `update_initial_network.py` | Updating the super-networks with FleetPy's results; microtransit skims |
 | `output_performance_metrics.py`, `testing_scenario_creation.py`, `folder_directory.py` | Output metrics, scenario and folder setup |
+| `synthetic_demand.py` | Synthetic microtransit requests for FleetPy (`synthesize_requests_with_trend_time`); imported by `microtransit.py`, used only by its commented-out block (I-32) |
 
 `mtsm_paths.py` (all folder locations) stays at the root: it derives them from its own location. How the code got
 this structure, and what was checked to keep the results identical, is in
