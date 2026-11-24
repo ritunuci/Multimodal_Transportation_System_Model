@@ -1425,6 +1425,29 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `study_area_inputs.md` (section 8), `fleetpy/LOCAL_CHANGES.md`.
 - Full run: **`REPRODUCED`** (26 files). Phase 3 is complete.
 
+## Phase 4: input checker (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 4 decisions (user, 2026-11-24).
+- `tools/check_study_area.py`: checks a study area's inputs against the consistency rules of
+  `docs/study_area_inputs.md` (files and columns, value types, link types and node ranges per file, FRT boarding and
+  alighting times, demand: walk-node trip ends, unique `request_id`, no negative coefficient; FRT links equal in files
+  3, 4, 6, 9 within 1 mm; file 9 = file 4 at `base_frt_headway`; route table against the FRT links; FRT stops with a
+  boarding link; FleetPy edges = walk links = microtransit links, all in the car network; every trip reachable by walk
+  + FRT and by car; FleetPy's vehicle start distribution and constant configs; `aggregation`; the node file with
+  `census_track`). Errors stop the run; warnings: duplicate `(from_node, to_node)` pairs (reported once for the road
+  network) and departures after FleetPy's `end_time`. No network-wide connectivity rule (decision 4).
+- `config.check_run_config` calls it for each area of the run, before any work (after the parameter files are read
+  and the node numbering is derived); it also runs on its own: `python tools/check_study_area.py [area]`.
+- Lemon Grove: 0 errors, 1 warning (the road network's 8 duplicate pairs), about 1.5 s.
+- Tested on copies of Lemon Grove's inputs in the scratchpad, one fault each, all caught with their message: a trip end
+  outside the walk nodes, a negative coefficient, a repeated `request_id`, a trip to an isolated island, FRT boarding
+  times of 0, a route missing from the route table, a car network missing an edge, a changed FRT link distance, a walk
+  link to a non-walk node, start probabilities summing to 0.9, a constant config naming another network, file 9 not at
+  the base headway, a missing required demand column, a missing route table; a departure after `end_time` gives the
+  warning only.
+- Docs: `study_area_inputs.md` (consistency rules), `README.md` (tools), the plan.
+- Full run: **`REPRODUCED`** (26 files). Phase 4 is complete.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -94,7 +94,7 @@ model's results do not depend on it.
 | `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`, one per study area) and the outputs of a run |
 | `fleetpy/` | FleetPy, upstream version `7019960` with a few local changes listed in [`fleetpy/LOCAL_CHANGES.md`](fleetpy/LOCAL_CHANGES.md) |
 | `env/` | Locked Python environment |
-| `tools/` | `check_inputs.py`, `compare_reference.py`, `export_env.py` |
+| `tools/` | `check_inputs.py`, `check_study_area.py` (a study area's inputs; also run at startup), `compare_reference.py`, `export_env.py` |
 | `docs/` | Progress log, open issues, reference results |
 | `standalone_scripts/` | Analysis and plotting scripts that the model run does not use |
 

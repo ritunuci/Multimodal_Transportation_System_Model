@@ -255,20 +255,32 @@ tracked file per fleet size was kept here.
 
 ## Consistency rules
 
-Phase 4's checker (`tools/check_study_area.py`) is to check these before a run:
+Checked since 2026-11-24 by `tools/check_study_area.py` (Phase 4), which every run calls at startup and which also runs
+on its own (`python tools/check_study_area.py [area]`). A broken rule is an error that stops the run before any work,
+except where it says "warning". Lemon Grove: no error, one warning (rule 9), in about 1.5 s.
 
 1. Every file above exists with its columns; every value has the right type.
 2. Node numbering: FleetPy's nodes are `0..N-1`; walk, car and type-0 links use only walk nodes; type-1 links only
    stop nodes; type-4 links only microtransit nodes; type-5 links join `i` and `M + i`.
 3. Type 2: boarding (walk -> stop) has `travel_time` > 0, alighting (stop -> walk) has 0.
-4. Every trip's `start` and `end` is a walk node; `request_id` is unique.
-5. FleetPy's edges, the car links and the walk / microtransit links are the same road edges.
+4. Every trip's `start` and `end` is a walk node; `request_id` is unique; no travel coefficient (`bt_*`) is negative.
+   A trip departing at or after FleetPy's `end_time` (its constant config) is a warning (decision 3; I-35).
+5. FleetPy's edges, the walk links (type 0) and the microtransit links (type 4, minus M) are the same road edges
+   (node pairs and distances); the car network has all of them and may have more (I-33: freeways for cars only).
 6. Files 3, 4, 6 and 9 have the same FRT links; file 9 is file 4 at `base_frt_headway`. File 10 has the routes of
    file 6 (checked by the run).
 7. With `aggregation = census_track`: the node file exists and `node_in_fleetpy` covers every walk node.
+   `aggregation` is `whole_region` or `census_track`.
 8. `<v>` in file 3's name equals `virtual_stop_scenarios`.
-9. No two links with the same `(from_node, to_node)`; a warning that names them, not an error (decision E).
-10. Every trip's origin can reach its destination on foot and FRT (the FRT-only network), and by car.
+9. No two links with the same `(from_node, to_node)`; a warning that names them, not an error (decision E). The road
+   network's own duplicates are reported once (Lemon Grove: 8 pairs), not again for each network file.
+10. Every trip's origin can reach its destination on foot and FRT (file 4), and by car (file 5). Not checked: whether a
+   network is one strongly connected part (Phase 4 decision 4: `TRA_input_data_prep` builds its networks that way, and
+   this trip-level rule is what the model needs; Lemon Grove's current road network has 4 isolated islands of 11
+   nodes with no trip and no FRT stop).
+11. FleetPy: `nodes.csv`, `edges.csv`, `crs.info`, `imbalanced.csv` and the vehicle type exist; the vehicle start
+   nodes are walk nodes and their probabilities sum to 1; each constant config of the run (`repositioning_list`) names
+   `<area>_example_network` and `<area>_example_demand`, and `imbalanced.csv` as the start distribution.
 
 ## What the run writes (not inputs)
 

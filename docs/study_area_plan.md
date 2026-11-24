@@ -305,3 +305,17 @@ and 916); a documented reference update.
 Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 3 step 1: FRT route table").
 Step 2 done 2026-11-24 (`docs/progress.md`, "Phase 3 step 2: FleetPy scenario file written by the run"). Phase 3
 complete.
+
+### Phase 4: decisions (user, 2026-11-24)
+
+1. (a) The checker runs at the start of every run and as a standalone tool.
+2. Errors and warnings as proposed (errors stop the run; warnings: duplicate node pairs, decision E).
+3. (a) Departures after FleetPy's `end_time`: a warning with the count; the rule is left to I-35.
+4. No network-wide connectivity rule (after checking `TRA_input_data_prep`, which requires one strongly connected
+   road network and drops cut-off pieces, and the user's question whether MTSM needs it): the trip-level rule (every
+   trip reaches its destination by walk + FRT and by car) is an error. The user kept the checker itself: "I do not
+   want the fallback ... to rely on TRA and on the run failing mid-way. That leaves non-TRA users with no early check,
+   and leaves a silent wrong value possible."
+5. One step, one commit.
+
+Done 2026-11-24 (`docs/progress.md`, "Phase 4: input checker"). Phase 4 complete.

@@ -310,6 +310,17 @@ def check_run_config(cfg):
     if unsupported:
         sys.exit("ERROR: configuration in %s is not supported: %s"
                  % (cfg.config_file, ", ".join(unsupported)))
+    # the study area's inputs against docs/study_area_inputs.md (since 2026-11-24, Phase 4 of docs/study_area_plan.md;
+    # also a standalone tool: python tools/check_study_area.py). Imported here, not at the top: the tool imports this
+    # module when it runs on its own.
+    from tools.check_study_area import check_study_area
+    for area in cfg.test_area:
+        result = check_study_area(area, PARAMETERS, NUM_WALK_NODES, MICROTRANSIT_NODE_OFFSET)
+        for text in result.warnings:
+            print(f"{Fore.YELLOW}WARNING ({area}): {text}{Style.RESET_ALL}")
+        if result.errors:
+            sys.exit(f"ERROR: the inputs of study area {area} do not fit the model (docs/study_area_inputs.md; "
+                     f"python tools/check_study_area.py):\n  " + "\n  ".join(result.errors))
     if os.path.abspath(cfg.config_file) != os.path.abspath(FROZEN_CONSTANT_CONFIG_FILE):
         frozen = read_constant_config(FROZEN_CONSTANT_CONFIG_FILE)
         changed = [f"{key}={PARAMETERS[key]!r} (frozen: {frozen[key]!r})" for key in gp.PARAMETER_TYPES
