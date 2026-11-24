@@ -152,16 +152,12 @@ def scenarios(cfg, area, log_f):
                 num_fleet_size_scen = 0
                 for fleet_size in area.fleet_size_scenarios: #fleetsize - influence the cost & mobility
                     num_fleet_size_scen+=1
-                    scs_path = mtsm.area_paths(study_area).fleetpy_scenarios_dir
+                    scs_path = mtsm.area_paths(study_area).fleetpy_scenarios_dir  # the area's FleetPy constant configs
                     num_operating_periods_scen = 0
 
-                    if repositioning ==True:
-                        sc = os.path.join(scs_path, "%s_example_ir_heuristics_repositioning_%s_veh.csv" % (str(study_area), str(fleet_size)))
-                    else:
-                        sc = os.path.join(scs_path, "%s_example_ir_only_%s_veh.csv" % (str(study_area), str(fleet_size)))
-                    isExist = os.path.exists(sc)
-                    if isExist==False:
-                        fleetpy.create_config_files(sc, study_area, repositioning, fleet_size)
+                    # FleetPy's scenario file for this fleet size, written into FleetPy's staging folder (since
+                    # 2026-11-24; until then a tracked file per fleet size in the area's folder, written there if missing)
+                    sc = fleetpy.scenario_config_file(study_area, repositioning, fleet_size)
 
                     for operating_periods in config.OPERATING_PERIODS_SCENARIOS: #fleetsize - influence the cost & mobility
                         num_operating_periods_scen+=1

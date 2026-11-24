@@ -284,8 +284,8 @@ Phase 2 complete.
    `build_frt_network.py` writes `frt_routes.csv`, one row per route variant (route x direction) with `route`,
    `direction`, `route_variant`, `n_stops`, `n_links`, `length_m` (inside the area), headways, fare, ... How MTSM's
    line cost uses the rows: decided below, (b2).
-2. FleetPy scenario files: (a) generated at run time into FleetPy's staging folder; the 23 tracked per-fleet-size
-   files (14 example, 9 debug) deleted; `forecast_f` written empty (as the tracked 2-vehicle file; a lone space,
+2. FleetPy scenario files: (a) generated at run time into FleetPy's staging folder; the tracked per-fleet-size
+   files deleted (26: 16 example, 10 debug; "23" in the proposal was a miscount); `forecast_f` written empty (as the tracked 2-vehicle file; a lone space,
    written until now and in 5 tracked files, is read by FleetPy as None too, so no result changed).
 3. FleetPy's operator settings stay in `create_config_files`: I-41.
 4. The 8 unused files in Lemon Grove's FleetPy network folder deleted (`base.zip`, the two `*_all_infos.geojson`,
@@ -303,3 +303,5 @@ table has two equal rows per route with half of the route's link distances (the 
 and 916); a documented reference update.
 
 Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 3 step 1: FRT route table").
+Step 2 done 2026-11-24 (`docs/progress.md`, "Phase 3 step 2: FleetPy scenario file written by the run"). Phase 3
+complete.

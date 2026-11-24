@@ -36,20 +36,37 @@ def staged_inputs(study_area):
 
 
 def stage_inputs(constant_config_file, scenario_file, study_area):
-    """Copy the two config files (which must be in mtsm_data/<area>/fleetpy/) and staged_inputs(study_area)
-    into fleetpy/, at the same relative paths. Returns the paths of the copied config files, to run FleetPy with."""
+    """Copy the constant config file (which must be in mtsm_data/<area>/fleetpy/) and staged_inputs(study_area) into
+    fleetpy/, at the same relative paths. The scenario file is written into fleetpy/ by scenario_config_file (since
+    2026-11-24; until then it was copied from the area's folder too). Returns the paths of the two config files in
+    fleetpy/, to run FleetPy with."""
     fleetpy_inputs_dir = mtsm.area_paths(study_area).fleetpy_inputs_dir
-    rel_cfgs = []
-    for f in (constant_config_file, scenario_file):
-        rel = os.path.relpath(f, fleetpy_inputs_dir)
-        if rel.startswith(".."):
-            raise ValueError(f"FleetPy config file {f} is not in {fleetpy_inputs_dir}")
-        rel_cfgs.append(rel)
-    for rel in rel_cfgs + staged_inputs(study_area):
+    rel_cc = os.path.relpath(constant_config_file, fleetpy_inputs_dir)
+    if rel_cc.startswith(".."):
+        raise ValueError(f"FleetPy config file {constant_config_file} is not in {fleetpy_inputs_dir}")
+    if os.path.relpath(scenario_file, mtsm.FLEETPY_DIR).startswith(".."):
+        raise ValueError(f"FleetPy scenario file {scenario_file} is not in {mtsm.FLEETPY_DIR} (scenario_config_file)")
+    for rel in [rel_cc] + staged_inputs(study_area):
         dst = os.path.join(mtsm.FLEETPY_DIR, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copyfile(os.path.join(fleetpy_inputs_dir, rel), dst)
-    return tuple(os.path.join(mtsm.FLEETPY_DIR, rel) for rel in rel_cfgs)
+    return os.path.join(mtsm.FLEETPY_DIR, rel_cc), scenario_file
+
+
+def scenario_config_file(study_area, repositioning, fleet_size):
+    """Write FleetPy's scenario file for the run (create_config_files) into FleetPy's scenarios folder, where FleetPy
+    reads it, and return its path: <area>_example_ir_heuristics_repositioning_<fleet>_veh.csv (with repositioning) or
+    <area>_example_ir_only_<fleet>_veh.csv. Written for every scenario, since 2026-11-24 (docs/study_area_plan.md,
+    Phase 3 decision 2); until then one tracked file per fleet size was kept in the area's folder."""
+    scenarios_dir = os.path.join(mtsm.FLEETPY_DIR, "studies", "example_study", "scenarios")
+    os.makedirs(scenarios_dir, exist_ok=True)
+    if repositioning == True:
+        name = "%s_example_ir_heuristics_repositioning_%s_veh.csv" % (str(study_area), str(fleet_size))
+    else:
+        name = "%s_example_ir_only_%s_veh.csv" % (str(study_area), str(fleet_size))
+    sc = os.path.join(scenarios_dir, name)
+    create_config_files(sc, study_area, repositioning, fleet_size)
+    return sc
 
 
 def run_single_simulation(scenario_parameters):
@@ -177,6 +194,8 @@ def warn_non_optimal_repositioning(constant_csv, scenario_csv):
                   f" results may not be reproducible: {output_dir}{Style.RESET_ALL}")
 
 
+# FleetPy's operator settings are fixed here (op_module, op_max_VR_con, repositioning method, horizons, timestep, the
+# scenario names): docs/open_issues.md I-41
 def create_config_files(sc,study_area,repositioning,fleet_size):
 
     with open(sc, 'w+', newline='') as csvfile_config:
@@ -192,7 +211,7 @@ def create_config_files(sc,study_area,repositioning,fleet_size):
             rq_file="%s_debug_False_fleetpy_demand.csv" % str(study_area)
             op_fleet_composition="%s_vehtype:" % str(study_area) + str(fleet_size)  # lemon_grove_vehtype until 2026-11-24
             op_max_VR_con=int(3)
-            forecast_f=" "
+            forecast_f=""  # empty, as in the tracked files (until 2026-11-24 a space; FleetPy reads both as None)
             op_repo_method="AlonsoMoraRepositioning"
             op_repo_horizons=int(60)
             op_repo_timestep=int(300)

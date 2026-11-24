@@ -1405,6 +1405,26 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - The optimizer's subsidy objective is built on `tot_sub`, so results of earlier sessions differ slightly (for the
   reference run `tot_sub` +0.32 %; the change depends on the headway).
 
+## Phase 3 step 2: FleetPy scenario file written by the run (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 3 decisions 2-4.
+- `fleetpy_runner.scenario_config_file(study_area, repositioning, fleet_size)` writes FleetPy's scenario file
+  (`create_config_files`) straight into `fleetpy/studies/example_study/scenarios/` for every scenario (git-ignored);
+  `scenarios.py` uses it. `stage_inputs` copies only the constant config and the staged inputs from the area and checks
+  that the scenario file is inside `fleetpy/`. Until now one tracked file per fleet size was kept in the area's folder
+  and copied, and a missing one was written there.
+- `create_config_files` writes `forecast_f` empty (was a space; FleetPy's `decode_config_str` reads both as `None`, and
+  forecasting is off without a zone system). Checked: the generated files equal the tracked ones byte for byte
+  (fleet sizes 2, 3, 10, with and without repositioning), except the 7-vehicle file, which had the space.
+- A comment above `create_config_files` points to I-41 (its fixed operator settings, kept in the code by decision 3).
+- Deleted with `git rm` (in git history): the 26 per-fleet-size scenario files of Lemon Grove (16 `example_ir_*`, 10
+  `debug_example_ir_*`; the proposal said 23, a miscount) and the 8 files in its FleetPy network folder that were never
+  staged (`base.zip`, `edges_all_infos.geojson`, `nodes_all_infos.geojson`, `edges_old.csv`, `sd_edges.csv`,
+  `sd_nodes.csv`, `pre_network/0719_edges.csv`, `pre_network/0719_nodes.csv`). Kept: the two constant configs and
+  `nodes.csv`, `edges.csv`, `crs.info`. The area manifest now lists 16 files.
+- Docs: `study_area_inputs.md` (section 8), `fleetpy/LOCAL_CHANGES.md`.
+- Full run: **`REPRODUCED`** (26 files). Phase 3 is complete.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

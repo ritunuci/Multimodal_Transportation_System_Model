@@ -240,8 +240,13 @@ into its outputs keep the area prefix (decision 4).
 | `data/networks/<area>_example_network/base/crs.info` | coordinate system of `pos_x, pos_y`, e.g. `EPSG:2230` (Lemon Grove's is wrong: I-39) |
 | `data/fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv` | `node_index, probability`: where vehicles start; probabilities sum to 1 (Lemon Grove: 5 nodes, 0.2 each; I-36) |
 | `data/vehicles/<area>_vehtype.csv` | FleetPy vehicle type (Lemon Grove: capacity 8) |
-| `studies/example_study/scenarios/<area>_constant_config_ir_repo.csv` | FleetPy constant config; `network_name` = `<area>_example_network`, `demand_name` = `<area>_example_demand` |
-| `studies/example_study/scenarios/<area>_example_ir_heuristics_repositioning_<fleet>_veh.csv` | FleetPy scenario config for a fleet size; generated from one template in Phase 3 |
+| `studies/example_study/scenarios/<area>_constant_config_ir_repo.csv` | FleetPy constant config with repositioning; `network_name` = `<area>_example_network`, `demand_name` = `<area>_example_demand` |
+| `studies/example_study/scenarios/<area>_constant_config_ir.csv` | the same without repositioning (`repositioning_list` False) |
+
+FleetPy's scenario file (`<area>_example_ir_heuristics_repositioning_<fleet>_veh.csv`, or `..._ir_only_...`) is not an
+input: since 2026-11-24 the run writes it for its fleet size into FleetPy's own scenarios folder
+(`fleetpy_runner.scenario_config_file`; the operator settings in it are fixed in the code, I-41). Until then one
+tracked file per fleet size was kept here.
 
 - FleetPy's road edges are the road edges of files 3 and 5: same node pairs, distances and car times, in the same
   order (checked for Lemon Grove).
