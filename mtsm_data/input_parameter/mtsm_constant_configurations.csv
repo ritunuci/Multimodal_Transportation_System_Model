@@ -1,5 +1,5 @@
 parameter_name,parameter_value,description
-test_area,lemon_grove,study area (only lemon_grove is supported)
+study_area,lemon_grove,study area: the folder mtsm_data/<area>/ with its inputs and area_parameters.csv (only lemon_grove is supported)
 transit_fare,3.615388,FRT fare ($)
 microtransit_dist_based_rate,5,microtransit distance-based fare ($/mile)
 microtransit_start_fare,2.3811314,microtransit start fare ($)
@@ -13,8 +13,6 @@ initial_rejection_rate,20,microtransit rejection rate assumed in the first itera
 micro_rejection_penalty,3,generalized cost penalty for microtransit rejection ($)
 random_seed,0,seed of the mode-choice draws and of FleetPy
 fare_scenario,10,fare structure number (the only one); kept in output file names
-base_frt_headway,20,FRT headway of the base case without microtransit (min)
-base_frt_fare,2.5,FRT fare of the base case without microtransit ($)
 maximum_iteration,15,iteration limit
 convergence_gap,0.01,convergence threshold
 mode_change_threshold,0.05,keep the previous mode if the transit probability changes by at most this
@@ -25,25 +23,9 @@ am_end_h,10,end of the AM period (h)
 md_end_h,15,end of the MD period (h)
 pm_end_h,20,end of the PM period (h)
 day_end_h,24,end of the EV period (h)
-frt_operating_hours,19,FRT service hours per day
-parking_charge_interval_min,30,parking is charged per started interval of this length (min)
-parking_rate_peak,1,parking charge in AM and PM ($ per started 30 min; the interval is parking_charge_interval_min); in the car's generalized and out-of-pocket cost
-parking_rate_offpeak,0.5,parking charge in MD and EV ($ per started 30 min; the interval is parking_charge_interval_min); in the car's generalized and out-of-pocket cost
 enable_num_transfer_penalty,False,True = the path search adds bt_f_trfer per transfer (each transit boarding after the first; a route change at a shared stop); False until a new reference (I-25)
-num_walk_nodes,1099,number of walk nodes (0 to 1098); FRT stops follow
-microtransit_node_offset,1171,first microtransit node; walk node i is microtransit node offset + i
-micro_only_max_walk_node,731,micro_only network: waiting links from walk nodes up to this are updated (I-13)
-car_gas_cost_per_meter,0.00025,traveler's car fuel cost ($/m; about 0.40 $/mile)
-f_gas_per_mile,0.35,FRT bus fuel cost to the operator ($/mile)
-m_gas_per_mile,0.55,microtransit vehicle fuel cost to the operator ($/mile)
-frt_operating_cost_per_veh_hour,170,FRT operating cost ($/vehicle-hour)
-micro_operating_cost_per_veh_hour,130,microtransit operating cost ($/vehicle-hour)
-frt_speed_mph,30,FRT bus speed for the line duration (mph)
-frt_dwell_time_min,3,FRT dwell time per stop (min)
-frt_dead_end_time_min,20,FRT dead-end time per line run (min)
 default_micro_wait_time,180,microtransit waiting time of a period without served requests (s)
 meters_per_mile,1609.34,meters per mile (all mile conversions; FleetPy's km per mile = this / 1000)
 operating_periods_scenarios,AM;MD;PM,microtransit operating periods; scenarios separated by |
-virtual_stop_scenarios,75,% of the nodes that are virtual microtransit stops
 microtransit_running_scenarios,micro,micro (microtransit + FRT) or micro_only (no FRT)
 repositioning_list,True,FleetPy vehicle repositioning

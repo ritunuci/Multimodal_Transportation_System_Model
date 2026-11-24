@@ -1,0 +1,19 @@
+parameter_name,parameter_value,description
+base_frt_headway,20,FRT headway of the base case without microtransit (min)
+base_frt_fare,2.5,FRT fare of the base case without microtransit ($)
+frt_operating_hours,19,FRT service hours per day
+parking_charge_interval_min,30,parking is charged per started interval of this length (min)
+parking_rate_peak,1,parking charge in AM and PM ($ per started 30 min; the interval is parking_charge_interval_min); in the car's generalized and out-of-pocket cost
+parking_rate_offpeak,0.5,parking charge in MD and EV ($ per started 30 min; the interval is parking_charge_interval_min); in the car's generalized and out-of-pocket cost
+num_walk_nodes,1099,number of walk nodes (0 to 1098); FRT stops follow
+microtransit_node_offset,1171,first microtransit node; walk node i is microtransit node offset + i
+micro_only_max_walk_node,731,micro_only network: waiting links from walk nodes up to this are updated (I-13)
+car_gas_cost_per_meter,0.00025,traveler's car fuel cost ($/m; about 0.40 $/mile)
+f_gas_per_mile,0.35,FRT bus fuel cost to the operator ($/mile)
+m_gas_per_mile,0.55,microtransit vehicle fuel cost to the operator ($/mile)
+frt_operating_cost_per_veh_hour,170,FRT operating cost ($/vehicle-hour)
+micro_operating_cost_per_veh_hour,130,microtransit operating cost ($/vehicle-hour)
+frt_speed_mph,30,FRT bus speed for the line duration (mph)
+frt_dwell_time_min,3,FRT dwell time per stop (min)
+frt_dead_end_time_min,20,FRT dead-end time per line run (min)
+virtual_stop_scenarios,75,% of the nodes that are virtual microtransit stops

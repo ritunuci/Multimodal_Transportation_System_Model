@@ -77,7 +77,7 @@ from mtsm_model import mtsm_global_parameters as gp
 # from matplotlib.cm import ScalarMappable
 # ----------------------------------------------------------------------------------------------------------------------
 # the study area of the frozen parameter file; its folders (until 2026-11-24 the Lemon Grove constants LG_*)
-STUDY_AREA = config.PARAMETERS[gp.G_TEST_AREA]
+STUDY_AREA = config.PARAMETERS[gp.G_STUDY_AREA]
 AREA_PATHS = mtsm.area_paths(STUDY_AREA)
 folder_name = str("LG_submission_results_R2")
 optimization_folder_path = os.path.join(AREA_PATHS.optimization_output_dir, folder_name)

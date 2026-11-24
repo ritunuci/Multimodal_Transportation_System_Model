@@ -1,10 +1,11 @@
 """Configuration of a model run.
 
 - read_constant_config() / PARAMETERS: all MTSM parameters (keys and types: mtsm_global_parameters.py), read once at
-  import from CONSTANT_CONFIG_FILE: the file named by the environment variable MTSM_CONFIG_FILE (set by
-  run_examples_new_parking.py --config <file>; the optimizer passes each candidate's copy), else the frozen
-  mtsm_data/input_parameter/mtsm_constant_configurations.csv. The model's constants (upper-case names below) take
-  their values from it.
+  import from two files: the model file CONSTANT_CONFIG_FILE (the file named by the environment variable
+  MTSM_CONFIG_FILE, set by run_examples_new_parking.py --config <file> and by the optimizer for each candidate's copy;
+  else the frozen mtsm_data/input_parameter/mtsm_constant_configurations.csv) and the area file
+  mtsm_data/<area>/area_parameters.csv of the model file's study_area (since 2026-11-24). The model's constants
+  (upper-case names below) take their values from it.
 - RunConfig / read_run_config(): the run's parameters (the former input_parameter.csv), from PARAMETERS.
 - check_run_config(): the startup check; stops on a configuration the code does not support, and says which values
   differ from the frozen file.
@@ -108,10 +109,11 @@ def convert_parameter(value, value_type):
     raise ValueError(f"unknown parameter type {value_type}")
 
 
-def read_constant_config(path=CONSTANT_CONFIG_FILE):
-    """Read the MTSM parameters into a dictionary {key: value}, each value converted to its type in
-    mtsm_global_parameters.PARAMETER_TYPES. The description column is not read. Stops on a wrong header, a missing,
-    unknown or repeated key, or a value that cannot be converted, listing all of them."""
+def read_parameter_file(path, keys, other_keys, other_file):
+    """Read one parameter file into a dictionary {key: value}, each value converted to its type in
+    mtsm_global_parameters.PARAMETER_TYPES; `keys` are the keys this file must have, `other_keys` those of the other
+    file (`other_file`, named in the message for a key that belongs there). The description column is not read. Stops
+    on a wrong header, a missing, unknown or repeated key, or a value that cannot be converted, listing all of them."""
     params = {}
     unconverted = set()
     problems = []
@@ -125,7 +127,9 @@ def read_constant_config(path=CONSTANT_CONFIG_FILE):
                 problems.append(f"line {line_number}: {len(row)} columns instead of {len(CONSTANT_CONFIG_HEADER)}")
                 continue
             name, value = row[0], row[1]
-            if name not in gp.PARAMETER_TYPES:
+            if name in other_keys:
+                problems.append(f"line {line_number}: {name} belongs in {other_file}")
+            elif name not in keys:
                 problems.append(f"line {line_number}: unknown parameter {name}")
             elif name in params or name in unconverted:
                 problems.append(f"line {line_number}: {name} is repeated")
@@ -135,11 +139,23 @@ def read_constant_config(path=CONSTANT_CONFIG_FILE):
                 except ValueError:
                     unconverted.add(name)
                     problems.append(f"line {line_number}: {name} = '{value}' is not a {gp.PARAMETER_TYPES[name]}")
-    problems += [f"missing parameter {name}" for name in gp.PARAMETER_TYPES
+    problems += [f"missing parameter {name}" for name in keys
                  if name not in params and name not in unconverted]
     if problems:
         sys.exit(f"ERROR: {path}:\n  " + "\n  ".join(problems))
     return params
+
+
+def read_constant_config(path=CONSTANT_CONFIG_FILE):
+    """All MTSM parameters, {key: value} in the order of PARAMETER_TYPES: the model file `path` and the area file of
+    its study_area (mtsm_data/<area>/area_parameters.csv). A key must be in its own file and only there (until
+    2026-11-24 the model file had them all)."""
+    model = read_parameter_file(path, gp.MODEL_PARAMETERS, gp.AREA_PARAMETERS, "the area file area_parameters.csv")
+    area_file = mtsm.area_paths(model[gp.G_STUDY_AREA]).area_parameter_file
+    if not os.path.isfile(area_file):
+        sys.exit(f"ERROR: the study area's parameter file is missing: {area_file} (study_area in {path})")
+    area = read_parameter_file(area_file, gp.AREA_PARAMETERS, gp.MODEL_PARAMETERS, f"the model file {path}")
+    return {key: (area[key] if key in area else model[key]) for key in gp.PARAMETER_TYPES}
 
 
 # ---- all MTSM parameters, read once when this module is imported: PARAMETERS[gp.G_<NAME>] ----
@@ -224,7 +240,7 @@ def microtransit_operating_hours(operating_periods):
 def read_run_config():
     p = PARAMETERS
     return RunConfig(config_file=CONSTANT_CONFIG_FILE,
-                     test_area=[p[gp.G_TEST_AREA]],
+                     test_area=[p[gp.G_STUDY_AREA]],
                      read_fleet_size=[p[gp.G_FLEET_SIZE]],
                      transit_fare=p[gp.G_TRANSIT_FARE],
                      microtransit_dist_based_rate=p[gp.G_MICROTRANSIT_DIST_BASED_RATE] / MILE_METER,  # $/mile -> $/m
@@ -247,7 +263,7 @@ def check_run_config(cfg):
     # (docs/progress.md).
     unsupported = []
     if any(area != "lemon_grove" for area in cfg.test_area):
-        unsupported.append(f"test_area={cfg.test_area} (only lemon_grove)")
+        unsupported.append(f"study_area={cfg.test_area} (only lemon_grove)")
     if FARE_SCENARIO != SUPPORTED_FARE_SCENARIO:
         unsupported.append(f"fare_scenario={FARE_SCENARIO} (only {SUPPORTED_FARE_SCENARIO})")
     if unsupported:

@@ -1318,6 +1318,30 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `auto_edges.csv`), `standalone_scripts/`.
 - Full run: **`REPRODUCED`** (26 files, 3:58); `check_inputs.py`: all inputs match.
 
+## Phase 1 step 3: area parameter file (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 1 (decision 1: the area's name stays in the model file, renamed); content from
+  `docs/study_area_inputs.md`, decision A.
+- `mtsm_data/lemon_grove/area_parameters.csv` (new, same format as the model file): the 18 lines of the area's
+  parameters, moved unchanged (with their descriptions, in the model file's order): `virtual_stop_scenarios`,
+  `base_frt_headway`, `base_frt_fare`, `frt_operating_hours`, `frt_speed_mph`, `frt_dwell_time_min`,
+  `frt_dead_end_time_min`, the operating costs, the fuel costs, `car_gas_cost_per_meter`, the parking rates and
+  interval, and (until Phase 2 derives them) `num_walk_nodes`, `microtransit_node_offset`,
+  `micro_only_max_walk_node`. The model file keeps 30 lines; `test_area` is now `study_area` (same value).
+- `mtsm_global_parameters.py`: `G_TEST_AREA` -> `G_STUDY_AREA` (`"study_area"`); `AREA_PARAMETERS` (the area file's
+  keys) and `MODEL_PARAMETERS` (the rest). `PARAMETER_TYPES` still has every key.
+- `config.read_constant_config(path)`: reads the model file `path` (`read_parameter_file` with `MODEL_PARAMETERS`),
+  then `area_paths(study_area).area_parameter_file` (with `AREA_PARAMETERS`), and returns one dictionary in the order
+  of `PARAMETER_TYPES`. A key in the wrong file stops the run with "... belongs in the area file area_parameters.csv"
+  (or "... in the model file"); a missing area file stops it too. `--config` and the optimizer's candidate copies
+  replace only the model file (the optimizer sets only model parameters).
+- Checked: all 48 parameters have the values and types they had (compared with the old file); a misplaced key and a
+  missing area file give their messages.
+- `mtsm_paths.AreaPaths.area_parameter_file`; `tools/check_inputs.py` lists it in the area manifest (41 files); both
+  manifests rewritten. Optimizer: `gp.G_STUDY_AREA`.
+- Docs: `README.md` (parameters), `study_area_inputs.md` (section 1), `reference_results/README.md`.
+- Full run: **`REPRODUCED`** (26 files). Phase 1 is complete.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

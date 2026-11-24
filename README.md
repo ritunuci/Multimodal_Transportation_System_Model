@@ -46,11 +46,16 @@ for vehicle repositioning).
    Do not use `requirements.txt` or FleetPy's own install instructions; they do not match the verified environment.
 2. **Check the inputs.** `python tools/check_inputs.py` must report that all frozen inputs match their manifests
    (`mtsm_data/MANIFEST.csv`, `mtsm_data/lemon_grove/MANIFEST.csv`).
-3. **Set the parameters.** All parameters (design parameters, `random_seed`, iterations and convergence, costs,
-   time periods, scenario lists, ...) are in `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: one row
-   per parameter, `parameter_name,parameter_value,description` (the description is for people; no code reads it).
-   The names and types are in `mtsm_model/mtsm_global_parameters.py`; lists are written `5;10;15`. The file is a
-   frozen input: to change values, copy it, edit the copy and run with `--config <copy>`.
+3. **Set the parameters.** They are in two files, one row per parameter,
+   `parameter_name,parameter_value,description` (the description is for people; no code reads it):
+   - the model file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: the study area (`study_area`),
+     design parameters, `random_seed`, iterations and convergence, time periods, scenario lists, ...;
+   - the study area's file `mtsm_data/<area>/area_parameters.csv`: its virtual-stop share, base FRT service, FRT
+     line data and local prices and costs.
+
+   The names and types are in `mtsm_model/mtsm_global_parameters.py` (`AREA_PARAMETERS`: the area file's keys);
+   lists are written `5;10;15`. Both are frozen inputs: to change model values, copy the model file, edit the copy
+   and run with `--config <copy>` (the area file is always the one of the copy's `study_area`).
 4. **Run** from the repository root, with `PYTHONHASHSEED=0` and without `PYTHONPATH`:
 
        python run_examples_new_parking.py                    # the frozen parameter file
@@ -117,7 +122,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | Module | Content |
 |---|---|
 | `config.py` | Reads the parameter file into `PARAMETERS` (`read_constant_config()`); `RunConfig` (the run's design parameters and seed), the startup check, and the model's constants (iterations, convergence, gas costs, time periods, parking, scenario lists, node ranges) |
-| `mtsm_global_parameters.py` | The names (keys) and types of all parameters in `mtsm_constant_configurations.csv` |
+| `mtsm_global_parameters.py` | The names (keys) and types of all parameters (model file and area file) |
 | `scenarios.py` | `StudyArea` (a study area's data) and the scenario loops (`Scenario`) |
 | `model.py` | `run_model()` and `run_scenario()`, the iteration loop |
 | `state.py` | `TravelerState` (per-traveler values across iterations), `BaseCase` (the fixed-route-only base case), `IterationTotals` |

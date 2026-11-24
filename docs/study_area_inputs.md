@@ -95,11 +95,12 @@ What the run does with them:
 ## 1. Area parameter file (`area_parameters.csv`)
 
 Same format as the model parameter file: `parameter_name,parameter_value,description`. Content (decision A,
-including the local prices and costs):
+including the local prices and costs). In use since 2026-11-24 (Phase 1 step 3): `config.read_constant_config` reads
+the model file and this file and stops if a key is in the wrong file, missing or repeated
+(`mtsm_global_parameters.AREA_PARAMETERS` lists this file's keys).
 
-| Parameter | Lemon Grove | Today in the model file as |
+| Parameter | Lemon Grove | In the model file until 2026-11-24 as |
 |---|---|---|
-| `study_area` | `lemon_grove` | `test_area` |
 | `virtual_stop_scenarios` | 75 | same (must match file 3's name) |
 | `base_frt_headway` (min) | 20 | same |
 | `base_frt_fare` ($) | 2.5 | same |
@@ -115,8 +116,12 @@ including the local prices and costs):
 | `parking_rate_peak`, `parking_rate_offpeak` ($ per interval) | 1, 0.5 | same |
 | `parking_charge_interval_min` | 30 | same |
 
-Removed from the parameter files (derived instead): `num_walk_nodes`, `microtransit_node_offset` (decision 3) and
-`micro_only_max_walk_node` (I-13: the `micro_only` branch should use the area's last walk node).
+The study area's name is not in this file: it is `study_area` in the model file (`test_area` until 2026-11-24;
+Phase 1 decision 1), which selects `mtsm_data/<area>/`.
+
+To be removed from the parameter files (derived instead, Phase 2): `num_walk_nodes`, `microtransit_node_offset`
+(decision 3) and `micro_only_max_walk_node` (I-13: the `micro_only` branch should use the area's last walk node).
+Until then they are in this file (Lemon Grove: 1099, 1171, 731).
 
 ## 2. Demand (`demand/demand.csv`)
 

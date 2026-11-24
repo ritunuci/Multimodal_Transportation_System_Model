@@ -27,6 +27,7 @@ class AreaPaths:
     area: str
     dir: str  # mtsm_data/<area>/ (LG_DIR)
     # ---- inputs ----
+    area_parameter_file: str  # area_parameters.csv, file 1 (since 2026-11-24; the values were in the model file)
     demand_dir: str  # demand/ (until 2026-11-24 demand_data/; LG_DEMAND_DIR)
     networks_dir: str  # networks/ (until 2026-11-24 the inputs were in initial_network/ and transit/)
     demand_file: str  # demand/demand.csv (demand_data/lemon_grove_trips_nodes_study_area_with_beta.csv)
@@ -67,6 +68,7 @@ def area_paths(area):
     return AreaPaths(
         area=area,
         dir=area_dir,
+        area_parameter_file=os.path.join(area_dir, "area_parameters.csv"),
         demand_dir=os.path.join(area_dir, "demand"),
         networks_dir=networks_dir,
         demand_file=os.path.join(area_dir, "demand", "demand.csv"),

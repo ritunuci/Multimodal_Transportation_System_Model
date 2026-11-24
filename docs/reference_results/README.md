@@ -29,7 +29,9 @@ Run parameters (in `mtsm_constant_configurations.csv` since 2026-11-10; until th
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | lemon_grove | 3.615388 | 5 | 2.3811314 | 2 | 2.3703918 | 1 | 1 | 0 | 10 | 20 | 3 | 0 |
 
-The other 40 parameters of the file have the values the code had before 2026-11-10 (`fare_scenario` 10). Other
+(`test_area` is `study_area` since 2026-11-24.) The other 40 parameters of the file have the values the code had before
+2026-11-10 (`fare_scenario` 10). Since 2026-11-24 the 48 parameters are in two files with the same values: 30 in the
+model file and 18 in `mtsm_data/lemon_grove/area_parameters.csv` (`docs/progress.md`, "Phase 1 step 3"). Other
 inputs: the frozen files in `mtsm_data/` (21, with the parameter file; 15 since 2026-11-24), with checksums in
 `mtsm_data/MANIFEST.csv` (since 2026-11-24 the parameter file there and Lemon Grove's inputs, under their new names, in
 `mtsm_data/lemon_grove/MANIFEST.csv`; `docs/study_area_inputs.md` gives the old and new names).

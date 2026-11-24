@@ -45,7 +45,8 @@ def area_inputs(area):
     def rel(p):
         return os.path.relpath(p, paths.dir).replace(os.sep, "/")
 
-    candidates = [(paths.demand_file, "travel demand (file 2)")]
+    candidates = [(paths.area_parameter_file, "area parameter file (file 1)"),
+                  (paths.demand_file, "travel demand (file 2)")]
     candidates += [(f, "super-network with microtransit (file 3)")
                    for f in sorted(glob.glob(os.path.join(paths.networks_dir, "super_network_micro_virstop_*.csv")))]
     candidates += [(paths.super_network_frt_file, "FRT-only super-network (file 4)"),

@@ -1,8 +1,13 @@
-"""Names (keys) and types of the MTSM parameters in mtsm_data/input_parameter/mtsm_constant_configurations.csv.
+"""Names (keys) and types of the MTSM parameters.
 
-The file has three columns: parameter_name (one of the keys below), parameter_value, and description (for people;
-no code reads it). config.read_constant_config() reads it into a dictionary {key: value}, converting each value to the
-type given in PARAMETER_TYPES. Lists are written with ";" (75;100), lists of lists with "|" between the lists
+Since 2026-11-24 (docs/study_area_plan.md, Phase 1 step 3) they are in two files: the model file
+mtsm_data/input_parameter/mtsm_constant_configurations.csv (the keys not in AREA_PARAMETERS; the optimizer writes
+copies of it) and the study area's file mtsm_data/<area>/area_parameters.csv (AREA_PARAMETERS); the model file's
+study_area names the area. Until then the model file had them all.
+
+Both files have three columns: parameter_name (one of the keys below), parameter_value, and description (for people;
+no code reads it). config.read_constant_config() reads both into one dictionary {key: value}, converting each value to
+the type given in PARAMETER_TYPES. Lists are written with ";" (75;100), lists of lists with "|" between the lists
 (AM;PM|AM;MD;PM). Each type matches today's value exactly (for example FRT_HEADWAY int, PK_FARE_FACTOR float): values
 appear in output file names (hw_10) and output CSVs, where 10 and 10.0 differ.
 
@@ -21,7 +26,7 @@ STR_LIST = "str_list"
 STR_LIST_LIST = "str_list_list"
 
 # ---- run parameters (until 2026-11-10 the columns of input_parameter.csv; the optimizer sets seven of them) ----
-G_TEST_AREA = "test_area"  # test_area
+G_STUDY_AREA = "study_area"  # test_area (key "test_area" and constant G_TEST_AREA until 2026-11-24): the folder mtsm_data/<area>/
 G_TRANSIT_FARE = "transit_fare"  # transit_fare ($)
 G_MICROTRANSIT_DIST_BASED_RATE = "microtransit_dist_based_rate"  # microtransit_dist_based_rate ($/mile)
 G_MICROTRANSIT_START_FARE = "microtransit_start_fare"  # microtransit_start_fare ($)
@@ -100,7 +105,7 @@ G_REPOSITIONING_LIST = "repositioning_list"  # REPOSITIONING_LIST
 
 # every key and its type, in the order of the file
 PARAMETER_TYPES = {
-    G_TEST_AREA: STR,
+    G_STUDY_AREA: STR,
     G_TRANSIT_FARE: FLOAT,
     G_MICROTRANSIT_DIST_BASED_RATE: FLOAT,
     G_MICROTRANSIT_START_FARE: FLOAT,
@@ -149,3 +154,28 @@ PARAMETER_TYPES = {
     G_MICROTRANSIT_RUNNING_SCENARIOS: STR_LIST,
     G_REPOSITIONING_LIST: BOOL_LIST,
 }
+
+# the keys of the study area's file area_parameters.csv (user's decision A, docs/study_area_inputs.md): the area's
+# virtual-stop share, base FRT service and FRT line data, and its local prices and costs. The node numbering is here
+# too until it is derived from the network files (Phase 2; decision 3). Every other key is in the model file.
+AREA_PARAMETERS = (
+    G_VIRTUAL_STOP_SCENARIOS,
+    G_BASE_FRT_HEADWAY,
+    G_BASE_FRT_FARE,
+    G_FRT_OPERATING_HOURS,
+    G_FRT_SPEED_MPH,
+    G_FRT_DWELL_TIME_MIN,
+    G_FRT_DEAD_END_TIME_MIN,
+    G_FRT_OPERATING_COST_PER_VEH_HOUR,
+    G_MICRO_OPERATING_COST_PER_VEH_HOUR,
+    G_F_GAS_PER_MILE,
+    G_M_GAS_PER_MILE,
+    G_CAR_GAS_COST_PER_METER,
+    G_PARKING_CHARGE_INTERVAL_MIN,
+    G_PARKING_RATE_PEAK,
+    G_PARKING_RATE_OFFPEAK,
+    G_NUM_WALK_NODES,
+    G_MICROTRANSIT_NODE_OFFSET,
+    G_MICRO_ONLY_MAX_WALK_NODE,
+)
+MODEL_PARAMETERS = tuple(key for key in PARAMETER_TYPES if key not in AREA_PARAMETERS)

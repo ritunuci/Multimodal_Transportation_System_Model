@@ -253,3 +253,4 @@ Decisions:
 
 Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 1: per-area paths").
 Step 2 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 2: Lemon Grove's inputs in the target layout"); I-05 closed.
+Step 3 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 3: area parameter file"). Phase 1 complete.
