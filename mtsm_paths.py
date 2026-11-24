@@ -10,17 +10,16 @@ MTSM_DIR = os.path.join(CODE_ROOT, "mtsm_data")
 
 # inputs shared by all study areas
 INPUT_PARAMETER_DIR = os.path.join(MTSM_DIR, "input_parameter")             # Bayesian_Optimization/Input_parameter
-REGION_DIR = os.path.join(MTSM_DIR, "region")                               # Data/0719_input
-ACTIVITYSIM_DIR = os.path.join(REGION_DIR, "activitysim_output")            # Data/0719_input/ActivitySim_output
+# (REGION_DIR, region/, and ACTIVITYSIM_DIR, region/activitysim_output/, held the accessibility inputs: removed
+# 2026-11-24)
 
 # lemon_grove
 LG_DIR = os.path.join(MTSM_DIR, "lemon_grove")
 LG_DEMAND_DIR = os.path.join(LG_DIR, "demand_data")                         # Bayesian_Optimization/demand_data/lemon_grove
 LG_INITIAL_NETWORK_DIR = os.path.join(LG_DIR, "initial_network")            # Bayesian_Optimization/lemon_grove/initial_network_folder/initial_network
-LG_INITIAL_NETWORK_0719_DIR = os.path.join(LG_DIR, "initial_network_0719")  # Data/0719_input/lemon_grove/initial_network
 LG_TRANSIT_DIR = os.path.join(LG_DIR, "transit")                            # Ritun/Lemon Grove
 LG_TRANSIT_NETWORK_DIR = os.path.join(LG_TRANSIT_DIR, "network_folder")     # Ritun/Lemon Grove/Network_folder
-LG_MGRA_NODE_MAPPING_DIR = os.path.join(LG_TRANSIT_DIR, "mgra_node_mapping")  # Ritun/Lemon Grove/MGRA_Node_Mapping
+# (LG_INITIAL_NETWORK_0719_DIR and LG_MGRA_NODE_MAPPING_DIR, accessibility only, removed 2026-11-24)
 LG_FINAL_NETWORK_DIR = os.path.join(LG_DIR, "final_network")                # Bayesian_Optimization/lemon_grove/final_network_folder
 LG_INDIV_OUTPUT_DIR = os.path.join(LG_DIR, "indiv_output")                  # Data/0719_input/indiv_output_folder
 LG_OUTPUT_DIR = os.path.join(LG_DIR, "output")                              # Bayesian_Optimization/lemon_grove/output_folder

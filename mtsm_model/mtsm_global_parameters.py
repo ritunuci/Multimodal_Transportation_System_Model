@@ -89,10 +89,8 @@ G_DEFAULT_MICRO_WAIT_TIME = "default_micro_wait_time"  # update_network_files.py
 # were merged into it; I-21) ----
 G_METERS_PER_MILE = "meters_per_mile"  # MILE_METER
 
-# ---- accessibility (output_performance_metrics) ----
-G_ACCESSIBILITY_THRESHOLDS_MIN = "accessibility_thresholds_min"  # minutes_set = [5, 10, 15]
-G_FALLBACK_EMPLOYMENT_MICRO = "fallback_employment_micro"  # 431 / 5074 / 6341
-G_FALLBACK_EMPLOYMENT_FRT = "fallback_employment_frt"  # 156 / 486 / 1020
+# ---- accessibility: accessibility_thresholds_min, fallback_employment_micro and fallback_employment_frt were
+# removed on 2026-11-24 with the accessibility calculation ----
 
 # ---- scenarios (each list has one element in the run) ----
 G_OPERATING_PERIODS_SCENARIOS = "operating_periods_scenarios"  # OPERATING_PERIODS_SCENARIOS
@@ -146,9 +144,6 @@ PARAMETER_TYPES = {
     G_FRT_DEAD_END_TIME_MIN: INT,
     G_DEFAULT_MICRO_WAIT_TIME: INT,
     G_METERS_PER_MILE: FLOAT,
-    G_ACCESSIBILITY_THRESHOLDS_MIN: INT_LIST,
-    G_FALLBACK_EMPLOYMENT_MICRO: INT_LIST,
-    G_FALLBACK_EMPLOYMENT_FRT: INT_LIST,
     G_OPERATING_PERIODS_SCENARIOS: STR_LIST_LIST,
     G_VIRTUAL_STOP_SCENARIOS: INT_LIST,
     G_MICROTRANSIT_RUNNING_SCENARIOS: STR_LIST,

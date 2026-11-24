@@ -5,8 +5,8 @@
   microtransit setup); yields one Scenario per model run. Each list has one element in the current runs.
 
 Moved from run_examples_new_parking.py. scenarios() is a generator, so the work done in the outer loops (the FRT
-headway in the initial networks, the FRT-only accessibility, FleetPy's scenario config) happens at the same point as
-before: just before the first scenario that needs it.
+headway in the initial networks, FleetPy's scenario config) happens at the same point as before: just before the first
+scenario that needs it. (Until 2026-11-24 the outer loop also computed the FRT-only accessibility; removed.)
 """
 import os
 from collections import OrderedDict
@@ -61,9 +61,6 @@ class Scenario:
     repositioning: bool
     headway: int  # FRT headway (min)
     num_headway_scen: int  # 1-based position in the loop
-    tot_weighted_5_min_F: Any  # accessibility of the fixed-route-only network
-    tot_weighted_10_min_F: Any
-    tot_weighted_15_min_F: Any
     virstop: int  # virtual stops (%)
     num_virstop_scen: int
     fleet_size: int
@@ -144,9 +141,6 @@ def scenarios(cfg, area, log_f):
         num_headway_scen = 0
         for headway in area.headway_scenarios: #put bus design parameter in the most outer loop
             init_net.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
-            # accessibility of the base case (FRT only): on the base headway's network, as the base travelers (I-28);
-            # until 2026-11-12 on the network of this scenario's headway
-            tot_weighted_5_min_F,tot_weighted_10_min_F,tot_weighted_15_min_F=output_metrics.all_scenario_fixed_acc_calculation(config.BASE_FRT_HEADWAY,study_area,test_scenario)
             num_headway_scen+=1
             num_virstop_scen = 0
             for virstop in config.VIRTUAL_STOP_SCENARIOS: #virtual stops - not necessarily influence the cost, but will influence the mobility
@@ -184,8 +178,7 @@ def scenarios(cfg, area, log_f):
                                     pass
 
                                 yield Scenario(repositioning, headway,
-                                               num_headway_scen, tot_weighted_5_min_F, tot_weighted_10_min_F,
-                                               tot_weighted_15_min_F, virstop, num_virstop_scen, fleet_size,
+                                               num_headway_scen, virstop, num_virstop_scen, fleet_size,
                                                num_fleet_size_scen, scs_path, sc, operating_periods,
                                                num_operating_periods_scen, M_operating_hrs, F_operating_hrs,
                                                F_transit_trips, microtransit_run)

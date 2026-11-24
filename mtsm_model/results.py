@@ -1,6 +1,6 @@
 """The results of a scenario after convergence (restructuring step 7, docs/entry_script_refactor_plan.md).
 
-Operating costs, revenues and subsidies; fixed-route link VMT files; accessibility; the individual-results files
+Operating costs, revenues and subsidies; fixed-route link VMT files; the individual-results files
 (with microtransit, and for the fixed-route-only base case); and the two columns of the evaluation file (the
 fixed-route-only base case and the scenario; EvaluationTable). Moved from run_examples_new_parking.py; the arguments
 are the values the code read from the surrounding loops.
@@ -27,7 +27,8 @@ EVALUATION_FIELDNAMES = ["study_area","repositioning","microtransit",'hdwy (min)
                          "tt_o_pckt_cost ($)","tt_mob_lgsm_inc_with_micro", "tt_gen_cost",
                          "tt_mode_switch", "M_avg_wait_time (s)", "F_avg_wait_time (s)","avg_walk_time (s)","tt_walk_time (h)",
                          "car_VMT (mi)","M_VMT (mi)","M_PMT (mi)","M_PMT/M_VMT","F_VMT (mi)","F_PMT (mi)","F_PMT/F_VMT","tt_VMT (mi)",
-                         "tt_walk_dist (mi)", "wghted_acc_emp_5_min","wghted_acc_emp_10_min","wghted_acc_emp_15_min", "M_util_rate (%)","M_veh_occ","M_avg_speed (mph)","cnvrg (iter, sm_sq_per_diff)", "fleetpy_wait", "rejection_rate"]
+                         "tt_walk_dist (mi)",  # until 2026-11-24 followed by wghted_acc_emp_5/10/15_min (accessibility, removed)
+                         "M_util_rate (%)","M_veh_occ","M_avg_speed (mph)","cnvrg (iter, sm_sq_per_diff)", "fleetpy_wait", "rejection_rate"]
 
 EVALUATION_METRIC_HEADER = "metric_name"
 EVALUATION_BASE_COLUMN = "FRT_only"  # the base case: FRT only, at the base headway and base fare
@@ -75,7 +76,6 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
     virstop, fleet_size, M_operating_hrs, F_operating_hrs = scen.virstop, scen.fleet_size, scen.M_operating_hrs, scen.F_operating_hrs
     operating_periods = scen.operating_periods
     num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
-    tot_weighted_5_min_F, tot_weighted_10_min_F, tot_weighted_15_min_F = scen.tot_weighted_5_min_F, scen.tot_weighted_10_min_F, scen.tot_weighted_15_min_F
     study_area, tt_num_agents, output_folder = area.study_area, area.tt_num_agents, area.output_folder
     transit_line_dist_list, transit_line_duration = area.transit_line_dist_list, area.transit_line_duration
     transit_link_vmt, transit_link_pax = area.transit_link_vmt, area.transit_link_pax
@@ -112,8 +112,6 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
     M_mode_operating_cost = M_operating_hrs * fleet_size * config.PARAMETERS[gp.G_MICRO_OPERATING_COST_PER_VEH_HOUR]  # microtransit operating cost $130/veh-hour
     output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,test_scenario,microtransit="micro")
     output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,off_micro_transit_link_vmt,off_micro_transit_link_pax,test_scenario,microtransit="non_micro")
-
-    avg_period_total_weighted_5_min,avg_period_total_weighted_10_min,avg_period_total_weighted_15_min = output_metrics.all_scenario_micro_acc_calculation(microtransit_run,headway, virstop,M_operating_hrs,fleet_size,study_area,test_scenario) #1112 Siwei: comment to make the program run faster.
 
 
     print("The program is converged.")
@@ -244,7 +242,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
     #calculate the turn-off micro transit scenario
     # I-28 (2026-11-12): the base case is FRT only at config.BASE_FRT_HEADWAY and config.BASE_FRT_FARE, whatever the
     # scenario's headway and fare. Its rows use the base headway's cost, vehicle miles and headway label. Not yet:
-    # the wghted_acc_emp_* columns (the scenario headway's network) and the file names (hw_<scenario headway>).
+    # the file names (hw_<scenario headway>). (The wghted_acc_emp_* columns were removed on 2026-11-24.)
     #under every different fixed route transit headway, we need to calculate the cost again
     if (num_virstop_scen==1) and (num_fleet_size_scen==1) and (num_operating_periods_scen==1) and (microtransit_run=="micro") and (repositioning==True):
         #calculate off_micro metrics
@@ -428,8 +426,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                          "car_VMT (mi)": base.off_micro_VMT_auto,"M_VMT (mi)": 0,
                          "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT_base,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT_base,
                          "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": base.off_micro_VMT_W,
-                         "wghted_acc_emp_5_min": tot_weighted_5_min_F,"wghted_acc_emp_10_min": tot_weighted_10_min_F,
-                         "wghted_acc_emp_15_min": tot_weighted_15_min_F,"M_util_rate (%)": 0,
+                         "M_util_rate (%)": 0,
                          "M_veh_occ": 0,"M_avg_speed (mph)": 0,"cnvrg (iter, sm_sq_per_diff)": 0, "fleetpy_wait": 0, "rejection_rate": 0})
 
     #calculate the turn-on micro transit scenario
@@ -501,9 +498,6 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
           "tt_mode_switch": total_switch_mode, "M_avg_wait_time (s)": avg_M_wait_time,
           "F_avg_wait_time (s)": avg_F_wait_time, "avg_walk_time (s)":avg_walk_time,"tt_walk_time (h)":total_walk_time/3600,
           "car_VMT (mi)":totals.VMT_auto,"M_VMT (mi)":total_vmt,"M_PMT (mi)":totals.VMT_M,"M_PMT/M_VMT":totals.VMT_M/total_vmt,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":totals.VMT_F,"F_PMT/F_VMT":PMT_VMT_ratio_F,"tt_VMT (mi)":tt_VMT,"tt_walk_dist (mi)":totals.VMT_W,
-          "wghted_acc_emp_5_min":avg_period_total_weighted_5_min,
-          "wghted_acc_emp_10_min":avg_period_total_weighted_10_min,
-          "wghted_acc_emp_15_min":avg_period_total_weighted_15_min,
             "M_util_rate (%)":util_rate,"M_veh_occ":veh_occ,"M_avg_speed (mph)":avg_speed_mph,"cnvrg (iter, sm_sq_per_diff)":iter_sum_sq_per_diff, "fleetpy_wait": last_fleetpy_wait_time, "rejection_rate": last_rejection_rate})
 
 

@@ -27,7 +27,7 @@ Paths are relative to the codebase root.
 | I-03 | The optimizer has not been run since the changes | Medium | Closed (2026-11-13) | 2026-10-23 |
 | I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Closed (2026-11-12) | 2026-10-23 |
 | I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Decision needed | 2026-10-23 |
-| I-06 | Accessibility uses a hard-coded network for its node list | Medium | Open | 2026-10-23 |
+| I-06 | Accessibility uses a hard-coded network for its node list | Medium | Closed (2026-11-24) | 2026-10-23 |
 | I-07 | `docs/progress.md` plan table is out of date | Low | Closed (2026-11-07) | 2026-11-07 |
 | I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Closed (2026-11-07) | 2026-10-23 |
 | I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | Closed (2026-11-08) | 2026-11-07 |
@@ -58,6 +58,7 @@ Paths are relative to the codebase root.
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Open | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | Open | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
+| I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 
 ---
 
@@ -75,18 +76,6 @@ Paths are relative to the codebase root.
   original.
 - **To decide:** is the overwrite intended? If not, give the rebuilt file its own name, or stop the run before it
   overwrites a frozen file.
-
-### I-06: Accessibility uses a hard-coded network for its node list
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-10-23 (Phase 4 check).
-- **What:** `create_nodes_emp_dict()` (`output_performance_metrics.py`) hard-codes `headway = 20` and `virstop = 100`
-  and reads `mtsm_data/lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv`, only to collect
-  the set of node IDs. Nodes with no assigned employment get 0. The result feeds the `wghted_acc_emp_{5,10,15}_min`
-  columns.
-- **Impact:** none today. The file has the same 2269 nodes as the network the scenario uses
-  (`initial_super_network_micro_hw_10_virstop_75.csv`). A future scenario with a different node set would get
-  silently wrong accessibility numbers.
-- **Fix:** take the node list from the network the scenario actually uses. If the node set is unchanged, the reference
-  still reproduces; check with a full run and `compare_reference.py`.
 
 ### I-13: The `micro_only` scenario uses the downtown San Diego node limit
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).
@@ -367,7 +356,7 @@ Paths are relative to the codebase root.
 - **Impact:** not known. The outputs do not show which walk links the reference's paths use (the ridership files
   have FRT links only), so it was not checked whether any traveler walks on these edges. If one does, the walk time
   and the transit generalized cost of that traveler are too low (a freeway is a short, direct line), and so is the
-  transit share. The same walk links are in the accessibility networks. A microtransit ride to or from one of the 8
+  transit share. The same walk links are in the accessibility networks (accessibility removed 2026-11-24). A microtransit ride to or from one of the 8
   virtual stops above ends where only a freeway walk leads on.
 - **To do as written 2026-11-20** (superseded by the decisions of 2026-11-23 below; microtransit now also stays off
   the freeways, and the ramp-end nodes are decided):
@@ -483,6 +472,8 @@ Paths are relative to the codebase root.
      - `num_walk_nodes`, `microtransit_node_offset` and `micro_only_max_walk_node` in
        `mtsm_constant_configurations.csv` (I-13);
      - the FleetPy network and staged inputs (`fleetpy_runner.LG_STAGED_INPUTS`).
+     - 2026-11-24: the accessibility calculation was removed (I-37); `output_performance_metrics.py` went from
+       1,035 to 197 lines and the region and MGRA paths are gone from `mtsm_paths.py`.
   6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
      - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
        keep.
@@ -615,6 +606,41 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-37: The Lemon Grove accessibility used downtown San Diego's node list
+- **Status:** Closed (2026-11-24). **Severity:** High (wrong reported values). **Found:** 2026-11-23 (planning MTSM
+  for any study area, `docs/study_area_plan.md`, item 7).
+- **What:** `get_fleetpy_demand_nodes()` (`output_performance_metrics.py`) read `mtsm_data/region/pre_nodes.csv`.
+  That file had 732 nodes (0-731, 497 demand nodes), narrower coordinates than Lemon Grove's, and the node range of
+  downtown San Diego (last walk node 731). Lemon Grove's own file, `lemon_grove/transit/network_folder/pre_nodes.csv`,
+  has 1,099 nodes (814 demand nodes). The list was the set of origins of the accessibility calculations and the set
+  of nodes that get a zone's employment (`create_nodes_emp_dict`). Node numbers are local to a network, so the
+  downtown flags do not match Lemon Grove's nodes: nodes 732-1098 were never origins and got no jobs; of the 1,062
+  nodes of Lemon Grove's node -> MGRA mapping, 483 were demand nodes in the downtown file, 805 in Lemon Grove's.
+- **Impact:** every `wghted_acc_emp_5/10/15_min` value and every per-zone `acc_super_network` file was computed on
+  the wrong node set, in both columns, including the reference until 2026-11-24 (last values, FRT only / with
+  microtransit: 107.60 / 249.99, 402.64 / 4184.02, 1031.14 / 6331.68). Nothing else used them: choices, costs and
+  subsidies were not affected. Accessibility values reported from earlier runs should be treated as affected. Since
+  when: unknown (the file came from `Data/0719_input` in Phase 1b).
+- **Resolution (2026-11-24):** not fixed; the accessibility calculation was removed (user's decision; the user no
+  longer uses it), and the downtown file with the other accessibility inputs. The last version is at git tag
+  `last-with-accessibility`. See `docs/progress.md`, "Accessibility calculation removed".
+
+### I-06: Accessibility uses a hard-coded network for its node list
+- **Status:** Closed (2026-11-24). **Severity:** Medium. **Found:** 2026-10-23 (Phase 4 check).
+- **What:** `create_nodes_emp_dict()` (`output_performance_metrics.py`) hard-codes `headway = 20` and `virstop = 100`
+  and reads `mtsm_data/lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv`, only to collect
+  the set of node IDs. Nodes with no assigned employment get 0. The result feeds the `wghted_acc_emp_{5,10,15}_min`
+  columns.
+- **Impact:** none today. The file has the same 2269 nodes as the network the scenario uses
+  (`initial_super_network_micro_hw_10_virstop_75.csv`). A future scenario with a different node set would get
+  silently wrong accessibility numbers.
+- **Fix:** take the node list from the network the scenario actually uses. If the node set is unchanged, the reference
+  still reproduces; check with a full run and `compare_reference.py`.
+- **Resolution (2026-11-24):** removed with the accessibility calculation (user's decision;
+  `docs/study_area_plan.md`, step A; `docs/progress.md`, "Accessibility calculation removed"). `create_nodes_emp_dict`
+  and the network file it read (`initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv`) no longer
+  exist. Checked: full run after the reference update printed `REPRODUCED` (26 files). See also I-37.
 
 ### I-21: Three different meters-per-mile values (1609.34, 1609, 1.609 km)
 - **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-10 (one parameter file, `docs/constant_config_plan.md`).
@@ -868,6 +894,8 @@ Paths are relative to the codebase root.
     run on the new reference outputs, returns the objectives -5460.99 and 903.05, the values of before.
   - Still as it is: the names of the base case's other output files keep `hw_<scenario headway>`
     (`individual_results_non_micro_...`, `..._non_micro_..._transit_edges_rders_...`).
+- **2026-11-24:** the accessibility calculation was removed (I-37), so the points above about the base rows'
+  `wghted_acc_emp_*` columns and `debug_False_acc_super_network_non_micro_20.csv` no longer apply.
 
 ### I-27: The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env)
 - **Status:** Closed (2026-11-12). **Severity:** High. **Found:** 2026-11-12 (first optimizer session since the changes:

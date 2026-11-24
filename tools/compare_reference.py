@@ -20,7 +20,6 @@ LOCATIONS = {
     "output": mtsm.LG_OUTPUT_DIR,
     "intermediate/final_network": mtsm.LG_FINAL_NETWORK_DIR,
     "intermediate/initial_network": mtsm.LG_INITIAL_NETWORK_DIR,
-    "intermediate/initial_network_0719": mtsm.LG_INITIAL_NETWORK_0719_DIR,
     "intermediate/indiv_output": mtsm.LG_INDIV_OUTPUT_DIR,
     "intermediate/fleetpy_demand": mtsm.LG_FLEETPY_DEMAND_DIR,
     "intermediate/fleetpy_results": os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_repo_AM_sc_1"),

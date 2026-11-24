@@ -1,8 +1,8 @@
 # Used by every run: sets the FRT headway in the Lemon Grove initial super-networks. Moved unchanged from
 # pre_process/process_network.py (2026-11-08), which holds the one-time network preprocessing.
+# Until 2026-11-24 it also copied the files into initial_network_0719/ for the accessibility calculation (removed).
 import os
 import csv
-import shutil
 
 import mtsm_paths as mtsm
 
@@ -19,7 +19,6 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
         updated_initial_net_file_non_micro = os.path.join(initial_net_folder,
                                                 f"initial_super_network_non_micro_hw_{headway}.csv")
 
-        copy_folder = mtsm.LG_INITIAL_NETWORK_0719_DIR
     else:
         mtsm.not_self_contained("study_area=%s" % study_area)
 
@@ -45,7 +44,6 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
                                  'travel_time': travel_time_1, "link_type": link_type_1,
                                  "route": route_1})
 
-    shutil.copy(updated_initial_net_file_micro, copy_folder)
 
     with open(updated_initial_net_file_micro, 'w+', newline='') as updated_file_1:
         fieldnames_1 = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]
@@ -69,7 +67,6 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
                                    'travel_time': travel_time_1, "link_type": link_type_1,
                                    "route": route_1})
 
-    shutil.copy(updated_initial_net_file_micro, copy_folder)
 
     with open(updated_initial_net_file_non_micro, 'w+', newline='') as updated_file_2:
         fieldnames_2 = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]
@@ -93,4 +90,3 @@ def update_initial_net_with_bayesian_headway(headway, study_area):
                                  'travel_time': travel_time_2, "link_type": link_type_2,
                                  "route": route_2})
 
-    shutil.copy(updated_initial_net_file_non_micro, copy_folder)

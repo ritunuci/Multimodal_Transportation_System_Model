@@ -1200,6 +1200,46 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
     last digits of floating-point values (e.g. `fleetpy_wait` 227.79615808611635 -> 227.79615808611547); choices and
     counts were the same. Run with the `fleetpy` env's interpreter, the reference reproduces.
 
+## Accessibility calculation removed (2026-11-24)
+
+- User's decision (2026-11-24, while deciding `docs/study_area_plan.md`): the employment accessibility
+  (`wghted_acc_emp_5/10/15_min`) is no longer used; remove it to keep the repository simpler. Also decided: delete the
+  inputs only it read, tag the last commit with it, drop its lines from the evaluation file, and do this before
+  Phase 0 of the study-area plan (step A there).
+- Found the day before (I-37): it read downtown San Diego's node list (`region/pre_nodes.csv`), so its values were
+  computed on the wrong node set.
+- Last version with it: git tag `last-with-accessibility` on `2295a6b`.
+- Code:
+  - `output_performance_metrics.py` (1,035 -> 197 lines): removed `create_mgra_pop_income_table`,
+    `create_adjacent_MGRA_file` (preprocessing stubs), `get_MGRA_pop`, `get_blank_adjacent_MGRA`,
+    `get_fleetpy_demand_nodes`, `create_nodes_emp_dict`, `acc_dijsktra_source_to_all_heap`,
+    `accessibility_calculation`, `all_scenario_micro_acc_calculation`, `all_scenario_fixed_acc_calculation`, the
+    `__main__` test (accessibility only), the region/ActivitySim paths, and the imports only they used (`heapq`,
+    `network_algorithms`). The FRT line, ridership and FleetPy evaluation functions stay.
+  - `scenarios.py`: no base-case accessibility in the headway loop; `Scenario` lost `tot_weighted_5/10/15_min_F`.
+  - `results.py`: no microtransit accessibility; the three metrics left `EVALUATION_FIELDNAMES` and both columns.
+  - `update_initial_network.py`: no copies into `initial_network_0719/` (only the accessibility read them).
+  - Parameters `accessibility_thresholds_min`, `fallback_employment_micro`, `fallback_employment_frt` removed
+    (parameter file, `mtsm_global_parameters.py`).
+  - `mtsm_paths.py`: `REGION_DIR`, `ACTIVITYSIM_DIR`, `LG_INITIAL_NETWORK_0719_DIR`, `LG_MGRA_NODE_MAPPING_DIR` removed.
+  - Optimizer: the three names left `METRIC_COLS` (otherwise `evaluation_value` stops on every candidate).
+  - `tools/check_inputs.py`, `tools/compare_reference.py`, `.gitignore`: entries for the removed files and folder.
+- Inputs: six frozen inputs deleted (21 -> 15; `MANIFEST.csv` rewritten): `region/pre_nodes.csv`,
+  `region/final_land_use.csv`, `region/activitysim_output/lemon_grove_MGRA_pop_inc.csv`, `.../lemon_grove_MGRA_adj.csv`,
+  `lemon_grove/transit/mgra_node_mapping/Nodes_MGRA_mapping.csv`,
+  `lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv`. The 32 run-written copies in
+  `initial_network_0719/` (git-ignored; identical files are in `initial_network/`) were deleted with the folder.
+  Left on disk: the git-ignored `debug_False_acc_super_network_*` files of earlier runs and optimizer sessions in
+  `mtsm_data/lemon_grove/output/`.
+- First full run (4:02, was about 4:40): 29 compared files identical; the evaluation file was the reference's without
+  its three `wghted_acc_emp_*` lines, byte for byte (73 lines); no `acc_super_network` file was written. Reference
+  updated (`docs/reference_results/README.md`, 2026-11-24): evaluation file replaced, the four per-zone files and
+  `intermediate/initial_network_0719/` removed (32 -> 26 files). Second full run: **`REPRODUCED`** (26 files).
+- Docs: `open_issues.md` (I-06 closed, I-37 recorded and closed, notes in I-28, I-33, I-34), `README.md`,
+  `docs/study_area_plan.md` (decisions of 2026-11-24, step A).
+- Not changed: the demand file's `transit_15min_acc` column (a traveler attribute passed to the individual results);
+  `standalone_scripts/` (several of its scripts use the removed functions); `pre_process/`.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

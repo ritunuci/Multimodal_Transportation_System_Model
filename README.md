@@ -3,7 +3,7 @@
 MTSM models a multimodal transportation system with microtransit (on-demand shared rides) integrated with
 fixed-route transit (FRT), and the travelers' choice between transit and auto. For a given set of design parameters
 (fleet size, FRT headway, fares, ...) it finds the equilibrium between microtransit demand and microtransit
-performance, and reports the resulting mode shares, ridership, costs and accessibility. A Bayesian optimization script
+performance, and reports the resulting mode shares, ridership and costs. A Bayesian optimization script
 searches the design parameters for the trade-off between operator subsidy and travelers' benefit.
 
 The microtransit service is simulated with [FleetPy](https://github.com/TUM-VT/FleetPy) (TU Munich), which is
@@ -127,7 +127,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
 | `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
 | `microtransit.py` | Running FleetPy (through `helpers/fleetpy_runner.py`) and updating the super-networks with its results |
-| `results.py` | The results of a converged scenario: costs, subsidies, accessibility, individual results, evaluation file |
+| `results.py` | The results of a converged scenario: costs, subsidies, individual results, evaluation file |
 
 The helpers these modules call are in `mtsm_model/helpers/` (moved from the repository root on 2026-11-10; imported
 as `from mtsm_model.helpers import network_algorithms as n_a`, ...):

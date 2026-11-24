@@ -17,19 +17,13 @@ MANIFEST = os.path.join(MTSM_DIR, "MANIFEST.csv")
 # frozen input -> role; paths relative to mtsm_data/, "/" separated
 INPUTS = {
     "input_parameter/mtsm_constant_configurations.csv": "all MTSM parameters",
-    "region/pre_nodes.csv": "region road nodes",
-    "region/final_land_use.csv": "land use (employment)",
-    "region/activitysim_output/lemon_grove_MGRA_pop_inc.csv": "MGRA population / income",
-    "region/activitysim_output/lemon_grove_MGRA_adj.csv": "MGRA adjacency",
     "lemon_grove/demand_data/lemon_grove_trips_nodes_study_area_with_beta.csv": "travel demand (agents)",
     "lemon_grove/initial_network/auto_edges.csv": "auto network",
     "lemon_grove/initial_network/base_super_network_lemon_grove_micro_hw_10_virstop_75.csv": "base super-network (micro)",
     "lemon_grove/initial_network/base_super_network_lemon_grove_non_micro_hw_10.csv": "base super-network (fixed route)",
     "lemon_grove/initial_network/initial_super_network_non_micro_hw_20.csv": "fixed-route network, base headway 20",
-    "lemon_grove/initial_network_0719/initial_super_network_micro_hw_20_virstop_100.csv": "node list for accessibility",
     "lemon_grove/transit/super_network_transit_edges.csv": "transit edges",
     "lemon_grove/transit/network_folder/pre_nodes.csv": "lemon_grove road nodes",
-    "lemon_grove/transit/mgra_node_mapping/Nodes_MGRA_mapping.csv": "node -> MGRA mapping",
     # inputs FleetPy reads; copied into fleetpy/ before each FleetPy run (fleetpy_runner.stage_inputs)
     "lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/nodes.csv": "FleetPy road network nodes",
     "lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/edges.csv": "FleetPy road network edges",

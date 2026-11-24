@@ -30,14 +30,15 @@ Run parameters (in `mtsm_constant_configurations.csv` since 2026-11-10; until th
 | lemon_grove | 3.615388 | 5 | 2.3811314 | 2 | 2.3703918 | 1 | 1 | 0 | 10 | 20 | 3 | 0 |
 
 The other 40 parameters of the file have the values the code had before 2026-11-10 (`fare_scenario` 10). Other
-inputs: the frozen files in `mtsm_data/` (21, with the parameter file), with checksums in `mtsm_data/MANIFEST.csv`.
+inputs: the frozen files in `mtsm_data/` (21, with the parameter file; 15 since 2026-11-24), with checksums in
+`mtsm_data/MANIFEST.csv`.
 
 | Folder | Contents | Written by the run to |
 |---|---|---|
-| `output/` | the 9 reported result files | `mtsm_data/lemon_grove/output/` |
+| `output/` | the reported result files (9; 5 since 2026-11-24) | `mtsm_data/lemon_grove/output/` |
 | `intermediate/final_network/` | super-networks updated after the last iteration | `mtsm_data/lemon_grove/final_network/` |
 | `intermediate/initial_network/` | super-networks rebuilt from the `base_*` files | `mtsm_data/lemon_grove/initial_network/` |
-| `intermediate/initial_network_0719/` | copies of those, read back by the metrics code | `mtsm_data/lemon_grove/initial_network_0719/` |
+| ~~`intermediate/initial_network_0719/`~~ | copies of those, read back by the accessibility code; removed 2026-11-24 | ~~`mtsm_data/lemon_grove/initial_network_0719/`~~ |
 | `intermediate/indiv_output/` | FleetPy user statistics of iterations 0–4 | `mtsm_data/lemon_grove/indiv_output/` |
 | `intermediate/fleetpy_demand/` | demand handed to FleetPy in the last iteration | `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` |
 | `intermediate/fleetpy_results/` | FleetPy results of the last iteration | `fleetpy/studies/example_study/results/example_pool_repo_AM_sc_1/` |
@@ -110,3 +111,14 @@ case (lines 2 and 4; the base row twice).
   depend on them (largest relative change 0.021 %). The metric names and the 76 lines stayed; the other 31 files did
   not change. The file was replaced by the run's; a second full run printed `REPRODUCED`. The parameter file (a
   frozen input) lost the two lines; `mtsm_data/MANIFEST.csv` was rewritten for it.
+- **2026-11-24, accessibility calculation removed** (`docs/progress.md`, "Accessibility calculation removed"; user's
+  decision, `docs/study_area_plan.md` step A): the run no longer computes the employment accessibility. The
+  evaluation file lost its three lines `wghted_acc_emp_5_min`, `wghted_acc_emp_10_min`, `wghted_acc_emp_15_min`
+  (76 -> 73 lines); their last values (FRT only / with microtransit) were 107.60 / 249.99, 402.64 / 4184.02 and
+  1031.14 / 6331.68. They were computed on downtown San Diego's node list (`docs/open_issues.md` I-37). A full run
+  differed from the reference only in this file, and it was the reference file without these three lines, byte for
+  byte; the file was replaced. The run no longer writes the four per-zone files `output/debug_False_acc_super_network_*`
+  or the copies in `initial_network_0719/`; these six reference files were removed (32 -> 26 files compared). Six
+  frozen inputs used only by the accessibility were removed (21 -> 15; `mtsm_data/MANIFEST.csv` rewritten), and
+  three parameters (`accessibility_thresholds_min`, `fallback_employment_micro`, `fallback_employment_frt`). The
+  last version with the accessibility is at git tag `last-with-accessibility`. A second full run printed `REPRODUCED`.
