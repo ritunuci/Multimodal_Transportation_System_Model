@@ -116,46 +116,32 @@ def run_scenario(cfg, area, scen, evaluation, log_f):
         ####################
         #Convergence test right after the Binary Choice Model
         ##########################################
-        # config.INDIV_CONVERG_TEST (mtsm_model/config.py) chooses between two convergence tests:
-        # - True (used): individual-level test, conv_test.indiv_convergence_test(). For every traveler it compares the
-        #   choice probabilities [prob_Auto, prob_T] with the previous iteration and sums (p_now - p_before)^2 / p_before
-        #   over all travelers and both modes. An iteration passes if the sum is <= CONVERGENCE_GAP. The model has
-        #   converged after two passing iterations (num_converged == 2), or at MAXIMUM_ITERATION.
-        # - False (not used, kept for later): aggregate-level test, conv_test.convergence_test(M_share, M_share_pre). It
-        #   compares only the overall microtransit mode share with the previous iteration: converged if the share changed
-        #   by at most 1% (relative). It is unfinished and does not work if switched on as it is (docs/open_issues.md, I-16):
-        #     * its call below is commented out, and nothing computes M_share / M_share_pre, so `converged` never
-        #       becomes True;
-        #     * the stop at MAXIMUM_ITERATION is only in the individual-level branch, so the loop would never end;
-        #     * convergence_test() raises UnboundLocalError when the share changed by more than 1%.
-        # aggregated level convergence test
-        if config.INDIV_CONVERG_TEST == False:
-            if iteration >= 1:
-                print("convergence check.....")
-                # converged,per_diff=conv_test.convergence_test(M_share,M_share_pre)
-                # print("Aggregated Level Convergence Test","M_share",M_share,"M_share_pre",M_share_pre,"per_diff",per_diff,"converged",converged)
-        else:
-            if iteration >= 1:
-                print("convergence check.....")
-                converged_, sum_sq_per_diff = conv_test.indiv_convergence_test(iter_agent_choice_prob[iteration], iter_agent_choice_prob[iteration - 1],config.CONVERGENCE_GAP)
+        # Individual-level test, conv_test.indiv_convergence_test(). For every traveler it compares the choice
+        # probabilities [prob_Auto, prob_T] with the previous iteration and sums (p_now - p_before)^2 / p_before over all
+        # travelers and both modes. An iteration passes if the sum is <= CONVERGENCE_GAP. The model has converged after
+        # two passing iterations (num_converged == 2), or at MAXIMUM_ITERATION. (An aggregate-level test on the
+        # microtransit mode share, never used and unfinished, was removed on 2026-11-23; docs/open_issues.md, I-16.)
+        if iteration >= 1:
+            print("convergence check.....")
+            converged_, sum_sq_per_diff = conv_test.indiv_convergence_test(iter_agent_choice_prob[iteration], iter_agent_choice_prob[iteration - 1],config.CONVERGENCE_GAP)
 
-                iter_sum_sq_per_diff.append((iteration,sum_sq_per_diff))
+            iter_sum_sq_per_diff.append((iteration,sum_sq_per_diff))
 
-                if converged_ == True:
-                    num_converged += 1
-                    if num_converged == 2:
-                        converged = True
-
-
-                if iteration == config.MAXIMUM_ITERATION:
-                    # stop after MAXIMUM_ITERATION iterations even if the test has not passed twice
+            if converged_ == True:
+                num_converged += 1
+                if num_converged == 2:
                     converged = True
 
-                print("Individual Level Convergence Test:","sum of square percentage difference ", sum_sq_per_diff, "converged",converged)
-                if converged == True:
-                    write_converged_results(cfg, area, scen, evaluation, state=state, base=base, totals=totals,
-                                            iter_sum_sq_per_diff=iter_sum_sq_per_diff, last_fleetpy_wait_time=last_fleetpy_wait_time,
-                                            last_rejection_rate=last_rejection_rate)
+
+            if iteration == config.MAXIMUM_ITERATION:
+                # stop after MAXIMUM_ITERATION iterations even if the test has not passed twice
+                converged = True
+
+            print("Individual Level Convergence Test:","sum of square percentage difference ", sum_sq_per_diff, "converged",converged)
+            if converged == True:
+                write_converged_results(cfg, area, scen, evaluation, state=state, base=base, totals=totals,
+                                        iter_sum_sq_per_diff=iter_sum_sq_per_diff, last_fleetpy_wait_time=last_fleetpy_wait_time,
+                                        last_rejection_rate=last_rejection_rate)
         if converged == False:
             wait_times, rejection_rate, last_rejection_rate, last_fleetpy_wait_time = run_fleetpy_and_update_networks(
                 cfg, area, scen, cc=cc, log_level=log_level, log_f=log_f, iteration=iteration)

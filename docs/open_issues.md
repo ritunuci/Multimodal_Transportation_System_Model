@@ -37,7 +37,7 @@ Paths are relative to the codebase root.
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
-| I-16 | The aggregate convergence test is unfinished | Low | Open | 2026-11-09 |
+| I-16 | The aggregate convergence test is unfinished | Low | Closed (2026-11-23) | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
@@ -126,22 +126,6 @@ Paths are relative to the codebase root.
     `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
     that import.
   - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
-
-### I-16: The aggregate convergence test is unfinished
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).
-- **What:** `run_examples_new_parking.py` has two convergence tests, chosen by `indiv_converg_test`. The run uses
-  the individual-level test (`True`). The aggregate-level test (`False`, `convergence_test.convergence_test`)
-  would compare only the microtransit mode share with the previous iteration. The user wants to keep it for
-  later (2026-11-09), so it was kept and commented, not removed. It does not work as it is:
-  - its call is commented out, and nothing computes `M_share` / `M_share_pre`, so `converged` never becomes True;
-  - the stop at `maximum_iteration` is only in the individual-level branch, so the iteration loop would never end;
-  - `convergence_test()` sets `converged` only when the test passes; when the share changed by more than 1% the
-    `return` raises `UnboundLocalError`.
-- **Impact:** none on results; `indiv_converg_test = True` is fixed in the code. Setting it to `False` would make
-  the model loop forever.
-- **Fix (when it is needed):** compute the microtransit mode share per iteration (`M_share`, and `M_share_pre`
-  from the previous iteration), restore the call, move the `maximum_iteration` stop out of the individual branch so
-  that it applies to both tests, and set `converged = False` at the start of `convergence_test()`. Then test it.
 
 ### I-17: Travelers who keep their transit choice resubmit only their last microtransit and FRT leg
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 4).
@@ -643,6 +627,34 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-16: The aggregate convergence test is unfinished
+- **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).
+- **What:** `run_examples_new_parking.py` has two convergence tests, chosen by `indiv_converg_test`. The run uses
+  the individual-level test (`True`). The aggregate-level test (`False`, `convergence_test.convergence_test`)
+  would compare only the microtransit mode share with the previous iteration. The user wants to keep it for
+  later (2026-11-09), so it was kept and commented, not removed. It does not work as it is:
+  - its call is commented out, and nothing computes `M_share` / `M_share_pre`, so `converged` never becomes True;
+  - the stop at `maximum_iteration` is only in the individual-level branch, so the iteration loop would never end;
+  - `convergence_test()` sets `converged` only when the test passes; when the share changed by more than 1% the
+    `return` raises `UnboundLocalError`.
+- **Impact:** none on results; `indiv_converg_test = True` is fixed in the code. Setting it to `False` would make
+  the model loop forever.
+- **Fix (when it is needed):** compute the microtransit mode share per iteration (`M_share`, and `M_share_pre`
+  from the previous iteration), restore the call, move the `maximum_iteration` stop out of the individual branch so
+  that it applies to both tests, and set `converged = False` at the start of `convergence_test()`. Then test it.
+- **Checked 2026-11-23:** `indiv_converg_test` is `True` in every commit since the baseline `6d311ee` ("codebase as
+  found"); no commit ever set it to `False`. The optimizer, `tools/` and the scripts in `standalone_scripts/` do not
+  set it either (the four old entry scripts there have `True`). So the aggregate test was never used in any version
+  in git.
+- **Resolution:** user's decision: remove it (not finish it). Removed: `convergence_test()` in
+  `mtsm_model/helpers/convergence_test.py`; the switch branch with the commented-out call in `mtsm_model/model.py`
+  (the individual-level test now runs without the `if`; its lines unchanged, one level less indented); the parameter
+  `indiv_converg_test` (line in `mtsm_constant_configurations.csv`, key and type in `mtsm_global_parameters.py`,
+  `config.INDIV_CONVERG_TEST`); `mtsm_data/MANIFEST.csv` rewritten for the parameter file. A parameter file that
+  still has the line now stops with "unknown parameter indiv_converg_test" (e.g. copies in the optimizer's
+  `candidate_configs/` from earlier sessions; new candidates are copies of the frozen file). Full run:
+  `compare_reference.py` printed `REPRODUCED` (32 identical).
 
 ### I-12: FleetPy's example a) serves 90 users; its check expects 88
 - **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 1).

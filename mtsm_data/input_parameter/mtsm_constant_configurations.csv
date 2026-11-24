@@ -15,7 +15,6 @@ random_seed,0,seed of the mode-choice draws and of FleetPy
 fare_scenario,10,fare structure number (the only one); kept in output file names
 base_frt_headway,20,FRT headway of the base case without microtransit (min)
 base_frt_fare,2.5,FRT fare of the base case without microtransit ($)
-indiv_converg_test,True,True = individual-level convergence test (False = aggregate-level; unfinished; I-16)
 maximum_iteration,15,iteration limit
 convergence_gap,0.01,convergence threshold
 mode_change_threshold,0.05,keep the previous mode if the transit probability changes by at most this

@@ -156,9 +156,7 @@ BASE_FRT_HEADWAY = PARAMETERS[gp.G_BASE_FRT_HEADWAY]  # min
 BASE_FRT_FARE = PARAMETERS[gp.G_BASE_FRT_FARE]  # $, Ritun: base fare for fixed route transit
 
 # ---- iterations and convergence ----
-# True: individual-level convergence test (used). False: aggregate-level test, kept for later but unfinished;
-# see the convergence test in the iteration loop of run_examples_new_parking.py and docs/open_issues.md, I-16.
-INDIV_CONVERG_TEST = PARAMETERS[gp.G_INDIV_CONVERG_TEST]
+# (the switch indiv_converg_test, always True, was removed with the aggregate-level test on 2026-11-23; I-16)
 # the iterations stop here even if the convergence test has not passed
 MAXIMUM_ITERATION = PARAMETERS[gp.G_MAXIMUM_ITERATION]
 CONVERGENCE_GAP = PARAMETERS[gp.G_CONVERGENCE_GAP]  # Ritun changed it from 0.01

@@ -1,16 +1,6 @@
 from colorama import Fore, Style
-def convergence_test(M_share,M_share_pre):
-    # Aggregate-level convergence test. Not used: the run uses indiv_convergence_test() (indiv_converg_test=True in
-    # run_examples_new_parking.py). Kept for later. Converged if the microtransit mode share M_share changed by at
-    # most 1% (relative) since the previous iteration (M_share_pre). Unfinished: when the share changed by more,
-    # `converged` is never set and the return raises UnboundLocalError (docs/open_issues.md, I-16).
-    diff=abs(M_share-M_share_pre)
-    per_diff=diff/M_share_pre
-    if per_diff<=0.01:
-        converged=True
-
-    return converged,per_diff
-
+# The aggregate-level test convergence_test(M_share, M_share_pre) (microtransit mode share), never used and unfinished,
+# was removed on 2026-11-23 (docs/open_issues.md, I-16); the run has always used indiv_convergence_test().
 def indiv_convergence_test(agent_choice_prob,agent_choice_prob_pre,convergence_gap):
     sum_abs_per_diff=0
     sum_sq_per_diff=0

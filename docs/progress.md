@@ -1156,6 +1156,17 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - README code map: `synthetic_demand.py` added.
 - Full run: `compare_reference.py` **32 identical, `REPRODUCED`**.
 
+## Aggregate convergence test removed (I-16, 2026-11-23)
+
+- `indiv_converg_test` was `True` in every commit since the baseline `6d311ee`; the aggregate-level test (microtransit
+  mode share) was never used and was unfinished. User's decision: remove it.
+- Removed: `convergence_test()` (`mtsm_model/helpers/convergence_test.py`); the switch branch in
+  `mtsm_model/model.py` (the individual-level test's lines kept as they were, one level less indented; `git diff -w`
+  shows only the removed branch and the new comment); the parameter `indiv_converg_test` (constant configuration
+  file, `mtsm_global_parameters.py`, `config.py`). `MANIFEST.csv` rewritten (only the parameter file changed).
+- A parameter file that still has `indiv_converg_test` now stops with "unknown parameter".
+- Full run: `compare_reference.py` **32 identical, `REPRODUCED`**.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
