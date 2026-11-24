@@ -225,4 +225,25 @@ item 5 loses I-06; Phase 3 loses its I-06 and item 7 bullets.
 ### Phase 0: draft written (2026-11-24)
 
 `docs/study_area_inputs.md`: the files, node numbering, link types, columns and units, consistency rules, and seven
-open decisions (A-G).
+open decisions (A-G). All seven decided the same day; G done the same day (node file optional with `whole_region`).
+
+### Phase 1: steps and decisions (user, 2026-11-24)
+
+Steps, one commit each, each ending with a full run that prints `REPRODUCED`:
+
+1. Per-area paths: `mtsm_paths.area_paths(area)` replaces the `LG_*` constants everywhere (model code, tools,
+   startup folder creation, the optimizer's output folder). No file moves.
+2. Lemon Grove's inputs move to the target layout of `docs/study_area_inputs.md` (`git mv`); `.gitignore`,
+   manifest, reference README.
+3. Area parameter file `mtsm_data/lemon_grove/area_parameters.csv` (decision A's parameters); the loader reads the
+   model file and the area file and stops on a key in both or in neither.
+
+Decisions:
+
+1. The study area's name stays in the model file, renamed `test_area` -> `study_area`; it selects `mtsm_data/<area>/`
+   (amends decision A: the area file does not repeat the name).
+2. Where the run writes its generated networks: open (the user is looking at the files first).
+3. One manifest per area (`mtsm_data/<area>/MANIFEST.csv`), optional for a new area (the startup check uses it when it
+   exists); the shared model file stays in `mtsm_data/MANIFEST.csv`.
+4. Leftover parts of output file names stay for now: I-40.
+5. The three steps above, in that order, one commit each.

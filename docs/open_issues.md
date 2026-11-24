@@ -61,6 +61,7 @@ Paths are relative to the codebase root.
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Decision needed | 2026-11-24 |
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
+| I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Open | 2026-11-24 |
 
 ---
 
@@ -643,6 +644,25 @@ Paths are relative to the codebase root.
   plot update), which the run does not turn on. Wrong for anyone who plots or exports the coordinates.
 - **Fix (later; user's decision 2026-11-24):** confirm the system (e.g. one node against a map), correct the file,
   rewrite `mtsm_data/MANIFEST.csv`, full run must print `REPRODUCED`.
+
+### I-40: Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`)
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 1 of `docs/study_area_plan.md`). Kept on the
+  user's request (decision 4 of Phase 1: keep the names for now).
+- **What:** names written by the run still contain parts of removed options:
+  - `zonal_partition_False`: the evaluation file `<area>_evaluation_zonal_partition_False.csv` (`scenarios.py`);
+  - `debug_False`: the FRT ridership files `debug_False_<area>_..._transit_edges_rders_scen_10.csv`
+    (`output_performance_metrics.write_fixed_transit_link_vmt`), FleetPy's demand file
+    `<area>_debug_False_fleetpy_demand.csv` (`scenarios.py`, `fleetpy_runner.create_config_files` and the FleetPy
+    scenario files) and the FRT demand file `debug_False_F_transit_demand_...` (`scenarios.py`);
+  - `scen_10` (the only fare scenario, `fare_scenario`): the individual-results and ridership files (`results.py`,
+    `output_performance_metrics.py`).
+  - The optimizer reads two of these names, partly with fixed values: `lemon_grove_evaluation_zonal_partition_False.csv`
+    and `individual_results_micro_M_fsize_<d>_op_hr_15_hw_<f>_virstop_75_scen_10.csv`
+    (`Bayesian_optimization_script.model_output_files`; `op_hr_15` and `virstop_75` fixed).
+- **Impact:** none on results; the names are longer than needed and carry meaningless parts.
+- **Fix (later):** drop the parts in the run and the optimizer together (and the optimizer's fixed `op_hr_15`,
+  `virstop_75`); a reference update that renames files only (and the FleetPy demand name inside FleetPy's
+  outputs); `fare_scenario` can then leave the parameter file.
 
 ---
 
