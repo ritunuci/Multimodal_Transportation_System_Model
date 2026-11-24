@@ -221,3 +221,8 @@ leave the reference). Record: `docs/progress.md`, "Accessibility calculation rem
 
 Effect on the plan: items 6 (zone data) and 7 (downtown node file) are gone, item 1 loses the region and MGRA paths,
 item 5 loses I-06; Phase 3 loses its I-06 and item 7 bullets.
+
+### Phase 0: draft written (2026-11-24)
+
+`docs/study_area_inputs.md`: the files, node numbering, link types, columns and units, consistency rules, and seven
+open decisions (A-G).
