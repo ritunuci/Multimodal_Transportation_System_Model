@@ -486,6 +486,8 @@ Paths are relative to the codebase root.
      - The new networks' `pre_nodes.csv` (`TRA_input_data_prep`) has these columns, with `census_tract = 0` for every
        node. The whole-region branch therefore works on them once the path is per area. No census tract data is
        needed.
+     - 2026-11-24: with `whole_region`, `get_node_ct` no longer reads `pre_nodes.csv`; every walk node is in one
+       zone (decision G, `docs/study_area_inputs.md`). The file is read only with `census_track`.
      - In the "micro" branch, the type-5 links are updated only `if study_area == "lemon_grove"`
        (`update_network_files.py:340`). In any other area they keep the initial 180 s. The micro_only branch uses
        `micro_only_max_walk_node` (I-13).

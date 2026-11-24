@@ -1240,6 +1240,21 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Not changed: the demand file's `transit_15min_acc` column (a traveler attribute passed to the individual results);
   `standalone_scripts/` (several of its scripts use the removed functions); `pre_process/`.
 
+## Node file optional with whole_region (2026-11-24)
+
+- Found while writing the input specification (`docs/study_area_inputs.md`): with `aggregation = whole_region` (the
+  setting in use), `update_network_files` gives every census tract the same period average waiting time; the
+  per-tract counts and rejection rates are only printed. So the node file's `census_tract` values do not matter, and
+  `node_in_fleetpy` is just 0 to N - 1.
+- User's decision (G, option c): the node file is optional. `get_microtransit_skims.get_node_ct(study_area,
+  aggregation)`: with `whole_region` every walk node (0 to `NUM_WALK_NODES` - 1) is in zone 0 and the file is not
+  read; with `census_track` it reads `pre_nodes.csv` as before. `update_network_files` passes its `aggregation`.
+- Checked: with `whole_region` the function does not open the file (a test that fails on any open of
+  `pre_nodes.csv`) and returns the same 1,099 nodes as the file; `census_track` still reads 23 tracts. Console output
+  changes (one zone instead of 23 in the printed lines); output files do not. Full run: **`REPRODUCED`** (26 files).
+- `pre_nodes.csv` stays a frozen input of Lemon Grove (used with `census_track`).
+- Same day, decision E: the planned checker warns about duplicate `(from_node, to_node)` pairs; nothing changed now.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

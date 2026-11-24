@@ -1,7 +1,7 @@
 # Study-area inputs: what a study area must supply
 
 Status: **draft** (Phase 0 of `docs/study_area_plan.md`; written 2026-11-24 against the code after step A, the
-accessibility removal). Decisions A-D and F made 2026-11-24, E and G open (section "Decisions" at the end).
+accessibility removal). Decisions A-G made 2026-11-24 (section "Decisions (user, 2026-11-24)" at the end).
 
 This file is the contract between a user and the model: the files a study area supplies, their columns and units, and
 the rules that tie them together. It follows the user's decisions of 2026-11-24 (`docs/study_area_plan.md`): the user
@@ -24,7 +24,7 @@ A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's na
 | 4 | `networks/super_network_frt.csv` | `initial_network/base_super_network_lemon_grove_non_micro_hw_10.csv` | yes |
 | 5 | `networks/car_network.csv` | `initial_network/auto_edges.csv` | yes |
 | 6 | `networks/frt_links.csv` | `transit/super_network_transit_edges.csv` | yes (decision B) |
-| 7 | `networks/nodes.csv` | `transit/network_folder/pre_nodes.csv` | yes |
+| 7 | `networks/nodes.csv` | `transit/network_folder/pre_nodes.csv` | only with `aggregation = census_track` (decision G) |
 | 8 | `fleetpy/...` (FleetPy's own folder layout) | `fleetpy_inputs/...` | yes |
 | 9 | `networks/super_network_frt_base_headway.csv` | `initial_network/initial_super_network_non_micro_hw_20.csv` | yes (decision C) |
 
@@ -85,7 +85,8 @@ What the run does with them:
   not count the stops.
 - **One link per node pair.** The networks are read into a `networkx.DiGraph`, which keeps only the last link of a
   `(from_node, to_node)` pair. Lemon Grove's road network has 8 parallel pairs (two different roads between the same
-  two nodes), so 8 of its walk, car and microtransit links are dropped (decision E).
+  two nodes), so 8 of its walk, car and microtransit links are dropped. FleetPy also keeps the last edge of a pair.
+  The checker lists such pairs as a warning; the run goes on (decision E).
 
 ## 1. Area parameter file (`area_parameters.csv`)
 
@@ -176,13 +177,20 @@ in the 7th decimal place).
 
 ## 7. Node file (`networks/nodes.csv`)
 
-One row per walk node. Read for the microtransit waiting times (`get_microtransit_skims.get_node_ct`).
+Optional (decision G). Read only when the model parameter `aggregation` is `census_track` (FleetPy's waiting times
+averaged per zone). With `whole_region` (the setting in use) the run puts every walk node in one zone and does not
+read the file: every zone gets the same period average there, so the zones would not matter
+(`get_microtransit_skims.get_node_ct`, since 2026-11-24).
 
-| Column | Used | Meaning |
-|---|---|---|
-| `node_in_fleetpy` | yes | walk node number (0 to N - 1) |
-| `census_tract` | yes | integer zone of the node; only matters with `aggregation = census_track`. With `whole_region` (the setting in use) any integer works, e.g. 0 |
-| `node_index`, `is_stop_only`, `pos_x`, `pos_y`, `is_demand_node` | no | Lemon Grove: SANDAG node id, flags, coordinates |
+When it is needed, one row per walk node:
+
+| Column | Meaning |
+|---|---|
+| `node_in_fleetpy` | walk node number (0 to N - 1) |
+| `census_tract` | integer zone of the node |
+
+Other columns may be present and are ignored. Lemon Grove's file has seven (`node_index` = SANDAG node id,
+`is_stop_only`, `pos_x`, `pos_y`, `is_demand_node` as well), with 23 census tracts; it stays in the repository.
 
 ## 8. FleetPy inputs (`fleetpy/`)
 
@@ -215,9 +223,9 @@ Phase 4's checker (`tools/check_study_area.py`) is to check these before a run:
 4. Every trip's `start` and `end` is a walk node; `request_id` is unique.
 5. FleetPy's edges, the car links and the walk / microtransit links are the same road edges.
 6. Files 3, 4, 6 and 9 have the same FRT links; file 9 is file 4 at `base_frt_headway`.
-7. `node_in_fleetpy` covers every walk node.
+7. With `aggregation = census_track`: the node file exists and `node_in_fleetpy` covers every walk node.
 8. `<v>` in file 3's name equals `virtual_stop_scenarios`.
-9. No two links with the same `(from_node, to_node)` (decision E).
+9. No two links with the same `(from_node, to_node)`; a warning that names them, not an error (decision E).
 10. Every trip's origin can reach its destination on foot and FRT (the FRT-only network), and by car.
 
 ## What the run writes (not inputs)
@@ -281,8 +289,12 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
 - **C:** (b) keep the base-headway FRT network as an input (file 9, `networks/super_network_frt_base_headway.csv`);
   I-05 stays open.
 - **D:** agreed.
-- **E:** asked for a fuller explanation; open.
+- **E:** (a), after a fuller explanation: the checker warns about duplicate node pairs and names them; the run keeps
+  the last link, as today. (Lemon Grove: 3 parallel road pairs, both directions, plus 2 loops listed twice; in each
+  pair the kept edge is the slower one; FleetPy also keeps the last.)
 - **F:** the run does not need the file; leave it for now and fix it later: I-39.
-- **G:** asked what it means; open.
+- **G:** replaced by (c) after checking that `census_tract` does not matter with `whole_region`: the node file is
+  optional and read only with `aggregation = census_track`. Done the same day (`get_node_ct`; full run
+  `REPRODUCED`; `docs/progress.md`, "Node file optional with whole_region").
 - Also recorded on the user's request: I-38 (outside the microtransit operating periods, scenario travelers ride the
   FRT at the base headway).

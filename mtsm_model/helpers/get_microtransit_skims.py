@@ -22,9 +22,17 @@ from itertools import islice
 
 
 from mtsm_model.helpers import network_algorithms as n_a
+from mtsm_model import config
 import mtsm_paths as mtsm
 
-def get_node_ct(study_area):
+def get_node_ct(study_area, aggregation):
+    """The zone (census tract) of each walk node, for FleetPy's waiting times: ({zone: [nodes]}, {node: zone}).
+    With aggregation "whole_region" every walk node is in one zone (0) and the node file is not read: every zone gets
+    the same period average there, so the zones do not matter (decision G, docs/study_area_inputs.md, 2026-11-24).
+    Only "census_track" reads the zones from pre_nodes.csv."""
+    if aggregation == "whole_region":
+        walk_nodes = list(range(config.NUM_WALK_NODES))
+        return OrderedDict([(0, walk_nodes)]), OrderedDict((node, 0) for node in walk_nodes)
     # pre_node_dir
     # census_tract	node_in_fleetpy	is_demand_node
     census_tract_node = OrderedDict()

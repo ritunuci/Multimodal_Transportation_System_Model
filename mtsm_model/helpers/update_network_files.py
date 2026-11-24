@@ -48,7 +48,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     # "PM"=15-20
     # "EV"=20-24
 
-    census_tract_node, node_census_tract = mt.get_node_ct(study_area)
+    census_tract_node, node_census_tract = mt.get_node_ct(study_area, aggregation)
     print("census_tract_node", len(census_tract_node))
     print("node_census_tract", len(node_census_tract))
 
