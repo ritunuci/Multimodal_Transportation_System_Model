@@ -62,6 +62,7 @@ Paths are relative to the codebase root.
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Decision needed | 2026-11-24 |
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Open | 2026-11-24 |
+| I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 
 ---
 
@@ -465,6 +466,11 @@ Paths are relative to the codebase root.
        `mtsm_paths.area_paths`; the fares (item 2), the type-5 update (item 6), the FRT line duration and the
        ridership file's `travel_time` apply to every area; `<area>_vehtype`; the startup check accepts any area.
        Items 1 (line length from the new FRT network), 3 (duplicate-link check, Phase 4) and 4 remain.
+     - 2026-11-24 (Phase 3 step 1; user's decision (b2)): item 1 is done. The FRT line length and stops come from
+       the route table `networks/frt_routes.csv`, in the format `TRA_input_data_prep` writes (one row per route and
+       direction); the costs add up the rows. Lemon Grove's table gives each direction half of the route's link
+       distances: routes 856 and 916 had lost a link of equal length under the old distinct-distance rule (3,508 m
+       -> 3,702 m, 1,647 m -> 1,844 m). Reference updated (FRT vehicle miles +2.41 %, FRT operating cost +0.52 %).
   6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
      - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
        keep.
@@ -651,6 +657,19 @@ Paths are relative to the codebase root.
 - **Fix (later):** drop the parts in the run and the optimizer together (and the optimizer's fixed `op_hr_15`,
   `virstop_75`); a reference update that renames files only (and the FleetPy demand name inside FleetPy's
   outputs); `fare_scenario` can then leave the parameter file.
+
+### I-41: FleetPy's operator settings are fixed in the code (`create_config_files`)
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 3 of `docs/study_area_plan.md`). Kept in the code
+  for now on the user's decision (Phase 3 decision 3), recorded here on the user's request.
+- **What:** `fleetpy_runner.create_config_files` writes FleetPy's scenario file with fixed values: `op_module`
+  `PoolingIRSOnly`; with repositioning `op_max_VR_con` 3, `op_repo_method` `AlonsoMoraRepositioning`,
+  `op_repo_horizons` 60, `op_repo_timestep` 300; and the scenario names `example_pool_repo_AM_sc_1` /
+  `example_pool_irsonly_sc_1`, by which MTSM finds FleetPy's results (`microtransit.py`,
+  `update_network_files.py`, `output_performance_metrics.py`, `tools/compare_reference.py`). The area's FleetPy
+  constant config (`<area>_constant_config_ir_repo.csv`) has some of them too (`op_repo_timestep` 300).
+- **Impact:** none on results; changing an operator setting needs a code change, and the values are in two places.
+- **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
+  from one place.
 
 ---
 

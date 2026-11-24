@@ -90,18 +90,20 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
         transit_tt_VMT=0
         transit_tt_VMT_base = 0
     else:
-        for (route_id,dist,num_stops) in transit_line_dist_list:
-            F_oper_cost += 2 * (
+        # one term per route and direction (the FRT route table, since 2026-11-24); until then one term per route,
+        # doubled for the two directions ("2 * ...")
+        for (route_id,direction,dist,num_stops) in transit_line_dist_list:
+            F_oper_cost += (
                     F_operating_hrs * 60 / headway) * \
                            transit_line_duration[
-                               route_id] / 60 * frt_cost_per_veh_hour  # 5 lines and $fixed route transit operating cost 170/veh-hour
-            F_oper_cost_base += 2 * (
+                               (route_id, direction)] / 60 * frt_cost_per_veh_hour  # $fixed route transit operating cost 170/veh-hour
+            F_oper_cost_base += (
                     F_operating_hrs * 60 / config.BASE_FRT_HEADWAY) * \
                                 transit_line_duration[
-                                    route_id] / 60 * frt_cost_per_veh_hour  # Ritun Jan 7, 2024: add base F operating cost calculation
-            transit_tt_VMT += 2 * (
+                                    (route_id, direction)] / 60 * frt_cost_per_veh_hour  # Ritun Jan 7, 2024: add base F operating cost calculation
+            transit_tt_VMT += (
                     F_operating_hrs * 60 / headway) * dist
-            transit_tt_VMT_base += 2 * (
+            transit_tt_VMT_base += (
                     F_operating_hrs * 60 / config.BASE_FRT_HEADWAY) * dist
 
     F_gas_cost = transit_tt_VMT * config.F_GAS_PER_MILE

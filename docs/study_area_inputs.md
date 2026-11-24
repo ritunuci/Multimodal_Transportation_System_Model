@@ -28,6 +28,7 @@ A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's na
 | 7 | `networks/nodes.csv` | `transit/network_folder/pre_nodes.csv` | only with `aggregation = census_track` (decision G) |
 | 8 | `fleetpy/...` (FleetPy's own folder layout) | `fleetpy_inputs/...` | yes |
 | 9 | `networks/super_network_frt_base_headway.csv` | `initial_network/initial_super_network_non_micro_hw_20.csv` | yes (decision C) |
+| 10 | `networks/frt_routes.csv` | (new 2026-11-24; the line lengths were computed from file 6) | yes (Phase 3) |
 
 Shared by all study areas: the model parameter file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`
 (decision 2: one shared model file plus the small area file 1; the split is decision A).
@@ -179,14 +180,36 @@ Link type 7 only, between walk node numbers. Lemon Grove: 2,816 links, row for r
 
 ## 6. FRT links (`networks/frt_links.csv`)
 
-The FRT in-vehicle links (type 1), with the column `distance (meters)`. Used for the FRT line length, number of stops
-and line duration (operating cost and FRT vehicle miles), and as the rows of the FRT ridership output files. Lemon
+The FRT in-vehicle links (type 1), with the column `distance (meters)`. Used as the rows of the FRT ridership output
+files (until 2026-11-24 also for the FRT line length, number of stops and line duration, now from file 10). Lemon
 Grove: 130 links, the type-1 links of files 3 and 4 in the same order (the distances differ from the super-network's
 in the 7th decimal place).
 
-- Line length of a route = the sum of its links' *distinct* distances. This halves the length only because the old
-  network has the same distance in both directions (I-34, item 1). A new FRT network needs the route table planned in
-  Phase 3 (`route, length_m, num_stops`).
+- Until 2026-11-24 the line length of a route was the sum of its links' *distinct* distances. This halved the length
+  only because the old network has the same distance in both directions (I-34, item 1), and it lost links of equal
+  length (Lemon Grove routes 856 and 916). Replaced by the route table, file 10.
+
+## 10. FRT route table (`networks/frt_routes.csv`)
+
+One row per route variant, i.e. route and direction: the format of `frt_routes.csv` written by
+`build_frt_network.py` in `TRA_input_data_prep` (Phase 3 decision 1, 2026-11-24). The run reads four columns; any other
+columns (TRA writes `route_variant`, mode, operator, the ABM3 headways, fare, ...) are ignored.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `route` | integer | the route number, as in file 6 |
+| `direction` | integer | the direction (ABM3: 1, 2) |
+| `n_stops` | integer | stops of this route and direction (at least 2) |
+| `length_m` | number | length of this route and direction inside the area (m), the sum of its links' distances |
+
+- Each row is one direction: per day it runs `frt_operating_hours x 60 / headway` times, each run taking
+  `length / frt_speed_mph + n_stops x frt_dwell_time_min + frt_dead_end_time_min`. The FRT operating cost, fuel cost
+  and vehicle miles add up the rows (until 2026-11-24: one row per route, doubled for the two directions).
+- A route of file 6 without a row, a row for a route that has no link, a repeated route and direction, `length_m`
+  <= 0 or `n_stops` < 2 stop the run.
+- Lemon Grove: 12 rows, routes 4, 856, 916, 917, 936, 520 in directions 1 and 2. Its FRT network has the same links
+  in both directions, so each direction gets half of the route's link distances in file 6 (unrounded) and the
+  route's stop nodes; the two rows of a route are equal.
 
 ## 7. Node file (`networks/nodes.csv`)
 
@@ -235,7 +258,8 @@ Phase 4's checker (`tools/check_study_area.py`) is to check these before a run:
 3. Type 2: boarding (walk -> stop) has `travel_time` > 0, alighting (stop -> walk) has 0.
 4. Every trip's `start` and `end` is a walk node; `request_id` is unique.
 5. FleetPy's edges, the car links and the walk / microtransit links are the same road edges.
-6. Files 3, 4, 6 and 9 have the same FRT links; file 9 is file 4 at `base_frt_headway`.
+6. Files 3, 4, 6 and 9 have the same FRT links; file 9 is file 4 at `base_frt_headway`. File 10 has the routes of
+   file 6 (checked by the run).
 7. With `aggregation = census_track`: the node file exists and `node_in_fleetpy` covers every walk node.
 8. `<v>` in file 3's name equals `virtual_stop_scenarios`.
 9. No two links with the same `(from_node, to_node)`; a warning that names them, not an error (decision E).

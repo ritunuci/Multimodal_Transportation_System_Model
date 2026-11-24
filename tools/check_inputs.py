@@ -52,6 +52,7 @@ def area_inputs(area):
     candidates += [(paths.super_network_frt_file, "FRT-only super-network (file 4)"),
                    (paths.car_network_file, "car network (file 5)"),
                    (paths.frt_links_file, "FRT links (file 6)"),
+                   (paths.frt_routes_file, "FRT route table (file 10)"),
                    (paths.nodes_file, "node file (file 7, optional)"),
                    (paths.super_network_frt_base_headway_file, "FRT-only super-network at the base headway (file 9)")]
     for staged in paths.fleetpy_staged:

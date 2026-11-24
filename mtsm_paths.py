@@ -35,6 +35,7 @@ class AreaPaths:
     super_network_frt_base_headway_file: str  # file 9 (initial_network/initial_super_network_non_micro_hw_20.csv)
     car_network_file: str  # file 5 (initial_network/auto_edges.csv)
     frt_links_file: str  # file 6 (transit/super_network_transit_edges.csv)
+    frt_routes_file: str  # file 10, the FRT route table (since 2026-11-24; TRA_input_data_prep's frt_routes.csv)
     nodes_file: str  # file 7, optional (transit/network_folder/pre_nodes.csv)
     manifest_file: str  # checksums of the area's frozen inputs, optional (tools/check_inputs.py)
     # the area's inputs for FleetPy, in FleetPy's folder layout (data/..., studies/...); fleetpy_runner copies them
@@ -76,6 +77,7 @@ def area_paths(area):
         super_network_frt_base_headway_file=os.path.join(networks_dir, "super_network_frt_base_headway.csv"),
         car_network_file=os.path.join(networks_dir, "car_network.csv"),
         frt_links_file=os.path.join(networks_dir, "frt_links.csv"),
+        frt_routes_file=os.path.join(networks_dir, "frt_routes.csv"),
         nodes_file=os.path.join(networks_dir, "nodes.csv"),
         manifest_file=os.path.join(area_dir, "MANIFEST.csv"),
         fleetpy_inputs_dir=fleetpy_inputs_dir,

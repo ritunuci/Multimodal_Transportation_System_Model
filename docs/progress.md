@@ -1382,6 +1382,29 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - `fleetpy_runner.py`: the unused `import pandas as pd` (unused since step 1) removed.
 - Full run: **`REPRODUCED`** (26 files). Phase 2 is complete.
 
+## Phase 3 step 1: FRT route table; reference updated (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 3 decision 1 (user: follow `TRA_input_data_prep`; option (b2)); I-34, item 1.
+- New input `networks/frt_routes.csv` (`docs/study_area_inputs.md`, file 10): one row per route and direction, the
+  format of `frt_routes.csv` from `TRA_input_data_prep/build_frt_network.py`; the run reads `route`, `direction`,
+  `n_stops`, `length_m`.
+- Lemon Grove's table (12 rows): its FRT links have the same distance in both directions (checked: every link has its
+  reverse with the same distance), so each direction gets half of the route's link distances in `frt_links.csv`
+  (`math.fsum`, unrounded) and the route's stop nodes. Compared with the old rule (the sum of a route's distinct link
+  distances, one row per route): routes 4, 917, 936, 520 have the same length to the last bit; 856 and 916 had lost a
+  link of equal length (3,507.99 -> 3,701.99 m, 1,646.99 -> 1,843.99 m); stop counts are the same.
+- Code: `output_performance_metrics.get_transit_line_dist` reads the table (checks: columns, a repeated route and
+  direction, `length_m` > 0, `n_stops` >= 2, the same routes as `frt_links.csv`; tested on a broken copy) and returns
+  `(route, direction, miles, stops)`; `get_transit_line_duration` is keyed by `(route, direction)`; `results.py` adds
+  up the rows (was `2 *` per route). `AreaPaths.frt_routes_file`; the area manifest lists it (42 files).
+- First full run: 25 files identical; the evaluation file differed in 26 values, all FRT cost or VMT or built on them
+  (`F_VMT` +2.41 %, `F_oper_cost` +0.52 %, `tot_sub` 7781.42 -> 7806.04 / base 2320.56 -> 2332.87, subsidies per trip,
+  rider, passenger mile and VMT, `F_PMT/F_VMT`, `tt_VMT`). `F_VMT` and `F_oper_cost` equal an independent calculation
+  from the table bit for bit; `tot_sub` changed by exactly the change of `F_oper_cost`. No choice changed. Reference file
+  replaced (`docs/reference_results/README.md`); second full run: **`REPRODUCED`** (26 files).
+- The optimizer's subsidy objective is built on `tot_sub`, so results of earlier sessions differ slightly (for the
+  reference run `tot_sub` +0.32 %; the change depends on the headway).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

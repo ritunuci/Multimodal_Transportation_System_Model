@@ -127,3 +127,17 @@ case (lines 2 and 4; the base row twice).
   frozen inputs used only by the accessibility were removed (21 -> 15; `mtsm_data/MANIFEST.csv` rewritten), and
   three parameters (`accessibility_thresholds_min`, `fallback_employment_micro`, `fallback_employment_frt`). The
   last version with the accessibility is at git tag `last-with-accessibility`. A second full run printed `REPRODUCED`.
+- **2026-11-24, FRT line costs from the route table** (`docs/study_area_plan.md`, Phase 3 step 1; `docs/open_issues.md`
+  I-34, item 1; `docs/progress.md`): the FRT line length and stops come from the new input
+  `mtsm_data/lemon_grove/networks/frt_routes.csv` (one row per route and direction, the format of `TRA_input_data_prep`),
+  and the FRT operating cost, fuel cost and vehicle miles add up its rows (before: one row per route, doubled). Lemon
+  Grove's table gives each direction half of the route's link distances; the old rule (the sum of a route's distinct
+  link distances) had lost a link of equal length on routes 856 (3,507.99 -> 3,701.99 m) and 916 (1,646.99 ->
+  1,843.99 m); the other four routes and all stop counts are unchanged. A full run differed from the reference only in
+  `output/lemon_grove_evaluation_zonal_partition_False.csv`, in 26 values (both columns): `F_VMT (mi)` 2298.64 -> 2354.03
+  (FRT only 1149.32 -> 1177.02; +2.41 %), `F_oper_cost ($)` 4736.12 -> 4760.74 (2368.06 -> 2380.37; +0.52 %),
+  `tot_sub ($)` 7781.42 -> 7806.04 (2320.56 -> 2332.87), and the subsidies per trip, rider, passenger mile and VMT,
+  `F_PMT/F_VMT` and `tt_VMT (mi)` that depend on them. Checked: `F_VMT` and `F_oper_cost` equal, bit for bit, an
+  independent calculation from the table, and `tot_sub` changed by exactly the change of `F_oper_cost`. No mode share,
+  trip count, time or logsum changed; the other 25 files did not change. The file was replaced by the run's; a second
+  full run printed `REPRODUCED`. The area manifest was rewritten for the new input.

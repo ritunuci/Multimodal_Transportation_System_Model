@@ -87,7 +87,7 @@ def load_study_area(cfg, study_area):
     transit_line_dist_list = output_metrics.get_transit_line_dist(study_area)
     transit_line_duration=output_metrics.get_transit_line_duration(study_area,transit_line_dist_list)
 
-    print("study_area",study_area,"transit_line_duration (route_id,duration (h))",transit_line_duration)
+    print("study_area",study_area,"transit_line_duration ((route_id,direction),duration (h))",transit_line_duration)
 
     evaluation_file = os.path.join(output_folder, "%s_evaluation_zonal_partition_False.csv" % str(study_area))
     paths = mtsm.area_paths(study_area)

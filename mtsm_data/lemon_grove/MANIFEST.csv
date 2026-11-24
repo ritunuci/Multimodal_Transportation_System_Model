@@ -5,6 +5,7 @@ networks/super_network_micro_virstop_75.csv,339868,61b14e7e49cb7284ce446f017d931
 networks/super_network_frt.csv,151984,b555fcde69cf5d7517be34f0d85492957ea219e5c6d45ca8d4a2190fa4e9d0e6,FRT-only super-network (file 4)
 networks/car_network.csv,143026,d1bc3d021d4a5d065f8d1e23600c0e8fe570765dd2268f0d9f41845679fcf1c5,car network (file 5)
 networks/frt_links.csv,5285,7d8510337fd97ebaf81c245f60ead4ea53786c5e6264b080ba5276ad864426a0,FRT links (file 6)
+networks/frt_routes.csv,314,c8b3e80176005828fc8dd579bd32dab3c3700e99ab99dae987cebf55bd98394f,FRT route table (file 10)
 networks/nodes.csv,50955,c9365fe83dc11a5d97884d944e00b840a9d33d1a9f7a2ea59aec284b77630d7b,"node file (file 7, optional)"
 networks/super_network_frt_base_headway.csv,151984,37a80ce95bb99d733592e4f80827881522a174b5fcfc8fe53128c0c8468775c7,FRT-only super-network at the base headway (file 9)
 fleetpy/data/networks/lemon_grove_example_network/base/nodes.csv,35487,8c43814c1a6c1f73bb55cbc08b6751d1ae06525d96b16441beaedfc9a1f7efff,FleetPy road network nodes

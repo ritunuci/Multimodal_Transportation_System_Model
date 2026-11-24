@@ -277,3 +277,29 @@ Decisions:
 Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 2 step 1: no Lemon Grove logic branches").
 Step 2 done 2026-11-24 (`docs/progress.md`, "Phase 2 step 2: node numbering derived from the files"); I-13 closed.
 Phase 2 complete.
+
+### Phase 3: steps and decisions (user, 2026-11-24)
+
+1. FRT route table: follow the format of `TRA_input_data_prep` (user: "check TRA_input_data_prep for this"). Its
+   `build_frt_network.py` writes `frt_routes.csv`, one row per route variant (route x direction) with `route`,
+   `direction`, `route_variant`, `n_stops`, `n_links`, `length_m` (inside the area), headways, fare, ... How MTSM's
+   line cost uses the rows: decided below, (b2).
+2. FleetPy scenario files: (a) generated at run time into FleetPy's staging folder; the 23 tracked per-fleet-size
+   files (14 example, 9 debug) deleted; `forecast_f` written empty (as the tracked 2-vehicle file; a lone space,
+   written until now and in 5 tracked files, is read by FleetPy as None too, so no result changed).
+3. FleetPy's operator settings stay in `create_config_files`: I-41.
+4. The 8 unused files in Lemon Grove's FleetPy network folder deleted (`base.zip`, the two `*_all_infos.geojson`,
+   `edges_old.csv`, `sd_edges.csv`, `sd_nodes.csv`, `pre_network/0719_*.csv`).
+5. Steps: 1. the route table; 2. the scenario-file generator and the cleanup of 2 and 4. One commit each.
+
+Found for decision 1 (2026-11-24): MTSM's cost takes one one-way length and stop count per route and doubles it
+(both directions). Summing the two directions' rows instead gives Lemon Grove's FRT cost and VMT with other
+last-digit rounding (tested: equal at some headways, not at others), so a per-direction formula changes the
+reference's reported values in their last digits.
+
+Decision 1, final (user, 2026-11-24): (b2), the option that matches `TRA_input_data_prep`: MTSM reads TRA's format
+(`route`, `direction`, `n_stops`, `length_m`) and adds up the rows (runs x duration per direction); Lemon Grove's
+table has two equal rows per route with half of the route's link distances (the old rule lost a link on routes 856
+and 916); a documented reference update.
+
+Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 3 step 1: FRT route table").

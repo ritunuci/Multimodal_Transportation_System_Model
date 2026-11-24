@@ -1,4 +1,5 @@
 import os
+import sys
 import csv
 from collections import OrderedDict
 import pandas as pd
@@ -44,67 +45,58 @@ def get_fleetpy_eval_output_metrics(repositioning):
     return util_rate,veh_occ,total_vmt,empty_vkm,avg_speed_mph
 
 def get_transit_line_dist(study_area):
-    # networks/frt_links.csv (until 2026-11-24 transit/super_network_transit_edges.csv, only for "lemon_grove")
-    new_transit_network_file = mtsm.area_paths(study_area).frt_links_file
+    """The FRT route table networks/frt_routes.csv (docs/study_area_inputs.md, file 10; the format of
+    TRA_input_data_prep's frt_routes.csv): one row per route variant, i.e. route x direction. Returns
+    [(route, direction, length (mi), stops)] in the file's order; other columns are not read.
 
-    with open(new_transit_network_file) as transit_network:
-        csvreader = csv.DictReader(transit_network)
-        routes=[]
-        for data in csvreader:
-            route_id = int(data["route"])
-            if route_id not in routes:
-                routes.append(route_id)
-    transit_network.close()
-    # routes=[1,2,3,4,5]
-    # new_transit_network_file = os.path.join(network_folder, "new_nodes_transit_network.csv")
+    Since 2026-11-24 (docs/study_area_plan.md, Phase 3 step 1; I-34 item 1). Until then the length of a route was the
+    sum of its distinct link distances in frt_links.csv and the stops its distinct from-nodes, one row per route, and
+    the costs doubled it for the two directions; the distinct-distance rule lost links of the same length (Lemon Grove
+    routes 856 and 916: 3,508 m instead of 3,702 m and 1,647 m instead of 1,844 m)."""
+    paths = mtsm.area_paths(study_area)
+    route_file = paths.frt_routes_file
+    if not os.path.isfile(route_file):
+        sys.exit(f"ERROR: the FRT route table is missing: {route_file} (docs/study_area_inputs.md, file 10)")
+    transit_line_dist_list = []
+    problems = []
+    with open(route_file, newline="") as f:
+        reader = csv.DictReader(f)
+        missing = {"route", "direction", "n_stops", "length_m"} - set(reader.fieldnames or [])
+        if missing:
+            sys.exit(f"ERROR: {route_file}: missing columns {sorted(missing)}")
+        seen = set()
+        for line_number, data in enumerate(reader, start=2):
+            route_id, direction = int(data["route"]), int(data["direction"])
+            length_m, num_stops = float(data["length_m"]), int(data["n_stops"])
+            if (route_id, direction) in seen:
+                problems.append(f"line {line_number}: route {route_id} direction {direction} is repeated")
+            if length_m <= 0 or num_stops < 2:
+                problems.append(f"line {line_number}: length_m must be > 0 and n_stops >= 2")
+            seen.add((route_id, direction))
+            transit_line_dist_list.append((route_id, direction, length_m / config.MILE_METER, num_stops))
+    with open(paths.frt_links_file, newline="") as f:
+        link_routes = {int(data["route"]) for data in csv.DictReader(f)}
+    table_routes = {route_id for (route_id, direction, dist, num_stops) in transit_line_dist_list}
+    if link_routes != table_routes:
+        problems.append(f"the routes differ from those of {paths.frt_links_file}: only in the table "
+                        f"{sorted(table_routes - link_routes)}, only in the links {sorted(link_routes - table_routes)}")
+    if problems:
+        sys.exit(f"ERROR: {route_file}:\n  " + "\n  ".join(problems))
 
-    with open(new_transit_network_file) as transit_network:
-        csvreader = csv.DictReader(transit_network)
-
-        pre_route_id=0
-        pre_start_node=0
-        transit_rt_dist_dict=OrderedDict()
-        transit_line_dist_list=[]
-        transit_rt_stps_dict=OrderedDict()
-        for route_id in routes:
-            transit_rt_dist_dict[route_id]=[]
-            transit_rt_stps_dict[route_id]=[]
-        for data in csvreader:
-            #from_node	to_node	distance (meters)	travel_time (sec)	route
-
-
-            from_node = int(data["from_node"])
-            route_id = int(data["route"])
-            distance = float(data["distance (meters)"])
-            # print("route_id", route_id,"distance",distance)
-            if route_id in transit_rt_dist_dict:
-                if distance not in transit_rt_dist_dict[route_id]:
-                    transit_rt_dist_dict[route_id].append(distance)
-            if from_node not in transit_rt_stps_dict[route_id]:
-                transit_rt_stps_dict[route_id].append(from_node)
-
-        transit_network.close()
-    # print("start_node_route",start_node_route,"end_node_route",end_node_route)
-    num_ts_stops = 0
-    for route_id in routes:
-        route_dist_list=transit_rt_dist_dict[route_id]
-        # print("route",route_id,"dist_list",transit_rt_dist_dict[route_id])
-        route_tt_dist = sum(route_dist_list)/config.MILE_METER  # until 2026-11-23 a separate 1609 m per mile (I-21)
-        num_ts_stops = len(transit_rt_stps_dict[route_id])
-        transit_line_dist_list.append((route_id,route_tt_dist,num_ts_stops))
-
-    print("transit_line_dist_list (route_id,miles,num_stops)",transit_line_dist_list)
+    print("transit_line_dist_list (route_id,direction,miles,num_stops)",transit_line_dist_list)
 
     return transit_line_dist_list
 
 def get_transit_line_duration(study_area,transit_line_dist_list):
+    """{(route, direction): duration of one run (h)}: length / speed + stops x dwell time + dead-end time.
+    (Keyed by route only until 2026-11-24.)"""
     transit_line_duration = OrderedDict()
     dwell_time = config.PARAMETERS[gp.G_FRT_DWELL_TIME_MIN] / 60  # unit hour
     dead_end_time = config.PARAMETERS[gp.G_FRT_DEAD_END_TIME_MIN] / 60  # unit hour - (10min) on one end
     # every study area since 2026-11-24 (only "lemon_grove" before)
     avg_speed = config.PARAMETERS[gp.G_FRT_SPEED_MPH]
-    for (route_id, dist, num_stops) in transit_line_dist_list:
-        transit_line_duration[route_id] = dist / avg_speed + num_stops * dwell_time + dead_end_time  # dwell time (3min/stop), dead-end times (10min)
+    for (route_id, direction, dist, num_stops) in transit_line_dist_list:
+        transit_line_duration[(route_id, direction)] = dist / avg_speed + num_stops * dwell_time + dead_end_time  # dwell time (3min/stop), dead-end times (10min)
 
     return transit_line_duration
 
