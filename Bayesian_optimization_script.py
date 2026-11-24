@@ -156,6 +156,8 @@ METRIC_COLS = ['car_users',
                'avg_F_fare',
                'avg_T_fare',
                'avg_auto_gas_cost',
+               'tt_auto_parking_cost ($)',  # the two parking lines since 2026-11-23 (in the evaluation file since 2026-11-19)
+               'avg_auto_parking_cost',
                'tt_o_pckt_cost ($)',
                'tt_mob_lgsm_inc_with_micro',
                'tt_gen_cost',

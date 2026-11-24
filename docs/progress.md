@@ -1083,6 +1083,7 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Not changed: the optimizer. Its objectives (subsidy, logsum) do not use the out-of-pocket cost, and the new lines
   are not in its `METRIC_COLS`, so `per_call_results.csv` does not record them. Its candidate files are copies of the
   frozen file and carry the new parameters.
+  - 2026-11-23: the two parking lines added to `METRIC_COLS` (section "Optimizer records the two parking lines").
 - The demand file has `parking_dur_min` = 0 for all 3,742 travelers, so the parking cost is 0 and no value changed.
   Full run against the reference: 29 of 32 files identical; the evaluation file and the two individual-results
   files differ only by the new lines / column (without them, byte for byte the reference; all new values 0.0). The
@@ -1182,6 +1183,22 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - The reference's evaluation file replaced by the run's (`docs/reference_results/README.md`, "Changes to this
   reference"); second full run: **`REPRODUCED`** (32 identical).
 - Not fixed here: the FRT link distances may be miles x 1000 (I-31), which would affect the FRT line length anyway.
+
+## Optimizer records the two parking lines (2026-11-23)
+
+- User's decision: add `tt_auto_parking_cost ($)` and `avg_auto_parking_cost` (evaluation file since 2026-11-19) to
+  `METRIC_COLS` in `Bayesian_optimization_script.py`, after `avg_auto_gas_cost` as in the evaluation file (66 names).
+  `per_call_results.csv` now has these two columns, read from the microtransit column like the other metrics.
+- Reporting only: objectives, candidate choice and the model run unchanged. The file is rewritten at the start of
+  each optimizer session and never read back, so older sessions' files simply have two columns fewer.
+- All 66 names exist in the reference evaluation file (checked with a script); both values are 0.0 there, since
+  every parking duration in the demand file is 0.
+- Full run: `compare_reference.py` **32 identical, `REPRODUCED`**.
+  - Two earlier runs that day were started by mistake with the base Anaconda Python (3.7.6, numpy 1.19, pandas
+    1.0.1), which a bare `python` finds in the session's shell. Both gave `NOT REPRODUCED`: 9 files (FleetPy's
+    results, the five `iter_*_1_user-stats.csv`, and `fleetpy_wait` in the evaluation file) differed only in the
+    last digits of floating-point values (e.g. `fleetpy_wait` 227.79615808611635 -> 227.79615808611547); choices and
+    counts were the same. Run with the `fleetpy` env's interpreter, the reference reproduces.
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
