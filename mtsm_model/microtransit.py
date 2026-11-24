@@ -57,8 +57,8 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
     # print(f"{Fore.RED}Local agents added to FleetPy: {extra_demand}{Style.RESET_ALL}")
     # print(f"{Fore.RED}Total demand in FleetPy: {num_M_travelers+extra_demand}{Style.RESET_ALL}")
     #######################################################################################################
-    # FleetPy runs on copies of the inputs in mtsm_data/lemon_grove/fleetpy_inputs/ placed inside fleetpy/
-    cc_fleetpy, sc_fleetpy = fleetpy.stage_inputs(cc, sc)
+    # FleetPy runs on copies of the inputs in mtsm_data/<area>/fleetpy_inputs/ placed inside fleetpy/
+    cc_fleetpy, sc_fleetpy = fleetpy.stage_inputs(cc, sc, study_area)
     fleetpy.run_scenarios(cc_fleetpy, sc_fleetpy, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=cfg.random_seed)
     fleetpy.warn_non_optimal_repositioning(cc_fleetpy, sc_fleetpy)
     list_results = fleetpy.read_outputs_for_comparison(cc_fleetpy, sc_fleetpy)

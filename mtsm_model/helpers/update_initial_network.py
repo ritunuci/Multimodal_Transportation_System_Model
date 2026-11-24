@@ -10,7 +10,7 @@ import mtsm_paths as mtsm
 def update_initial_net_with_bayesian_headway(headway, study_area):
 
     if study_area=="lemon_grove":
-        initial_net_folder = mtsm.LG_INITIAL_NETWORK_DIR
+        initial_net_folder = mtsm.area_paths(study_area).initial_network_dir
         base_initial_net_file_micro = os.path.join(initial_net_folder, "base_super_network_lemon_grove_micro_hw_10_virstop_75.csv")
         updated_initial_net_file_micro = os.path.join(initial_net_folder, f"initial_super_network_micro_hw_{headway}_virstop_75.csv")
 

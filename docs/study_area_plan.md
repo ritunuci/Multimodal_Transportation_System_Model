@@ -242,8 +242,13 @@ Decisions:
 
 1. The study area's name stays in the model file, renamed `test_area` -> `study_area`; it selects `mtsm_data/<area>/`
    (amends decision A: the area file does not repeat the name).
-2. Where the run writes its generated networks: open (the user is looking at the files first).
+2. Where the run writes its generated networks: (a), decided after looking at the files. The inputs move to
+   `networks/` (the two `base_*` templates become `super_network_micro_virstop_75.csv` and `super_network_frt.csv`,
+   the base-headway network `super_network_frt_base_headway.csv`); `initial_network/` keeps only what the run writes.
+   A run at the base headway then no longer overwrites an input (I-05).
 3. One manifest per area (`mtsm_data/<area>/MANIFEST.csv`), optional for a new area (the startup check uses it when it
    exists); the shared model file stays in `mtsm_data/MANIFEST.csv`.
 4. Leftover parts of output file names stay for now: I-40.
 5. The three steps above, in that order, one commit each.
+
+Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 1: per-area paths").

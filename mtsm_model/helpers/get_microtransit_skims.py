@@ -38,8 +38,7 @@ def get_node_ct(study_area, aggregation):
     census_tract_node = OrderedDict()
     node_census_tract = OrderedDict()
     demand_nodes_fleetpy = []
-    if study_area == "lemon_grove":
-        network_folder = mtsm.LG_TRANSIT_NETWORK_DIR
+    network_folder = mtsm.area_paths(study_area).transit_network_dir  # until 2026-11-24 only for "lemon_grove"
     pre_node_dir = os.path.join(network_folder, 'pre_nodes.csv')
 
     with open(pre_node_dir) as f:

@@ -1,6 +1,7 @@
 """Compare the outputs of the last run with the stored reference outputs, byte by byte.
 
-    python tools/compare_reference.py [reference_name]      default reference_name: lemon_grove_seed0
+    python tools/compare_reference.py [reference_name] [study_area]
+        defaults: reference_name lemon_grove_seed0, study_area lemon_grove (the area whose run outputs are compared)
 
 Run it after a full run with the reference's input (mtsm_data/, checked by tools/check_inputs.py) and seed. Every
 reference file must be byte-identical; anything else means the code change altered the results.
@@ -15,15 +16,20 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import mtsm_paths as mtsm
 
-# reference sub-folder -> folder the run writes that file to
-LOCATIONS = {
-    "output": mtsm.LG_OUTPUT_DIR,
-    "intermediate/final_network": mtsm.LG_FINAL_NETWORK_DIR,
-    "intermediate/initial_network": mtsm.LG_INITIAL_NETWORK_DIR,
-    "intermediate/indiv_output": mtsm.LG_INDIV_OUTPUT_DIR,
-    "intermediate/fleetpy_demand": mtsm.LG_FLEETPY_DEMAND_DIR,
-    "intermediate/fleetpy_results": os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_repo_AM_sc_1"),
-}
+
+def locations(study_area):
+    """reference sub-folder -> folder the run writes that file to (until 2026-11-24 the Lemon Grove dict LOCATIONS)"""
+    paths = mtsm.area_paths(study_area)
+    return {
+        "output": paths.output_dir,
+        "intermediate/final_network": paths.final_network_dir,
+        "intermediate/initial_network": paths.initial_network_dir,
+        "intermediate/indiv_output": paths.indiv_output_dir,
+        "intermediate/fleetpy_demand": paths.fleetpy_demand_dir,
+        "intermediate/fleetpy_results": os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_repo_AM_sc_1"),
+    }
+
+
 LOCATION_DEPENDENT = {"00_config.json"}
 REFERENCE_FLEETPY_ROOT = r"D:\Ritun\Siwei_Micro_Transit\FleetPy_SanDiego"  # FleetPy's root in the reference run
 
@@ -33,10 +39,10 @@ def _normalized(data, fleetpy_root):
     return data.replace(escaped, b"<FLEETPY_ROOT>")
 
 
-def compare(reference_name="lemon_grove_seed0"):
+def compare(reference_name="lemon_grove_seed0", study_area="lemon_grove"):
     ref_root = os.path.join(mtsm.CODE_ROOT, "docs", "reference_results", reference_name)
     n_same, problems = 0, []
-    for sub, live_dir in LOCATIONS.items():
+    for sub, live_dir in locations(study_area).items():
         ref_dir = os.path.join(ref_root, *sub.split("/"))
         for name in sorted(os.listdir(ref_dir)):
             live = os.path.join(live_dir, name)
@@ -62,7 +68,8 @@ def compare(reference_name="lemon_grove_seed0"):
 
 if __name__ == "__main__":
     name = sys.argv[1] if len(sys.argv) > 1 else "lemon_grove_seed0"
-    n_same, problems = compare(name)
+    area = sys.argv[2] if len(sys.argv) > 2 else "lemon_grove"
+    n_same, problems = compare(name, area)
     print("\n".join(problems))
     print(f"{n_same} identical, {len(problems)} differing/missing -> "
           f"{'REPRODUCED' if not problems else 'NOT REPRODUCED'} ({name})")

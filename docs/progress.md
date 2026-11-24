@@ -1255,6 +1255,31 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - `pre_nodes.csv` stays a frozen input of Lemon Grove (used with `census_track`).
 - Same day, decision E: the planned checker warns about duplicate `(from_node, to_node)` pairs; nothing changed now.
 
+## Phase 1 step 1: per-area paths (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 1 (user's decisions of 2026-11-24 there). No file moved in this step.
+- `mtsm_paths.py`: the Lemon Grove constants `LG_*` are replaced by `area_paths(area)`, which returns a frozen
+  `AreaPaths` with the area's folders (same folders as before for `lemon_grove`; the comment of each field names the
+  old constant). It rejects a name that is not a plain folder name. `FLEETPY_DIR`, `FLEETPY_RESULTS_DIR` and
+  `INPUT_PARAMETER_DIR` stay.
+- Users changed:
+  - Branches that only chose a folder for `"lemon_grove"` are gone: `folder_directory.determine_folders`,
+    `output_performance_metrics.get_transit_line_dist`, `get_transit_link_info`, `write_fixed_transit_link_vmt`
+    (its path part), `get_microtransit_skims.get_node_ct`, `update_network_files.update_network_files`
+    (`copy_csv` now gets the study area).
+  - `update_initial_network.py`: the folder from `area_paths`; its Lemon Grove branch stays (the file names, step 2).
+  - `fleetpy_runner`: `LG_STAGED_INPUTS` is now `staged_inputs(study_area)`; `stage_inputs` gets the study area
+    (`microtransit.py` passes it).
+  - `scenarios.py` (FleetPy scenario folder), `config.check_run_config` (output folders, for each area of the run).
+  - `tools/compare_reference.py`: `locations(study_area)`; optional second argument, the study area (default
+    `lemon_grove`).
+  - Optimizer: `STUDY_AREA` from the frozen parameter file, its folders from `area_paths`; the evaluation file's name
+    from the area. Paths only; not run (it is checked with `py_compile`).
+- Still Lemon Grove only, for Phase 2: the fares and the type-5 update (`network_algorithms`, `update_network_files`),
+  the FRT line duration and the ridership file's `travel_time` (`output_performance_metrics`), the startup check,
+  `lemon_grove_vehtype` in `create_config_files`, FleetPy's check of 88 users.
+- Full run: **`REPRODUCED`** (26 files).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -76,9 +76,12 @@ from mtsm_model import mtsm_global_parameters as gp
 # from matplotlib import pyplot as plt
 # from matplotlib.cm import ScalarMappable
 # ----------------------------------------------------------------------------------------------------------------------
+# the study area of the frozen parameter file; its folders (until 2026-11-24 the Lemon Grove constants LG_*)
+STUDY_AREA = config.PARAMETERS[gp.G_TEST_AREA]
+AREA_PATHS = mtsm.area_paths(STUDY_AREA)
 folder_name = str("LG_submission_results_R2")
-optimization_folder_path = os.path.join(mtsm.LG_OPTIMIZATION_OUTPUT_DIR, folder_name)
-indv_res_folder_path = os.path.join(mtsm.LG_OPTIMIZATION_OUTPUT_DIR, folder_name, "indv_res")
+optimization_folder_path = os.path.join(AREA_PATHS.optimization_output_dir, folder_name)
+indv_res_folder_path = os.path.join(AREA_PATHS.optimization_output_dir, folder_name, "indv_res")
 agg_sim_output_folder_path = os.path.join(optimization_folder_path, "per_itr_agg_sim_output")
 os.makedirs(optimization_folder_path, exist_ok=True)
 os.makedirs(indv_res_folder_path, exist_ok=True)
@@ -247,8 +250,8 @@ def evaluation_value(evaluation, column, metric):
 def model_output_files(values):
     """the two model output files collect_output() reads for this candidate: (evaluation csv, individual results csv)"""
     a, b, c, d, e, h, f = values
-    output_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR, "lemon_grove_evaluation_zonal_partition_False.csv")
-    indv_res_csv_path = os.path.join(mtsm.LG_OUTPUT_DIR,
+    output_csv_path = os.path.join(AREA_PATHS.output_dir, "%s_evaluation_zonal_partition_False.csv" % STUDY_AREA)
+    indv_res_csv_path = os.path.join(AREA_PATHS.output_dir,
                                      f"individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv")
     return output_csv_path, indv_res_csv_path
 

@@ -262,6 +262,8 @@ def check_run_config(cfg):
     if input_problems:
         print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm_data/MANIFEST.csv -> results are not comparable to "
               f"docs/reference_results: {input_problems}{Style.RESET_ALL}")
-    # LG_FLEETPY_DEMAND_DIR: the run writes FleetPy's demand there; it holds no tracked file since 2026-11-23 (I-11)
-    for folder in (mtsm.LG_FINAL_NETWORK_DIR, mtsm.LG_INDIV_OUTPUT_DIR, mtsm.LG_OUTPUT_DIR, mtsm.LG_FLEETPY_DEMAND_DIR):
-        os.makedirs(folder, exist_ok=True)
+    # fleetpy_demand_dir: the run writes FleetPy's demand there; it holds no tracked file since 2026-11-23 (I-11)
+    for area in cfg.test_area:
+        paths = mtsm.area_paths(area)
+        for folder in (paths.final_network_dir, paths.indiv_output_dir, paths.output_dir, paths.fleetpy_demand_dir):
+            os.makedirs(folder, exist_ok=True)

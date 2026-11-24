@@ -10,8 +10,8 @@ import mtsm_paths as mtsm
 from mtsm_model import config
 from mtsm_model import mtsm_global_parameters as gp
 
-def copy_csv(filename,iteration):
-    indiv_output_folder = mtsm.LG_INDIV_OUTPUT_DIR
+def copy_csv(filename,iteration,study_area):
+    indiv_output_folder = mtsm.area_paths(study_area).indiv_output_dir  # until 2026-11-24 LG_INDIV_OUTPUT_DIR
     df = pd.read_csv(filename)
     output_file_dic=new_path=os.path.join(indiv_output_folder,'iter_%s_1_user-stats.csv' % str(iteration))
     df.to_csv(output_file_dic,index=False)
@@ -85,7 +85,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
         Fleetpy_output_folder = os.path.join(mtsm.FLEETPY_RESULTS_DIR, "example_pool_irsonly_sc_1")
     Fleetpy_user_stats = os.path.join(Fleetpy_output_folder, "1_user-stats.csv")
 
-    copy_csv(Fleetpy_user_stats, iteration)
+    copy_csv(Fleetpy_user_stats, iteration, study_area)
     # lines_number=10
     # i=0
     num_rq_served = 0
@@ -288,15 +288,13 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
 
     #output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
     # STALE: demand_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/demand_data/%s" % str(study_area)
-    if study_area == "lemon_grove":
-        # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
-        initial_network_folder = mtsm.LG_INITIAL_NETWORK_DIR
-        # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
-    if study_area == "lemon_grove":
-        final_network_folder = mtsm.LG_FINAL_NETWORK_DIR
-    else:
-        mtsm.not_self_contained("study_area=%s" % study_area)
-        # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
+    # the area's folders (until 2026-11-24 only for "lemon_grove": LG_INITIAL_NETWORK_DIR, LG_FINAL_NETWORK_DIR)
+    # STALE: fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network"
+    # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\initial_network_folder\initial_network
+    paths = mtsm.area_paths(study_area)
+    initial_network_folder = paths.initial_network_dir
+    final_network_folder = paths.final_network_dir
+    # STALE: final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/final_network_folder" % str(study_area)
     # STALE: output_folder = "D:/Ritun/Siwei_Micro_Transit/Bayesian_Optimization/%s/output_folder" % str(study_area)
     # D:\Siwei_Micro_Transit\TR_PartA\Data\lemon_grove\output_folder
 

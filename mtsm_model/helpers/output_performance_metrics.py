@@ -44,9 +44,8 @@ def get_fleetpy_eval_output_metrics(repositioning):
     return util_rate,veh_occ,total_vmt,empty_vkm,avg_speed_mph
 
 def get_transit_line_dist(study_area):
-    if study_area == "lemon_grove":
-        network_folder = mtsm.LG_TRANSIT_DIR
-        new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
+    network_folder = mtsm.area_paths(study_area).transit_dir  # until 2026-11-24 only for "lemon_grove" (LG_TRANSIT_DIR)
+    new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
 
     with open(new_transit_network_file) as transit_network:
         csvreader = csv.DictReader(transit_network)
@@ -110,9 +109,8 @@ def get_transit_line_duration(study_area,transit_line_dist_list):
     return transit_line_duration
 
 def get_transit_link_info(study_area):
-    if study_area == "lemon_grove":
-        network_folder = mtsm.LG_TRANSIT_DIR
-        new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
+    network_folder = mtsm.area_paths(study_area).transit_dir  # until 2026-11-24 only for "lemon_grove" (LG_TRANSIT_DIR)
+    new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
 
     transit_link_list=[]
     with open(new_transit_network_file) as transit_network:
@@ -148,13 +146,14 @@ def vmt_and_link_dict_creation(time_periods,transit_link_list):
     return transit_link_vmt,transit_link_pax,off_micro_transit_link_pax,off_micro_transit_link_vmt
 
 def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,test_scenario,microtransit):
-    if study_area == "lemon_grove":
-        network_folder = mtsm.LG_TRANSIT_DIR
-        new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
-        # output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
-        # transit_link_vmt_output = os.path.join(output_folder, "debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders.csv" % (str(debug_mode),str(study_area),str(microtransit),str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
-        output_folder = mtsm.LG_OUTPUT_DIR
-        transit_link_vmt_output = os.path.join(output_folder,"debug_False_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders_scen_%s.csv" % (str(study_area), str(microtransit),str(fleet_size), str(M_operating_hrs), str(headway),str(virstop), str(test_scenario)))
+    # until 2026-11-24 only for "lemon_grove" (LG_TRANSIT_DIR, LG_OUTPUT_DIR)
+    paths = mtsm.area_paths(study_area)
+    network_folder = paths.transit_dir
+    new_transit_network_file = os.path.join(network_folder, "super_network_transit_edges.csv")
+    # output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
+    # transit_link_vmt_output = os.path.join(output_folder, "debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders.csv" % (str(debug_mode),str(study_area),str(microtransit),str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
+    output_folder = paths.output_dir
+    transit_link_vmt_output = os.path.join(output_folder,"debug_False_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders_scen_%s.csv" % (str(study_area), str(microtransit),str(fleet_size), str(M_operating_hrs), str(headway),str(virstop), str(test_scenario)))
 
 
     transit_link_list = []

@@ -148,7 +148,7 @@ def scenarios(cfg, area, log_f):
                 num_fleet_size_scen = 0
                 for fleet_size in area.fleet_size_scenarios: #fleetsize - influence the cost & mobility
                     num_fleet_size_scen+=1
-                    scs_path = mtsm.LG_FLEETPY_SCENARIOS_DIR
+                    scs_path = mtsm.area_paths(study_area).fleetpy_scenarios_dir
                     num_operating_periods_scen = 0
 
                     if repositioning ==True:

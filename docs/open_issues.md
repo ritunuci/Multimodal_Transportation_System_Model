@@ -477,6 +477,14 @@ Paths are relative to the codebase root.
      - the FleetPy network and staged inputs (`fleetpy_runner.LG_STAGED_INPUTS`).
      - 2026-11-24: the accessibility calculation was removed (I-37); `output_performance_metrics.py` went from
        1,035 to 197 lines and the region and MGRA paths are gone from `mtsm_paths.py`.
+     - 2026-11-24 (`docs/study_area_plan.md`, Phase 1 step 1): the `LG_*` constants are replaced by
+       `mtsm_paths.area_paths(area)`; the branches that only chose a folder are gone (`folder_directory`,
+       `get_transit_line_dist`, `get_transit_link_info`, `write_fixed_transit_link_vmt`, `get_node_ct`,
+       `update_network_files`), so item 1's `UnboundLocalError` no longer occurs.
+       `fleetpy_runner.LG_STAGED_INPUTS` is `staged_inputs(area)`. Still for Lemon Grove only (Phase 2): the fares
+       (item 2), the type-5 update (item 6), the FRT line duration and the ridership file's `travel_time`, the
+       file names in `update_initial_network.py`, `lemon_grove_vehtype` in `create_config_files`, and the startup
+       check.
   6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
      - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
        keep.
