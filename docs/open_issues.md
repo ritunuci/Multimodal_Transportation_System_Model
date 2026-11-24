@@ -34,7 +34,7 @@ Paths are relative to the codebase root.
 | I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | Closed (2026-11-08) | 2026-11-07 |
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Closed (2026-11-23) | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Closed (2026-11-23) | 2026-11-08 |
-| I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
+| I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Closed (2026-11-24) | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Closed (2026-11-23) | 2026-11-09 |
@@ -66,17 +66,6 @@ Paths are relative to the codebase root.
 ---
 
 ## Open
-
-### I-13: The `micro_only` scenario uses the downtown San Diego node limit
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).
-- **What:** in `update_network_files.update_network_files`, the `micro_only` branch sets the microtransit waiting
-  time only on waiting links with `from_node <= 731`, the last walk node of the downtown San Diego network, and
-  without a study-area check. The `micro` branch uses `from_node <= 1098` for Lemon Grove.
-- **Impact:** none on the current results: the run only uses `microtransit_running_scenarios = ["micro"]`. A
-  Lemon Grove `micro_only` run would leave the waiting time of walk nodes 732-1098 at their initial values.
-- **Fix:** decided to leave it for now (2026-11-08). If `micro_only` is needed: use the same Lemon Grove check as
-  the `micro` branch, then test it. The user decided on 2026-11-09 to keep `micro_only` and `non_micro` as
-  options in the restructuring (`docs/entry_script_refactor_plan.md`).
 
 ### I-14: The preprocessing code still contains downtown San Diego
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
@@ -666,6 +655,23 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-13: The `micro_only` scenario uses the downtown San Diego node limit
+- **Status:** Closed (2026-11-24). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).
+- **What:** in `update_network_files.update_network_files`, the `micro_only` branch sets the microtransit waiting
+  time only on waiting links with `from_node <= 731`, the last walk node of the downtown San Diego network, and
+  without a study-area check. The `micro` branch uses `from_node <= 1098` for Lemon Grove.
+- **Impact:** none on the current results: the run only uses `microtransit_running_scenarios = ["micro"]`. A
+  Lemon Grove `micro_only` run would leave the waiting time of walk nodes 732-1098 at their initial values.
+- **Fix:** decided to leave it for now (2026-11-08). If `micro_only` is needed: use the same Lemon Grove check as
+  the `micro` branch, then test it. The user decided on 2026-11-09 to keep `micro_only` and `non_micro` as
+  options in the restructuring (`docs/entry_script_refactor_plan.md`).
+- **Resolution (2026-11-24):** user's decision 1 of Phase 2 (`docs/study_area_plan.md`): the `micro_only` branch of
+  `update_network_files` updates the waiting time on the type-5 links from every walk node up to the area's last walk
+  node (`config.LAST_WALK_NODE`, derived from the files: Lemon Grove 1098), like the `micro` branch. The parameter
+  `micro_only_max_walk_node` (731; in the parameter file since 2026-11-10) was removed. The reference run does not use
+  `micro_only`; full run `REPRODUCED`. Not tested: a `micro_only` run (it needs a network no area has, see
+  `docs/study_area_inputs.md`).
 
 ### I-05: `FRT_headway = 20` overwrites a frozen network
 - **Status:** Closed (2026-11-24). **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the

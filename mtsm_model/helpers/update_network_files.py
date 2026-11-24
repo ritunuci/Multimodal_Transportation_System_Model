@@ -375,7 +375,9 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                         route = int(data["route"])
 
                         if link_type == 5:  # adjust the microtransit waiting time according to fleetpy results
-                            if from_node <= config.PARAMETERS[gp.G_MICRO_ONLY_MAX_WALK_NODE]:
+                            # the area's last walk node since 2026-11-24 (I-13; until then micro_only_max_walk_node, 731,
+                            # downtown San Diego's last walk node)
+                            if from_node <= config.LAST_WALK_NODE:
                                 census_tract = node_census_tract[from_node]
                                 travel_time = census_tract_avg_wait_time[time_period][census_tract]  # update the connector link travel time as the waiting time
 

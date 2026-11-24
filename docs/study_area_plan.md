@@ -275,3 +275,5 @@ Decisions:
 4. The two steps above, one commit each.
 
 Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 2 step 1: no Lemon Grove logic branches").
+Step 2 done 2026-11-24 (`docs/progress.md`, "Phase 2 step 2: node numbering derived from the files"); I-13 closed.
+Phase 2 complete.

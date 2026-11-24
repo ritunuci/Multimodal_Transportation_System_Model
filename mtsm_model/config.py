@@ -193,10 +193,53 @@ PM_END = PARAMETERS[gp.G_PM_END_H] * 3600
 PARKING_RATE_PEAK = PARAMETERS[gp.G_PARKING_RATE_PEAK]  # AM and PM, $ per started interval
 PARKING_RATE_OFFPEAK = PARAMETERS[gp.G_PARKING_RATE_OFFPEAK]  # MD and EV, $ per started interval
 
-# ---- Lemon Grove super-network: walk node i (0..NUM_WALK_NODES-1) is microtransit node MICROTRANSIT_NODE_OFFSET + i,
-# and FleetPy node i ----
-NUM_WALK_NODES = PARAMETERS[gp.G_NUM_WALK_NODES]
-MICROTRANSIT_NODE_OFFSET = PARAMETERS[gp.G_MICROTRANSIT_NODE_OFFSET]
+# ---- node numbering of the study area's super-networks (docs/study_area_inputs.md, "Node numbering"): walk node i
+# (0..NUM_WALK_NODES-1) is FleetPy node i and microtransit node MICROTRANSIT_NODE_OFFSET + i. Derived from the files
+# since 2026-11-24 (decision 3, docs/study_area_plan.md Phase 2 step 2); until then the parameters num_walk_nodes and
+# microtransit_node_offset (Lemon Grove: 1099, 1171) ----
+def derive_node_numbering(study_area, virstops):
+    """(N, M): N = the number of FleetPy road nodes (nodes.csv; node_index must be 0..N-1), M = the smallest node of
+    the microtransit in-vehicle links (type 4) of the super-network with microtransit, whose nodes must be exactly
+    M..M+N-1, the same in the file of every virtual-stop share; every microtransit boarding / alighting link (type 5)
+    must join walk node i and microtransit node M + i. Stops with a message if a file breaks the rule."""
+    paths = mtsm.area_paths(study_area)
+    nodes_file = os.path.join(paths.fleetpy_inputs_dir, *paths.fleetpy_staged[0].split("/"))  # FleetPy's nodes.csv
+    with open(nodes_file, newline="") as f:
+        node_index = [int(row["node_index"]) for row in csv.DictReader(f)]
+    n = len(node_index)
+    if node_index != list(range(n)):
+        sys.exit(f"ERROR: {nodes_file}: node_index must be 0, 1, ..., N-1 in this order (docs/study_area_inputs.md)")
+    offsets = set()
+    for virstop in virstops:
+        network_file = paths.super_network_micro_file(virstop)
+        micro_nodes = set()
+        waiting_links = []
+        with open(network_file, newline="") as f:
+            for row in csv.DictReader(f):
+                link_type = int(row["link_type"])
+                if link_type == 4:
+                    micro_nodes.update((int(row["from_node"]), int(row["to_node"])))
+                elif link_type == 5:
+                    waiting_links.append((int(row["from_node"]), int(row["to_node"])))
+        m = min(micro_nodes) if micro_nodes else None
+        if m is None or micro_nodes != set(range(m, m + n)):
+            sys.exit(f"ERROR: {network_file}: the nodes of the microtransit links (type 4) must be M..M+N-1, with "
+                     f"N = {n} FleetPy nodes (docs/study_area_inputs.md, node numbering)")
+        if m < n:
+            sys.exit(f"ERROR: {network_file}: the first microtransit node ({m}) must come after the {n} walk nodes")
+        wrong = [(a, b) for a, b in waiting_links if not ((a < n and b == a + m) or (b < n and a == b + m))]
+        if wrong:
+            sys.exit(f"ERROR: {network_file}: {len(wrong)} microtransit waiting links (type 5) do not join walk node i "
+                     f"and microtransit node {m} + i, e.g. {wrong[0]}")
+        offsets.add(m)
+    if len(offsets) != 1:
+        sys.exit(f"ERROR: the super-networks of the virtual-stop shares {virstops} number their microtransit nodes "
+                 f"differently: {sorted(offsets)}")
+    return n, offsets.pop()
+
+
+NUM_WALK_NODES, MICROTRANSIT_NODE_OFFSET = derive_node_numbering(PARAMETERS[gp.G_STUDY_AREA],
+                                                                 PARAMETERS[gp.G_VIRTUAL_STOP_SCENARIOS])
 
 # ---- gas cost ----
 F_GAS_PER_MILE = PARAMETERS[gp.G_F_GAS_PER_MILE]  # The fuel cost for the CNG buses averaged $0.35 per mile

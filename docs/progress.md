@@ -1363,6 +1363,25 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   files; no tracked file matches an ignore pattern.
 - Full run: **`REPRODUCED`** (26 files, 3:57).
 
+## Phase 2 step 2: node numbering derived from the files (2026-11-24)
+
+- Decision 3 of 2026-11-24 (`docs/study_area_inputs.md`) and Phase 2 decision 1 (I-13).
+- `config.derive_node_numbering(study_area, virstops)` gives `NUM_WALK_NODES` (`N`) and `MICROTRANSIT_NODE_OFFSET`
+  (`M`), which were the parameters `num_walk_nodes` and `microtransit_node_offset`:
+  - `N` = the rows of FleetPy's `nodes.csv` (its `node_index` must be 0..N-1);
+  - `M` = the smallest node of the type-4 links of the super-network with microtransit; those nodes must be exactly
+    M..M+N-1, the same in the file of every virtual-stop share, and every type-5 link must join walk node i and
+    microtransit node M + i.
+  - Otherwise the run stops with a message. Checked on copies in the scratchpad: Lemon Grove gives 1099 and 1171; one
+    FleetPy node fewer and type-4 nodes shifted without their type-5 links stop the run; type-4 and type-5 shifted
+    together give the shifted offset.
+- I-13 closed: the `micro_only` branch of `update_network_files` uses `config.LAST_WALK_NODE` (was
+  `micro_only_max_walk_node`, 731, downtown San Diego's last walk node).
+- The three parameters left `area_parameters.csv` (15 left) and `mtsm_global_parameters.py` (45 keys); the area
+  manifest was rewritten.
+- `fleetpy_runner.py`: the unused `import pandas as pd` (unused since step 1) removed.
+- Full run: **`REPRODUCED`** (26 files). Phase 2 is complete.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

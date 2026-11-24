@@ -70,10 +70,8 @@ G_PARKING_RATE_OFFPEAK = "parking_rate_offpeak"  # PARKING_RATE_OFFPEAK
 # ---- path search ----
 G_ENABLE_NUM_TRANSFER_PENALTY = "enable_num_transfer_penalty"  # new 2026-11-11; to be turned on with a new reference (I-25)
 
-# ---- Lemon Grove super-network node numbering ----
-G_NUM_WALK_NODES = "num_walk_nodes"  # NUM_WALK_NODES
-G_MICROTRANSIT_NODE_OFFSET = "microtransit_node_offset"  # MICROTRANSIT_NODE_OFFSET
-G_MICRO_ONLY_MAX_WALK_NODE = "micro_only_max_walk_node"  # update_network_files.py: from_node <= 731 (I-13)
+# ---- node numbering: num_walk_nodes and microtransit_node_offset are derived from the network files since 2026-11-24
+# (config.derive_node_numbering); micro_only_max_walk_node (731) is the area's last walk node since then (I-13) ----
 
 # ---- costs ----
 G_CAR_GAS_COST_PER_METER = "car_gas_cost_per_meter"  # network_algorithms.py: 0.00025 * link_length
@@ -136,9 +134,6 @@ PARAMETER_TYPES = {
     G_PARKING_RATE_PEAK: FLOAT,
     G_PARKING_RATE_OFFPEAK: FLOAT,
     G_ENABLE_NUM_TRANSFER_PENALTY: BOOL,
-    G_NUM_WALK_NODES: INT,
-    G_MICROTRANSIT_NODE_OFFSET: INT,
-    G_MICRO_ONLY_MAX_WALK_NODE: INT,
     G_CAR_GAS_COST_PER_METER: FLOAT,
     G_F_GAS_PER_MILE: FLOAT,
     G_M_GAS_PER_MILE: FLOAT,
@@ -156,8 +151,8 @@ PARAMETER_TYPES = {
 }
 
 # the keys of the study area's file area_parameters.csv (user's decision A, docs/study_area_inputs.md): the area's
-# virtual-stop share, base FRT service and FRT line data, and its local prices and costs. The node numbering is here
-# too until it is derived from the network files (Phase 2; decision 3). Every other key is in the model file.
+# virtual-stop share, base FRT service and FRT line data, and its local prices and costs (the node numbering was here
+# until it was derived from the network files on 2026-11-24). Every other key is in the model file.
 AREA_PARAMETERS = (
     G_VIRTUAL_STOP_SCENARIOS,
     G_BASE_FRT_HEADWAY,
@@ -174,8 +169,5 @@ AREA_PARAMETERS = (
     G_PARKING_CHARGE_INTERVAL_MIN,
     G_PARKING_RATE_PEAK,
     G_PARKING_RATE_OFFPEAK,
-    G_NUM_WALK_NODES,
-    G_MICROTRANSIT_NODE_OFFSET,
-    G_MICRO_ONLY_MAX_WALK_NODE,
 )
 MODEL_PARAMETERS = tuple(key for key in PARAMETER_TYPES if key not in AREA_PARAMETERS)

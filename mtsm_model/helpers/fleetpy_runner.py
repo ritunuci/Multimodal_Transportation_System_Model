@@ -16,7 +16,6 @@ import shutil
 import sys
 import traceback
 
-import pandas as pd
 from colorama import Fore, Style
 
 import mtsm_paths as mtsm

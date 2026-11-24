@@ -51,7 +51,9 @@ Every network file uses one set of integer node numbers. The code relies on this
   microtransit node `M + i`.
 - `N` (`num_walk_nodes`) and `M` (`microtransit_node_offset`) are derived from the files (decision 3): `N` = the
   number of rows of FleetPy's `nodes.csv`; `M` = the smallest node of the microtransit in-vehicle links (type 4).
-  Today they are parameters.
+  Since 2026-11-24 (Phase 2 step 2, `config.derive_node_numbering`); until then they were parameters. The run stops
+  with a message if FleetPy's `node_index` is not 0..N-1, if the type-4 nodes are not M..M+N-1 (the same in every
+  virtual-stop share's file), or if a type-5 link does not join walk node i and microtransit node M + i.
 - Every trip starts and ends at a walk node. The car network uses the walk node numbers.
 
 ## Link types
@@ -119,9 +121,10 @@ the model file and this file and stops if a key is in the wrong file, missing or
 The study area's name is not in this file: it is `study_area` in the model file (`test_area` until 2026-11-24;
 Phase 1 decision 1), which selects `mtsm_data/<area>/`.
 
-To be removed from the parameter files (derived instead, Phase 2): `num_walk_nodes`, `microtransit_node_offset`
-(decision 3) and `micro_only_max_walk_node` (I-13: the `micro_only` branch should use the area's last walk node).
-Until then they are in this file (Lemon Grove: 1099, 1171, 731).
+Removed from the parameter files on 2026-11-24 (Phase 2 step 2; they were in this file from Phase 1 step 3 until
+then): `num_walk_nodes`, `microtransit_node_offset` (derived from the files, decision 3) and
+`micro_only_max_walk_node` (the `micro_only` branch uses the area's last walk node, I-13). Lemon Grove's file has
+15 parameters.
 
 ## 2. Demand (`demand/demand.csv`)
 
