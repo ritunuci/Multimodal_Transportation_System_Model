@@ -98,3 +98,15 @@ case (lines 2 and 4; the base row twice).
   other 29 did not change. The parameter file (a frozen input) has the two new lines; `mtsm_data/MANIFEST.csv` was
   rewritten for it. Same day: `parking_factor_peak` (1) and `parking_factor_offpeak` (0.5) were removed and the rates
   set to 1 and 0.5 ($ per started 30 min), the same charges; no reference file changed.
+- **2026-11-23, one meters-per-mile value** (`docs/open_issues.md` I-21): the FRT line lengths (1609 m per mile) and
+  FleetPy's vkm and speed (1.609 km per mile) now use `meters_per_mile` (1609.34; km per mile = 1.60934); the
+  parameters `meters_per_mile_frt_lines` and `km_per_mile_fleetpy` were removed. These values are used only for
+  results computed after convergence, so paths, choices and FleetPy's runs did not change. A full run differed from
+  the reference only in `output/lemon_grove_evaluation_zonal_partition_False.csv`, in 34 values (both columns where
+  they exist): `F_VMT (mi)`, `M_VMT (mi)` and `M_avg_speed (mph)` x 0.99978873 (= 1609 / 1609.34), e.g. `F_VMT`
+  2299.12 -> 2298.64 and `M_VMT` 136.863 -> 136.834; `F_oper_cost ($)` 4736.33 -> 4736.12 (FRT only 2368.17 ->
+  2368.06); `M_oper_cost ($)` 3975.274 -> 3975.258; `tot_sub ($)` 7781.65 -> 7781.42 (FRT only 2320.67 -> 2320.56);
+  and the subsidies per trip, rider, passenger mile and VMT, `F_PMT/F_VMT`, `M_PMT/M_VMT` and `tt_VMT (mi)` that
+  depend on them (largest relative change 0.021 %). The metric names and the 76 lines stayed; the other 31 files did
+  not change. The file was replaced by the run's; a second full run printed `REPRODUCED`. The parameter file (a
+  frozen input) lost the two lines; `mtsm_data/MANIFEST.csv` was rewritten for it.

@@ -710,10 +710,12 @@ def get_fleetpy_eval_output_metrics(repositioning):
     # util_rate_=util_rate["MoD_0"]
     veh_occ = df.loc["occupancy"]["MoD_0"]
     total_vkm = df.loc["total vkm"]["MoD_0"]
-    total_vmt = total_vkm/config.PARAMETERS[gp.G_KM_PER_MILE_FLEETPY]
+    # km -> miles with meters_per_mile (until 2026-11-23 a separate 1.609 km per mile; I-21)
+    km_per_mile = config.MILE_METER / 1000
+    total_vmt = total_vkm/km_per_mile
     empty_vkm = df.loc["% empty vkm"]["MoD_0"]
     avg_speed_kmh = df.loc["avg driving velocity [km/h]"]["MoD_0"]
-    avg_speed_mph = avg_speed_kmh/config.PARAMETERS[gp.G_KM_PER_MILE_FLEETPY]
+    avg_speed_mph = avg_speed_kmh/km_per_mile
     print("util_rate(%)",util_rate,"veh_occ",veh_occ,"total_vmt (miles)",total_vmt,"empty_vkm(%)",empty_vkm,"avg_speed (vmp)",avg_speed_mph)
     return util_rate,veh_occ,total_vmt,empty_vkm,avg_speed_mph
 
@@ -764,7 +766,7 @@ def get_transit_line_dist(study_area):
     for route_id in routes:
         route_dist_list=transit_rt_dist_dict[route_id]
         # print("route",route_id,"dist_list",transit_rt_dist_dict[route_id])
-        route_tt_dist = sum(route_dist_list)/config.PARAMETERS[gp.G_METERS_PER_MILE_FRT_LINES]
+        route_tt_dist = sum(route_dist_list)/config.MILE_METER  # until 2026-11-23 a separate 1609 m per mile (I-21)
         num_ts_stops = len(transit_rt_stps_dict[route_id])
         transit_line_dist_list.append((route_id,route_tt_dist,num_ts_stops))
 

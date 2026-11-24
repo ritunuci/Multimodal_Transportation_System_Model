@@ -42,7 +42,7 @@ Paths are relative to the codebase root.
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
 | I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Closed (2026-11-11) | 2026-11-09 |
-| I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Open | 2026-11-10 |
+| I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Closed (2026-11-23) | 2026-11-10 |
 | I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Open | 2026-11-11 |
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
@@ -153,18 +153,6 @@ Paths are relative to the codebase root.
   1, every microtransit trip gets the transfer discount on its start fare, not only trips after FRT.
 - **To decide:** is this intended? If not, apply the factor to the start fare only after an FRT leg, like the
   distance fare. This changes results for `Fixed2MicroFactor != 1` (not the reference).
-
-### I-21: Three different meters-per-mile values (1609.34, 1609, 1.609 km)
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-10 (one parameter file, `docs/constant_config_plan.md`).
-- **What:** the code converts miles with three different values, now three parameters in
-  `mtsm_constant_configurations.csv`: `meters_per_mile` 1609.34 (fares, gas costs, VMT; `config.MILE_METER`),
-  `meters_per_mile_frt_lines` 1609 (FRT line lengths, `output_performance_metrics.get_transit_line_dist`) and
-  `km_per_mile_fleetpy` 1.609 (FleetPy's vkm and km/h, `output_performance_metrics.get_fleetpy_eval_output_metrics`).
-  They were kept apart so that the results stayed identical (user's decision 2: separate keys now, merge later).
-- **Impact:** small differences in the FRT line durations and operating costs and in the microtransit VMT and speed
-  reported from FleetPy (1609 vs 1609.34: about 0.02 %).
-- **Fix (later, user's intention):** use one value (`meters_per_mile`, 1.60934 km) everywhere and remove the two other
-  keys. This changes results: make and document a new reference in `docs/reference_results/`.
 
 ### I-22: The path search can miss the least-cost path when a transfer discount applies
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
@@ -627,6 +615,32 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-21: Three different meters-per-mile values (1609.34, 1609, 1.609 km)
+- **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-10 (one parameter file, `docs/constant_config_plan.md`).
+- **What:** the code converts miles with three different values, now three parameters in
+  `mtsm_constant_configurations.csv`: `meters_per_mile` 1609.34 (fares, gas costs, VMT; `config.MILE_METER`),
+  `meters_per_mile_frt_lines` 1609 (FRT line lengths, `output_performance_metrics.get_transit_line_dist`) and
+  `km_per_mile_fleetpy` 1.609 (FleetPy's vkm and km/h, `output_performance_metrics.get_fleetpy_eval_output_metrics`).
+  They were kept apart so that the results stayed identical (user's decision 2: separate keys now, merge later).
+- **Impact:** small differences in the FRT line durations and operating costs and in the microtransit VMT and speed
+  reported from FleetPy (1609 vs 1609.34: about 0.02 %).
+- **Fix (later, user's intention):** use one value (`meters_per_mile`, 1.60934 km) everywhere and remove the two other
+  keys. This changes results: make and document a new reference in `docs/reference_results/`.
+- **Resolution (user's decisions 2026-11-23: now, with a reference update; keep 1609.34, not the exact 1609.344;
+  FleetPy's km per mile = `meters_per_mile` / 1000; remove the two keys):**
+  `output_performance_metrics.get_transit_line_dist` and `get_fleetpy_eval_output_metrics` use `config.MILE_METER`;
+  `meters_per_mile_frt_lines` and `km_per_mile_fleetpy` removed from the parameter file and
+  `mtsm_global_parameters.py`; `MANIFEST.csv` rewritten. Both values fed only results computed after convergence, so
+  paths, choices and FleetPy did not change. A full run differed from the reference only in the evaluation file (34
+  values: FRT and microtransit VMT and speed x 0.99978873, FRT and microtransit operating cost, subsidies and the
+  ratios built on them; `tot_sub` 7781.65 -> 7781.42); the file was replaced, recorded in
+  `docs/reference_results/README.md`, and a second full run printed `REPRODUCED`. The optimizer's subsidy objective
+  for the reference candidate moves by the same amount (old sessions differ by up to about 0.02 %). A parameter file
+  that still has one of the two keys stops with "unknown parameter".
+- **Not fixed here (see I-31):** the FRT link distances may be miles x 1000, not metres (their sums are about 1.6 x
+  shorter than the straight lines between the end stops). The FRT line length is computed from them, so it may be off
+  by that factor, whichever meters-per-mile value is used.
 
 ### I-16: The aggregate convergence test is unfinished
 - **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).

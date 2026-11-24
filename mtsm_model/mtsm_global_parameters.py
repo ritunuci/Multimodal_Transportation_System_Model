@@ -85,10 +85,9 @@ G_FRT_DEAD_END_TIME_MIN = "frt_dead_end_time_min"
 # ---- microtransit waiting time ----
 G_DEFAULT_MICRO_WAIT_TIME = "default_micro_wait_time"  # update_network_files.py: 180 s
 
-# ---- unit conversions that disagree (decision 2 of docs/constant_config_plan.md: separate keys, merge later) ----
+# ---- units (one meters-per-mile value since 2026-11-23: meters_per_mile_frt_lines 1609 and km_per_mile_fleetpy 1.609
+# were merged into it; I-21) ----
 G_METERS_PER_MILE = "meters_per_mile"  # MILE_METER
-G_METERS_PER_MILE_FRT_LINES = "meters_per_mile_frt_lines"  # output_performance_metrics.get_transit_line_dist: 1609
-G_KM_PER_MILE_FLEETPY = "km_per_mile_fleetpy"  # output_performance_metrics: FleetPy's vkm and km/h, 1.609
 
 # ---- accessibility (output_performance_metrics) ----
 G_ACCESSIBILITY_THRESHOLDS_MIN = "accessibility_thresholds_min"  # minutes_set = [5, 10, 15]
@@ -147,8 +146,6 @@ PARAMETER_TYPES = {
     G_FRT_DEAD_END_TIME_MIN: INT,
     G_DEFAULT_MICRO_WAIT_TIME: INT,
     G_METERS_PER_MILE: FLOAT,
-    G_METERS_PER_MILE_FRT_LINES: INT,
-    G_KM_PER_MILE_FLEETPY: FLOAT,
     G_ACCESSIBILITY_THRESHOLDS_MIN: INT_LIST,
     G_FALLBACK_EMPLOYMENT_MICRO: INT_LIST,
     G_FALLBACK_EMPLOYMENT_FRT: INT_LIST,

@@ -1167,6 +1167,22 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - A parameter file that still has `indiv_converg_test` now stops with "unknown parameter".
 - Full run: `compare_reference.py` **32 identical, `REPRODUCED`**.
 
+## One meters-per-mile value; reference updated (I-21, 2026-11-23)
+
+- User's decisions: do it now with a reference update; keep `meters_per_mile` 1609.34 (not the exact 1609.344, which
+  would also change the fares and so the choices); FleetPy's km per mile = `meters_per_mile` / 1000; remove the two
+  other keys.
+- `output_performance_metrics`: the FRT line lengths (was 1609) and FleetPy's vkm and km/h (was 1.609) use
+  `config.MILE_METER`. `meters_per_mile_frt_lines` and `km_per_mile_fleetpy` removed (parameter file,
+  `mtsm_global_parameters.py`); `MANIFEST.csv` rewritten.
+- First full run: 31 identical; the evaluation file differed in 34 values, all of them the FRT and microtransit VMT
+  and speed (x 0.99978873 = 1609 / 1609.34), the operating costs and the subsidies and ratios built on them (largest
+  change 0.021 %; `tot_sub` 7781.65 -> 7781.42). Metric names and lines unchanged. Both values fed only the results
+  after convergence; paths, choices and FleetPy are unchanged.
+- The reference's evaluation file replaced by the run's (`docs/reference_results/README.md`, "Changes to this
+  reference"); second full run: **`REPRODUCED`** (32 identical).
+- Not fixed here: the FRT link distances may be miles x 1000 (I-31), which would affect the FRT line length anyway.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
