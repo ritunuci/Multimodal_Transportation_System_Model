@@ -90,7 +90,8 @@ def load_study_area(cfg, study_area):
     print("study_area",study_area,"transit_line_duration (route_id,duration (h))",transit_line_duration)
 
     evaluation_file = os.path.join(output_folder, "%s_evaluation_zonal_partition_False.csv" % str(study_area))
-    demand_file = os.path.join(demand_folder,"%s_trips_nodes_study_area_with_beta.csv" % str(study_area))
+    paths = mtsm.area_paths(study_area)
+    demand_file = paths.demand_file  # demand/demand.csv (until 2026-11-24 demand_data/<area>_trips_nodes_study_area_with_beta.csv)
 
     ##############################################
     #1108: read the initial network information
@@ -102,11 +103,14 @@ def load_study_area(cfg, study_area):
     microtransit_setup_scenarios = ["micro", "non_micro","micro_only"]
     time_periods = ["AM", "MD", "PM", "EV"]
 
-    auto_network_dir=os.path.join(initial_network_folder,"auto_edges.csv")
+    auto_network_dir = paths.car_network_file  # networks/car_network.csv (until 2026-11-24 initial_network/auto_edges.csv)
     auto_network = n_a.read_super_network(auto_network_dir)
 
     #### Create initial and final network scenarios
-    initial_super_network_dir, initial_super_network, final_super_network_dir, final_super_network=tst_scen_create.scen_create(microtransit_setup_scenarios,config.VIRTUAL_STOP_SCENARIOS,config.OPERATING_PERIODS_SCENARIOS,time_periods,fleet_size_scenarios,headway_scenarios,initial_network_folder,final_network_folder,config.BASE_FRT_HEADWAY)
+    initial_super_network_dir, initial_super_network, final_super_network_dir, final_super_network = tst_scen_create.scen_create(
+        microtransit_setup_scenarios, config.VIRTUAL_STOP_SCENARIOS, config.OPERATING_PERIODS_SCENARIOS, time_periods,
+        fleet_size_scenarios, headway_scenarios, initial_network_folder, final_network_folder, config.BASE_FRT_HEADWAY,
+        base_frt_headway_file=paths.super_network_frt_base_headway_file)
     #################################################
     # 1108: prepare for the request files - demand side
     ###################################################
@@ -140,7 +144,7 @@ def scenarios(cfg, area, log_f):
 
         num_headway_scen = 0
         for headway in area.headway_scenarios: #put bus design parameter in the most outer loop
-            init_net.update_initial_net_with_bayesian_headway(headway,study_area)  #Ritun
+            init_net.update_initial_net_with_bayesian_headway(headway,study_area,config.VIRTUAL_STOP_SCENARIOS)  #Ritun
             num_headway_scen+=1
             num_virstop_scen = 0
             for virstop in config.VIRTUAL_STOP_SCENARIOS: #virtual stops - not necessarily influence the cost, but will influence the mobility

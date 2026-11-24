@@ -31,10 +31,10 @@ holds no model parameter or input of MTSM.
 - Only `fleetpy_runner.py` (repository root) imports FleetPy. It puts this folder on `sys.path`, because FleetPy
   imports itself as the top-level package `src`.
 - FleetPy finds `data/` and `studies/` next to `src/`, so they stay in this folder.
-- MTSM's Lemon Grove inputs for FleetPy are kept in `mtsm_data/lemon_grove/fleetpy_inputs/` (same folder layout as this
-  folder) and copied into this folder before each FleetPy run (`fleetpy_runner.stage_inputs`): the road network,
-  the initial vehicle distribution, the vehicle type `lemon_grove_vehtype` (capacity 8) and the two scenario config
-  files of the run. The copies are git-ignored. Model inputs belong there, not in this folder.
+- MTSM's Lemon Grove inputs for FleetPy are kept in `mtsm_data/lemon_grove/fleetpy/` (`fleetpy_inputs/` until 2026-11-24;
+  same folder layout as this folder) and copied into this folder before each FleetPy run (`fleetpy_runner.stage_inputs`):
+  the road network, the initial vehicle distribution, the vehicle type `lemon_grove_vehtype` (capacity 8) and the two
+  scenario config files of the run. The copies are git-ignored. Model inputs belong there, not in this folder.
 - In every iteration, MTSM writes the demand for FleetPy into
   `data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` and reads FleetPy's results from
   `studies/example_study/results/`. Both are git-ignored. The demand folder holds no tracked file; the run creates

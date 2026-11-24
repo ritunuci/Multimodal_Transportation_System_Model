@@ -31,13 +31,14 @@ Run parameters (in `mtsm_constant_configurations.csv` since 2026-11-10; until th
 
 The other 40 parameters of the file have the values the code had before 2026-11-10 (`fare_scenario` 10). Other
 inputs: the frozen files in `mtsm_data/` (21, with the parameter file; 15 since 2026-11-24), with checksums in
-`mtsm_data/MANIFEST.csv`.
+`mtsm_data/MANIFEST.csv` (since 2026-11-24 the parameter file there and Lemon Grove's inputs, under their new names, in
+`mtsm_data/lemon_grove/MANIFEST.csv`; `docs/study_area_inputs.md` gives the old and new names).
 
 | Folder | Contents | Written by the run to |
 |---|---|---|
 | `output/` | the reported result files (9; 5 since 2026-11-24) | `mtsm_data/lemon_grove/output/` |
 | `intermediate/final_network/` | super-networks updated after the last iteration | `mtsm_data/lemon_grove/final_network/` |
-| `intermediate/initial_network/` | super-networks rebuilt from the `base_*` files | `mtsm_data/lemon_grove/initial_network/` |
+| `intermediate/initial_network/` | super-networks rebuilt from the `base_*` files (since 2026-11-24 the templates in `mtsm_data/lemon_grove/networks/`) | `mtsm_data/lemon_grove/initial_network/` |
 | ~~`intermediate/initial_network_0719/`~~ | copies of those, read back by the accessibility code; removed 2026-11-24 | ~~`mtsm_data/lemon_grove/initial_network_0719/`~~ |
 | `intermediate/indiv_output/` | FleetPy user statistics of iterations 0–4 | `mtsm_data/lemon_grove/indiv_output/` |
 | `intermediate/fleetpy_demand/` | demand handed to FleetPy in the last iteration | `fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/` |

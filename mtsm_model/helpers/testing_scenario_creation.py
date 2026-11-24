@@ -3,7 +3,10 @@ import os
 
 from mtsm_model import config
 
-def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_periods_scenarios,time_periods,fleet_size_scenarios,headway_scenarios,initial_network_folder,final_network_folder, base_FRT_headway = None):  # Ritun Jan 3
+def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_periods_scenarios,time_periods,fleet_size_scenarios,headway_scenarios,initial_network_folder,final_network_folder, base_FRT_headway = None, base_frt_headway_file = None):  # Ritun Jan 3
+    # base_frt_headway_file: the FRT-only network at the base headway, an input (networks/super_network_frt_base_headway.csv;
+    # until 2026-11-24 initial_network/initial_super_network_non_micro_hw_<base_FRT_headway>.csv, which a run at that
+    # headway overwrote, I-05)
     initial_super_network_dir = OrderedDict()
     initial_super_network = OrderedDict()
     final_super_network_dir = OrderedDict()
@@ -73,6 +76,6 @@ def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_pe
                                                                                 str(headway), str(virstop)))
                 else:
                     # print("WE ARE HERE!!!!!!!!!")
-                    initial_super_network_dir[microtransit][base_FRT_headway] = os.path.join(initial_network_folder,"initial_super_network_%s_hw_%s.csv" % (str(microtransit), str(base_FRT_headway)))
+                    initial_super_network_dir[microtransit][base_FRT_headway] = base_frt_headway_file
 
     return initial_super_network_dir,initial_super_network,final_super_network_dir,final_super_network

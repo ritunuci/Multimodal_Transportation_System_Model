@@ -26,7 +26,7 @@ Paths are relative to the codebase root.
 | I-02 | The optimizer overwrites the frozen parameter file | Medium | Closed (2026-11-10) | 2026-10-23 |
 | I-03 | The optimizer has not been run since the changes | Medium | Closed (2026-11-13) | 2026-10-23 |
 | I-04 | Rows 1 and 2 of the evaluation CSV are identical | Medium | Closed (2026-11-12) | 2026-10-23 |
-| I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Decision needed | 2026-10-23 |
+| I-05 | `FRT_headway = 20` overwrites a frozen network | Medium | Closed (2026-11-24) | 2026-10-23 |
 | I-06 | Accessibility uses a hard-coded network for its node list | Medium | Closed (2026-11-24) | 2026-10-23 |
 | I-07 | `docs/progress.md` plan table is out of date | Low | Closed (2026-11-07) | 2026-11-07 |
 | I-08 | FleetPy's `README.md` still installs from `requirements.txt` | Low | Closed (2026-11-07) | 2026-10-23 |
@@ -66,19 +66,6 @@ Paths are relative to the codebase root.
 ---
 
 ## Open
-
-### I-05: `FRT_headway = 20` overwrites a frozen network
-- **Status:** Decision needed. **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
-  reproducibility work.
-- **What:** `update_initial_net_with_bayesian_headway()` (`update_initial_network.py`; in
-  `pre_process/process_network.py` until 2026-11-08) writes
-  `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm_data/lemon_grove/initial_network/`. For headway 20 this is
-  the frozen `initial_super_network_non_micro_hw_20.csv` (the fixed-route network at the base headway).
-- **Impact:** a run or optimizer candidate with headway 20 changes a frozen input. The startup check and
-  `tools/check_inputs.py` would then report it as changed, and later runs would read the rebuilt file instead of the
-  original.
-- **To decide:** is the overwrite intended? If not, give the rebuilt file its own name, or stop the run before it
-  overwrites a frozen file.
 
 ### I-13: The `micro_only` scenario uses the downtown San Diego node limit
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).
@@ -675,6 +662,26 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-05: `FRT_headway = 20` overwrites a frozen network
+- **Status:** Closed (2026-11-24). **Severity:** Medium. **Found:** 2026-10-23 (Phase 1b). This predates the
+  reproducibility work.
+- **What:** `update_initial_net_with_bayesian_headway()` (`update_initial_network.py`; in
+  `pre_process/process_network.py` until 2026-11-08) writes
+  `initial_super_network_non_micro_hw_{headway}.csv` into `mtsm_data/lemon_grove/initial_network/`. For headway 20 this is
+  the frozen `initial_super_network_non_micro_hw_20.csv` (the fixed-route network at the base headway).
+- **Impact:** a run or optimizer candidate with headway 20 changes a frozen input. The startup check and
+  `tools/check_inputs.py` would then report it as changed, and later runs would read the rebuilt file instead of the
+  original.
+- **To decide:** is the overwrite intended? If not, give the rebuilt file its own name, or stop the run before it
+  overwrites a frozen file.
+- **Resolution (2026-11-24):** fixed by Phase 1 step 2 of `docs/study_area_plan.md` (user's decision 2 (a) there).
+  The inputs moved to `mtsm_data/lemon_grove/networks/`; the base case reads the base-headway network from
+  `networks/super_network_frt_base_headway.csv`, and the run writes its per-headway networks into `initial_network/`,
+  which now holds only what the run writes. Checked: building the networks for headway 20 writes
+  `initial_network/initial_super_network_non_micro_hw_20.csv` and leaves every input unchanged
+  (`tools/check_inputs.py`); that file is byte-identical to the input (as for the overwrites before, e.g. by the
+  optimizer's headway-20 candidates on 2026-11-12, which is why they went unnoticed). Full run: `REPRODUCED`.
 
 ### I-37: The Lemon Grove accessibility used downtown San Diego's node list
 - **Status:** Closed (2026-11-24). **Severity:** High (wrong reported values). **Found:** 2026-11-23 (planning MTSM

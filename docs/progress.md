@@ -1280,6 +1280,44 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `lemon_grove_vehtype` in `create_config_files`, FleetPy's check of 88 users.
 - Full run: **`REPRODUCED`** (26 files).
 
+## Phase 1 step 2: Lemon Grove's inputs in the target layout (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 1 (decision 2 (a): inputs in `networks/`, `initial_network/` only for what the run
+  writes; decision 3: one manifest per area). Names from `docs/study_area_inputs.md`.
+- Moved with `git mv` (content unchanged; checked by hash against the old manifest), in `mtsm_data/lemon_grove/`:
+  - `demand_data/lemon_grove_trips_nodes_study_area_with_beta.csv` -> `demand/demand.csv`
+  - `initial_network/base_super_network_lemon_grove_micro_hw_10_virstop_75.csv` -> `networks/super_network_micro_virstop_75.csv`
+  - `initial_network/base_super_network_lemon_grove_non_micro_hw_10.csv` -> `networks/super_network_frt.csv`
+  - `initial_network/auto_edges.csv` -> `networks/car_network.csv`
+  - `initial_network/initial_super_network_non_micro_hw_20.csv` -> `networks/super_network_frt_base_headway.csv`
+  - `transit/super_network_transit_edges.csv` -> `networks/frt_links.csv`
+  - `transit/network_folder/pre_nodes.csv` -> `networks/nodes.csv`
+  - `fleetpy_inputs/` -> `fleetpy/` (the whole folder, 41 files; 48 files moved in all)
+  - The empty `demand_data/` and `transit/` were removed. `initial_network/` keeps the networks earlier runs wrote
+    (git-ignored) and gets a `.gitkeep`; `.gitignore` ignores everything else in it.
+- Code:
+  - `mtsm_paths.AreaPaths`: the new folders plus a path for each input (`demand_file`, `super_network_frt_file`,
+    `super_network_frt_base_headway_file`, `car_network_file`, `frt_links_file`, `nodes_file`, `manifest_file`,
+    `super_network_micro_file(virstop)`, `fleetpy_staged`); `transit_dir`, `transit_network_dir` gone.
+  - `update_initial_network`: reads the templates from `networks/`; writes one microtransit network per share in
+    `virtual_stop_scenarios` (was the fixed `virstop_75`); the microtransit network was written twice with the same
+    code, now once (same file). `scenarios.py` passes the shares.
+  - The base case's network: `testing_scenario_creation.scen_create` gets `base_frt_headway_file` (was
+    `initial_network/initial_super_network_non_micro_hw_<base>.csv`). Closes I-05: a run at the base headway no longer
+    overwrites an input (checked: building headway 20 writes `initial_network/...hw_20.csv`, byte-identical to the
+    input, and every input still matches its manifest).
+  - `scenarios.py` (demand file, car network), `output_performance_metrics` (FRT links file),
+    `get_microtransit_skims.get_node_ct` (node file), `fleetpy_runner.staged_inputs` (from `AreaPaths`),
+    `config.check_run_config` (also creates `initial_network/`; checks the run's area manifests).
+  - `tools/check_inputs.py`: `mtsm_data/MANIFEST.csv` holds the model parameter file; `mtsm_data/<area>/MANIFEST.csv`
+    the area's inputs, optional (`area_inputs(area)`: the files of `docs/study_area_inputs.md` that exist, plus every
+    FleetPy config in the area's scenarios folder; Lemon Grove: 40 files, was 14). `--write AREA`.
+- Docs: `study_area_inputs.md` (names now in use; column "until 2026-11-24"), `reference_results/README.md`,
+  `README.md`, `fleetpy/LOCAL_CHANGES.md`, `open_issues.md` (I-05 closed). Not changed: `pre_process/` (its
+  `build_super_network.py` stays identical to the copy in `TRA_input_data_prep`; its docstring still says
+  `auto_edges.csv`), `standalone_scripts/`.
+- Full run: **`REPRODUCED`** (26 files, 3:58); `check_inputs.py`: all inputs match.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -9,14 +9,15 @@ supplies **finished super-networks** (decision 1), the node counts are **derived
 files have **generic names inside the area folder** (decision 4), and there is **one network for the whole day**
 (decision 8; per-period networks come with I-35).
 
-The names below are the **target names** (after Phases 1-3 of the plan). Today the code reads the Lemon Grove files
-under their current names; the table "The files" gives both. Lemon Grove is the worked example throughout.
+The names below are the **target names** (after Phases 1-3 of the plan). Since 2026-11-24 (Phase 1 step 2) Lemon
+Grove's inputs have them, except the area file (step 3); the table "The files" also gives the names they had until
+then. Lemon Grove is the worked example throughout.
 
 ## The files
 
 A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's name, e.g. `lemon_grove`.
 
-| # | Target file in `mtsm_data/<area>/` | Lemon Grove file today | Required |
+| # | Target file in `mtsm_data/<area>/` | Lemon Grove file until 2026-11-24 | Required |
 |---|---|---|---|
 | 1 | `area_parameters.csv` | (part of `input_parameter/mtsm_constant_configurations.csv`) | yes |
 | 2 | `demand/demand.csv` | `demand_data/lemon_grove_trips_nodes_study_area_with_beta.csv` | yes |
@@ -30,6 +31,9 @@ A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's na
 
 Shared by all study areas: the model parameter file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`
 (decision 2: one shared model file plus the small area file 1; the split is decision A).
+
+Optional: `MANIFEST.csv` in the area folder, the checksums of the area's inputs (`python tools/check_inputs.py --write
+<area>`). When it exists, a run warns if an input has changed since. Lemon Grove has one (40 files).
 
 Each file is a comma-separated text file with a header row. Column names must be exactly as given.
 
@@ -157,7 +161,8 @@ links.
 The base case runs on this network at `base_frt_headway`, supplied as file 9 (decision C: it stays an input). File 9
 is file 4 with every FRT boarding time (type 2, `travel_time` above 0) set to `base_frt_headway x 60 / 2`. Checked
 2026-11-24: rebuilding it from file 4 that way gives Lemon Grove's file byte for byte. A run with `frt_headway`
-equal to the base headway overwrites it today (I-05, open).
+equal to the base headway overwrote it until 2026-11-24 (I-05; since Phase 1 step 2 the run reads file 9 from
+`networks/` and writes its own networks into `initial_network/`).
 
 ## 5. Car network (`networks/car_network.csv`)
 
@@ -287,7 +292,7 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
 - **A:** yes; the local prices and costs go to the area file too (section 1).
 - **B:** (a) keep the FRT links file (6) as an input.
 - **C:** (b) keep the base-headway FRT network as an input (file 9, `networks/super_network_frt_base_headway.csv`);
-  I-05 stays open.
+  I-05 stays open (closed the same day by Phase 1 step 2, which separates the run's networks from the inputs).
 - **D:** agreed.
 - **E:** (a), after a fuller explanation: the checker warns about duplicate node pairs and names them; the run keeps
   the last link, as today. (Lemon Grove: 3 parallel road pairs, both directions, plus 2 loops listed twice; in each

@@ -2,8 +2,8 @@
 
 FleetPy (fleetpy/) is upstream TUM-VT/FleetPy with the local changes listed in fleetpy/LOCAL_CHANGES.md. It imports
 itself as the top-level package `src` and finds its data/ and studies/ folders next to src/, so fleetpy/ is put on
-sys.path here. A study area's inputs for FleetPy are kept in mtsm_data/<area>/fleetpy_inputs/ (same folder layout as
-fleetpy/) and copied into fleetpy/ before each run (stage_inputs).
+sys.path here. A study area's inputs for FleetPy are kept in mtsm_data/<area>/fleetpy/ (same folder layout as
+fleetpy/; fleetpy_inputs/ until 2026-11-24) and copied into fleetpy/ before each run (stage_inputs).
 
 FleetPy runs in the calling process. It re-seeds random/np.random during a simulation, and the mode choice of the
 next iteration continues from that state, so running it in a separate process would change the results
@@ -32,18 +32,12 @@ MM_STR = "Assertion"
 
 def staged_inputs(study_area):
     """FleetPy inputs of a study area besides the two config files; paths relative to both
-    mtsm_data/<area>/fleetpy_inputs/ and fleetpy/ (until 2026-11-24 the Lemon Grove list LG_STAGED_INPUTS)."""
-    return [
-        "data/networks/%s_example_network/base/nodes.csv" % study_area,
-        "data/networks/%s_example_network/base/edges.csv" % study_area,
-        "data/networks/%s_example_network/base/crs.info" % study_area,
-        "data/fleetctrl/initial_vehicle_distribution/%s_example_network/imbalanced.csv" % study_area,
-        "data/vehicles/%s_vehtype.csv" % study_area,
-    ]
+    mtsm_data/<area>/fleetpy/ and fleetpy/ (until 2026-11-24 the Lemon Grove list LG_STAGED_INPUTS)."""
+    return list(mtsm.area_paths(study_area).fleetpy_staged)
 
 
 def stage_inputs(constant_config_file, scenario_file, study_area):
-    """Copy the two config files (which must be in mtsm_data/<area>/fleetpy_inputs/) and staged_inputs(study_area)
+    """Copy the two config files (which must be in mtsm_data/<area>/fleetpy/) and staged_inputs(study_area)
     into fleetpy/, at the same relative paths. Returns the paths of the copied config files, to run FleetPy with."""
     fleetpy_inputs_dir = mtsm.area_paths(study_area).fleetpy_inputs_dir
     rel_cfgs = []

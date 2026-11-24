@@ -10,20 +10,21 @@ results/
 fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/lemon_grove_debug_*_fleetpy_demand.csv
 fleetpy/data/demand/lemon_grove_example_demand/matched/lemon_grove_example_network/debug_*_F_transit_demand_*.csv
 /lemon_grove_debug_*_fleetpy_demand.csv
-# Lemon Grove inputs copied from mtsm_data/lemon_grove/fleetpy_inputs/ into FleetPy before each run
+# Lemon Grove inputs copied from mtsm_data/lemon_grove/fleetpy/ (fleetpy_inputs/ until 2026-11-24) into FleetPy before each run
 # (fleetpy_runner.stage_inputs); the tracked originals are in mtsm_data/
 fleetpy/data/networks/lemon_grove_example_network/
 fleetpy/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/
 fleetpy/studies/example_study/scenarios/lemon_grove_*
 fleetpy/data/vehicles/lemon_grove_vehtype.csv
-# mtsm_data/: outputs and per-run networks (the frozen inputs stay tracked, see mtsm_data/MANIFEST.csv)
+# mtsm_data/: outputs and per-run networks (the frozen inputs stay tracked, see mtsm_data/MANIFEST.csv and
+# mtsm_data/<area>/MANIFEST.csv)
 mtsm_data/lemon_grove/output/*
 mtsm_data/lemon_grove/final_network/*
 mtsm_data/lemon_grove/indiv_output/*
 mtsm_data/lemon_grove/optimization_output/*
+# initial_network/ holds only what the run writes since 2026-11-24 (its inputs moved to networks/)
+mtsm_data/lemon_grove/initial_network/*
 !mtsm_data/lemon_grove/*/.gitkeep
-mtsm_data/lemon_grove/initial_network/initial_super_network_*
-!mtsm_data/lemon_grove/initial_network/initial_super_network_non_micro_hw_20.csv
 # SacRT super-network notebook: kept locally, not part of the repository (absolute paths to outside folders;
 # its saved outputs show rows of the request data)
 standalone_scripts/Supernetwork_construction_SacRT_final.ipynb

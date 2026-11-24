@@ -258,12 +258,13 @@ def check_run_config(cfg):
         changed = [f"{key}={PARAMETERS[key]!r} (frozen: {frozen[key]!r})" for key in gp.PARAMETER_TYPES
                    if PARAMETERS[key] != frozen[key] or type(PARAMETERS[key]) is not type(frozen[key])]
         print(f"parameter file: {cfg.config_file}; different from the frozen file: {', '.join(changed) or 'none'}")
-    input_problems = check_inputs()
+    input_problems = check_inputs(cfg.test_area)  # the shared manifest and the run's area manifests (2026-11-24)
     if input_problems:
-        print(f"{Fore.RED}WARNING: frozen inputs differ from mtsm_data/MANIFEST.csv -> results are not comparable to "
+        print(f"{Fore.RED}WARNING: frozen inputs differ from their manifests -> results are not comparable to "
               f"docs/reference_results: {input_problems}{Style.RESET_ALL}")
     # fleetpy_demand_dir: the run writes FleetPy's demand there; it holds no tracked file since 2026-11-23 (I-11)
     for area in cfg.test_area:
         paths = mtsm.area_paths(area)
-        for folder in (paths.final_network_dir, paths.indiv_output_dir, paths.output_dir, paths.fleetpy_demand_dir):
+        for folder in (paths.initial_network_dir, paths.final_network_dir, paths.indiv_output_dir, paths.output_dir,
+                       paths.fleetpy_demand_dir):
             os.makedirs(folder, exist_ok=True)

@@ -44,8 +44,8 @@ for vehicle repositioning).
 
 1. **Environment.** Create the locked conda environment as described in [`env/README.md`](env/README.md).
    Do not use `requirements.txt` or FleetPy's own install instructions; they do not match the verified environment.
-2. **Check the inputs.** `python tools/check_inputs.py` must report that all frozen inputs match
-   `mtsm_data/MANIFEST.csv`.
+2. **Check the inputs.** `python tools/check_inputs.py` must report that all frozen inputs match their manifests
+   (`mtsm_data/MANIFEST.csv`, `mtsm_data/lemon_grove/MANIFEST.csv`).
 3. **Set the parameters.** All parameters (design parameters, `random_seed`, iterations and convergence, costs,
    time periods, scenario lists, ...) are in `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: one row
    per parameter, `parameter_name,parameter_value,description` (the description is for people; no code reads it).
@@ -86,7 +86,7 @@ model's results do not depend on it.
 | `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
 | `pre_process/` | Preprocessing of networks and demand; `build_super_network.py` builds the super-networks (`micro`, `non_micro`, `micro_only`) and the car network from a road and an FRT network (not used by a run yet) |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`); a study area's folders from `area_paths(area)` |
-| `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`) and the outputs of a run |
+| `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`, one per study area) and the outputs of a run |
 | `fleetpy/` | FleetPy, upstream version `7019960` with a few local changes listed in [`fleetpy/LOCAL_CHANGES.md`](fleetpy/LOCAL_CHANGES.md) |
 | `env/` | Locked Python environment |
 | `tools/` | `check_inputs.py`, `compare_reference.py`, `export_env.py` |
