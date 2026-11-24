@@ -1,7 +1,7 @@
 # Study-area inputs: what a study area must supply
 
-Status: **draft, decisions open** (Phase 0 of `docs/study_area_plan.md`; written 2026-11-24 against the code after
-step A, the accessibility removal). The decisions this file still needs are listed at the end.
+Status: **draft** (Phase 0 of `docs/study_area_plan.md`; written 2026-11-24 against the code after step A, the
+accessibility removal). Decisions A-D and F made 2026-11-24, E and G open (section "Decisions" at the end).
 
 This file is the contract between a user and the model: the files a study area supplies, their columns and units, and
 the rules that tie them together. It follows the user's decisions of 2026-11-24 (`docs/study_area_plan.md`): the user
@@ -26,7 +26,7 @@ A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's na
 | 6 | `networks/frt_links.csv` | `transit/super_network_transit_edges.csv` | yes (decision B) |
 | 7 | `networks/nodes.csv` | `transit/network_folder/pre_nodes.csv` | yes |
 | 8 | `fleetpy/...` (FleetPy's own folder layout) | `fleetpy_inputs/...` | yes |
-| - | (derived by the run; decision C) | `initial_network/initial_super_network_non_micro_hw_20.csv` | today yes |
+| 9 | `networks/super_network_frt_base_headway.csv` | `initial_network/initial_super_network_non_micro_hw_20.csv` | yes (decision C) |
 
 Shared by all study areas: the model parameter file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`
 (decision 2: one shared model file plus the small area file 1; the split is decision A).
@@ -52,7 +52,7 @@ Every network file uses one set of integer node numbers. The code relies on this
 
 ## Link types
 
-All network files (3, 4, 5, 6) have the columns `from_node, to_node, distance, travel_time, link_type, route` (file 6
+All network files (3, 4, 5, 6, 9) have the columns `from_node, to_node, distance, travel_time, link_type, route` (file 6
 writes `distance (meters)` instead of `distance`).
 
 - `distance`: meters. `travel_time`: seconds. `route`: an integer; `-1` where there is no route.
@@ -89,8 +89,8 @@ What the run does with them:
 
 ## 1. Area parameter file (`area_parameters.csv`)
 
-Same format as the model parameter file: `parameter_name,parameter_value,description`. Proposed content
-(decision A):
+Same format as the model parameter file: `parameter_name,parameter_value,description`. Content (decision A,
+including the local prices and costs):
 
 | Parameter | Lemon Grove | Today in the model file as |
 |---|---|---|
@@ -102,6 +102,13 @@ Same format as the model parameter file: `parameter_name,parameter_value,descrip
 | `frt_speed_mph` | 30 | same |
 | `frt_dwell_time_min` | 3 | same |
 | `frt_dead_end_time_min` | 20 | same |
+| `frt_operating_cost_per_veh_hour` ($) | 170 | same |
+| `micro_operating_cost_per_veh_hour` ($) | 130 | same |
+| `f_gas_per_mile` ($/mile, FRT fuel) | 0.35 | same |
+| `m_gas_per_mile` ($/mile, microtransit fuel) | 0.55 | same |
+| `car_gas_cost_per_meter` ($/m) | 0.00025 | same |
+| `parking_rate_peak`, `parking_rate_offpeak` ($ per interval) | 1, 0.5 | same |
+| `parking_charge_interval_min` | 30 | same |
 
 Removed from the parameter files (derived instead): `num_walk_nodes`, `microtransit_node_offset` (decision 3) and
 `micro_only_max_walk_node` (I-13: the `micro_only` branch should use the area's last walk node).
@@ -143,12 +150,13 @@ alighting, 2,816 microtransit in-vehicle, 1,630 microtransit boarding and alight
 
 Link types 0, 1, 2: the walk and FRT links of file 3, without microtransit. Used for the base case and for the
 scenario's travelers outside the microtransit operating periods, in both cases at `base_frt_headway`, not at the
-scenario's `frt_headway` (`paths.networks_for_traveler`; so in the original code too). Lemon Grove: 3,088 links.
+scenario's `frt_headway` (`paths.networks_for_traveler`; so in the original code too; I-38). Lemon Grove: 3,088
+links.
 
-The base case runs on this network at `base_frt_headway`. Today that network is a frozen input
-(`initial_super_network_non_micro_hw_20.csv`); a run with `frt_headway` equal to the base headway overwrites it
-(I-05). Checked 2026-11-24: rebuilding it from file 4 the way the run builds the scenario networks gives the frozen
-file byte for byte, so the run can derive it (decision C).
+The base case runs on this network at `base_frt_headway`, supplied as file 9 (decision C: it stays an input). File 9
+is file 4 with every FRT boarding time (type 2, `travel_time` above 0) set to `base_frt_headway x 60 / 2`. Checked
+2026-11-24: rebuilding it from file 4 that way gives Lemon Grove's file byte for byte. A run with `frt_headway`
+equal to the base headway overwrites it today (I-05, open).
 
 ## 5. Car network (`networks/car_network.csv`)
 
@@ -185,7 +193,7 @@ into its outputs keep the area prefix (decision 4).
 |---|---|
 | `data/networks/<area>_example_network/base/nodes.csv` | `node_index` (0 to N - 1), `is_stop_only`, `pos_x`, `pos_y` |
 | `data/networks/<area>_example_network/base/edges.csv` | `from_node, to_node, distance` (m), `travel_time` (s), `source_edge_id` |
-| `data/networks/<area>_example_network/base/crs.info` | coordinate system of `pos_x, pos_y`, e.g. `EPSG:2230` (decision F) |
+| `data/networks/<area>_example_network/base/crs.info` | coordinate system of `pos_x, pos_y`, e.g. `EPSG:2230` (Lemon Grove's is wrong: I-39) |
 | `data/fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv` | `node_index, probability`: where vehicles start; probabilities sum to 1 (Lemon Grove: 5 nodes, 0.2 each; I-36) |
 | `data/vehicles/<area>_vehtype.csv` | FleetPy vehicle type (Lemon Grove: capacity 8) |
 | `studies/example_study/scenarios/<area>_constant_config_ir_repo.csv` | FleetPy constant config; `network_name` = `<area>_example_network`, `demand_name` = `<area>_example_demand` |
@@ -206,7 +214,7 @@ Phase 4's checker (`tools/check_study_area.py`) is to check these before a run:
 3. Type 2: boarding (walk -> stop) has `travel_time` > 0, alighting (stop -> walk) has 0.
 4. Every trip's `start` and `end` is a walk node; `request_id` is unique.
 5. FleetPy's edges, the car links and the walk / microtransit links are the same road edges.
-6. Files 3, 4 and 6 have the same FRT links.
+6. Files 3, 4, 6 and 9 have the same FRT links; file 9 is file 4 at `base_frt_headway`.
 7. `node_in_fleetpy` covers every walk node.
 8. `<v>` in file 3's name equals `virtual_stop_scenarios`.
 9. No two links with the same `(from_node, to_node)` (decision E).
@@ -265,3 +273,16 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
 - **G. Node file (7).**
   - (a) Require only `node_in_fleetpy` and `census_tract` (recommended; the other columns may be there).
   - (b) Keep requiring all of Lemon Grove's columns.
+
+## Decisions (user, 2026-11-24)
+
+- **A:** yes; the local prices and costs go to the area file too (section 1).
+- **B:** (a) keep the FRT links file (6) as an input.
+- **C:** (b) keep the base-headway FRT network as an input (file 9, `networks/super_network_frt_base_headway.csv`);
+  I-05 stays open.
+- **D:** agreed.
+- **E:** asked for a fuller explanation; open.
+- **F:** the run does not need the file; leave it for now and fix it later: I-39.
+- **G:** asked what it means; open.
+- Also recorded on the user's request: I-38 (outside the microtransit operating periods, scenario travelers ride the
+  FRT at the base headway).

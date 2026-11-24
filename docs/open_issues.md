@@ -59,6 +59,8 @@ Paths are relative to the codebase root.
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | Open | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
+| I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Decision needed | 2026-11-24 |
+| I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
 
 ---
 
@@ -602,6 +604,43 @@ Paths are relative to the codebase root.
     FleetPy's uniform default), and write the file per area and network (street nodes only);
   - name it after what it is, and record where the nodes come from;
   - a change belongs to a new reference.
+
+### I-38: Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway
+- **Status:** Decision needed. **Severity:** High (can give wrong reported results, if not intended). **Found:**
+  2026-11-24 (writing the input specification, `docs/study_area_inputs.md`). Recorded on the user's request.
+- **What:** `paths.networks_for_traveler` sets `T_F_network = initial_super_network["non_micro"][BASE_FRT_HEADWAY]`
+  for every traveler. In a `micro` scenario, a traveler who departs outside the microtransit operating periods gets
+  `T_micro_network = T_F_network`, so `paths.micro_path` routes their transit trip on the FRT network at
+  `base_frt_headway` (Lemon Grove: 20 min, boarding wait 600 s) instead of the scenario's `frt_headway` (reference:
+  10 min, 300 s). That search uses the scenario's fare (`cfg.transit_fare`), so the traveler gets the scenario's
+  fare with the base case's headway. The scenario's FRT operating cost and vehicle miles are computed for
+  `frt_headway` over all `frt_operating_hours` (19 h). (Using `T_F_network` with `BASE_FRT_FARE` for the base
+  case's FRT path, `paths.frt_path`, is intended: I-28.)
+- **Since:** the original code. `v1-reproducible`, `run_examples_new_parking.py` line 884, uses `base_FRT_headway`,
+  with the scenario-headway version commented out just above it:
+  `# T_F_network = initial_super_network["non_micro"][headway]  # the fixed route transit network remain constant - won't feedback to it`.
+- **Impact:** in the reference the microtransit runs AM, MD and PM (5:00-20:00); 270 of the 3,742 travelers depart
+  after 20:00 (EV). When the scenario's headway is shorter than the base headway (as in the reference), their
+  transit cost is too high, so the transit share and the logsum for these travelers are too low; with a longer
+  scenario headway, the other way round. Not quantified.
+- **To decide:**
+  - (a) Outside the operating periods, use the FRT network at the scenario's headway. The run already writes it
+    (`initial_super_network_non_micro_hw_<headway>.csv`, `update_initial_network.py`) but does not read it.
+    Changes results: its own reference update, or the batched new reference.
+  - (b) Keep it, if the FRT is meant to run at the base headway outside the microtransit hours; then the FRT
+    operating cost should be computed that way too.
+
+### I-39: Lemon Grove's FleetPy `crs.info` names the wrong coordinate system
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (writing the input specification).
+- **What:** `mtsm_data/lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info` says
+  `EPSG:32632` (WGS 84 / UTM zone 32N, in Germany). The node coordinates in `nodes.csv` (`pos_x` about 6.27-6.33
+  million, `pos_y` about 1.82-1.86 million) look like NAD83 California zone 6 in US feet (`EPSG:2230`). Probably a
+  leftover of FleetPy's example data, like I-10.
+- **Impact:** none on results. FleetPy reads the file on startup (`NetworkBasic.py:173`) and uses it only to convert
+  coordinates to longitude/latitude for its real-time plot (`FleetSimulationBase._start_realtime_plot` and the
+  plot update), which the run does not turn on. Wrong for anyone who plots or exports the coordinates.
+- **Fix (later; user's decision 2026-11-24):** confirm the system (e.g. one node against a map), correct the file,
+  rewrite `mtsm_data/MANIFEST.csv`, full run must print `REPRODUCED`.
 
 ---
 
