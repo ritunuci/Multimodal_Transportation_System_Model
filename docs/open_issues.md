@@ -57,6 +57,7 @@ Paths are relative to the codebase root.
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Open | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | Open | 2026-11-23 |
+| I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
 
 ---
 
@@ -612,6 +613,42 @@ Paths are relative to the codebase root.
   - the headway update in every period file;
   - a new reference.
   - See also I-33 and I-34.
+
+### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
+- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
+- **What:** FleetPy places the microtransit vehicles at the start of each simulation from
+  `mtsm_data/lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv`,
+  named by `op_init_veh_distribution,imbalanced.csv` in `lemon_grove_constant_config_ir_repo.csv` (the reference's
+  `00_config.json` shows it). The file lists five road nodes, each with probability 0.2:
+
+  | node_index | probability |
+  |---|---|
+  | 256 | 0.2 |
+  | 400 | 0.2 |
+  | 600 | 0.2 |
+  | 650 | 0.2 |
+  | 700 | 0.2 |
+
+  `FleetSimulationBase` (about line 480) draws each vehicle's start node from this list with `np.random` (seed 0 in
+  the reference). Without the parameter, FleetPy would spread the vehicles uniformly over the boarding nodes, or over
+  all nodes if there are none.
+- **What is known** (checked 2026-11-23):
+  - The name comes from FleetPy's example (`fleetpy/data/fleetctrl/initial_vehicle_distribution/example_network/imbalanced.csv`:
+    one node, probability 1.0, i.e. all vehicles at one place). The Lemon Grove file is not imbalanced in that sense.
+  - Who chose the five nodes, and why, is not recorded. They are ordinary street nodes (car speeds 10-35 mph; none on
+    a 50+ mph edge, I-33); 13 trips of the demand file start at one of them.
+  - The node numbers belong to the frozen Lemon Grove road network.
+- **Why it matters:**
+  - With the reference's fleet of 2, each vehicle starts at one of these five nodes in every FleetPy run; the start
+    positions affect the first waiting times and so the results read back by MTSM.
+  - The new road networks (I-33, I-34) number the nodes anew, so the file does not carry over: a node number may not
+    exist, or be another place, or be a freeway node. Downtown San Diego has no such file; FleetPy reads it from the
+    network's own folder and stops if it is missing.
+- **To do:**
+  - decide the rule for the start positions (e.g. a few chosen nodes, all virtual stops, demand-weighted, or
+    FleetPy's uniform default), and write the file per area and network (street nodes only);
+  - name it after what it is, and record where the nodes come from;
+  - a change belongs to a new reference.
 
 ---
 
