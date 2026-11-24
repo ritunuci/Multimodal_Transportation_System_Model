@@ -101,10 +101,10 @@ def get_transit_line_duration(study_area,transit_line_dist_list):
     transit_line_duration = OrderedDict()
     dwell_time = config.PARAMETERS[gp.G_FRT_DWELL_TIME_MIN] / 60  # unit hour
     dead_end_time = config.PARAMETERS[gp.G_FRT_DEAD_END_TIME_MIN] / 60  # unit hour - (10min) on one end
-    if study_area == "lemon_grove":
-        avg_speed = config.PARAMETERS[gp.G_FRT_SPEED_MPH]
-        for (route_id, dist, num_stops) in transit_line_dist_list:
-            transit_line_duration[route_id] = dist / avg_speed + num_stops * dwell_time + dead_end_time  # dwell time (3min/stop), dead-end times (10min)
+    # every study area since 2026-11-24 (only "lemon_grove" before)
+    avg_speed = config.PARAMETERS[gp.G_FRT_SPEED_MPH]
+    for (route_id, dist, num_stops) in transit_line_dist_list:
+        transit_line_duration[route_id] = dist / avg_speed + num_stops * dwell_time + dead_end_time  # dwell time (3min/stop), dead-end times (10min)
 
     return transit_line_duration
 
@@ -173,8 +173,7 @@ def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,v
                 from_node = int(data["from_node"])
                 to_node = int(data["to_node"])
                 distance = float(data["distance (meters)"])
-                if study_area == "lemon_grove":
-                    travel_time = float(data["travel_time"])
+                travel_time = float(data["travel_time"])  # every study area since 2026-11-24 (only "lemon_grove" before)
                 link_type = int(1)
                 route = int(data["route"])
                 vmt_AM = float(transit_link_vmt["AM"][(from_node, to_node)])

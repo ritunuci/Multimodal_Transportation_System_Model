@@ -472,6 +472,10 @@ Paths are relative to the codebase root.
        (item 2), the type-5 update (item 6), the FRT line duration and the ridership file's `travel_time`, the
        file names in `update_initial_network.py`, `lemon_grove_vehtype` in `create_config_files`, and the startup
        check.
+     - 2026-11-24 (Phase 1 step 2 and Phase 2 step 1): all of these are gone. The file names come from
+       `mtsm_paths.area_paths`; the fares (item 2), the type-5 update (item 6), the FRT line duration and the
+       ridership file's `travel_time` apply to every area; `<area>_vehtype`; the startup check accepts any area.
+       Items 1 (line length from the new FRT network), 3 (duplicate-link check, Phase 4) and 4 remain.
   6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
      - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
        keep.

@@ -38,7 +38,7 @@ class RunConfig:
     """The run's parameters (until 2026-11-10 the columns of input_parameter.csv), from PARAMETERS. The lists hold one
     value (the model loops over them)."""
     config_file: str  # the parameter file of the run
-    test_area: List[str]  # study area, must be lemon_grove
+    test_area: List[str]  # study area: the parameter study_area (until 2026-11-24 it had to be lemon_grove)
     read_fleet_size: List[int]  # microtransit fleet size (vehicles)
     transit_fare: float  # $
     microtransit_dist_based_rate: float  # $ per meter (the file gives $ per mile)
@@ -259,11 +259,9 @@ def read_run_config():
 def check_run_config(cfg):
     """Stop on a configuration the code does not support; warn if the frozen inputs changed; create the output
     folders."""
-    # The code supports only Lemon Grove and fare scenario 10; the branches for the other values were removed
-    # (docs/progress.md).
+    # The code supports only fare scenario 10; the branches for the other values were removed (docs/progress.md).
+    # Until 2026-11-24 it also supported only the study area Lemon Grove (docs/study_area_plan.md, Phase 2 decision 3).
     unsupported = []
-    if any(area != "lemon_grove" for area in cfg.test_area):
-        unsupported.append(f"study_area={cfg.test_area} (only lemon_grove)")
     if FARE_SCENARIO != SUPPORTED_FARE_SCENARIO:
         unsupported.append(f"fare_scenario={FARE_SCENARIO} (only {SUPPORTED_FARE_SCENARIO})")
     if unsupported:

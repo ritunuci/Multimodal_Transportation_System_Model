@@ -27,7 +27,6 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
     sc, repositioning, microtransit_run, headway = scen.sc, scen.repositioning, scen.microtransit_run, scen.headway
     virstop, M_operating_hrs, fleet_size = scen.virstop, scen.M_operating_hrs, scen.fleet_size
     study_area, demand_file, new_fleetpy_demand = area.study_area, area.demand_file, area.new_fleetpy_demand
-    LOG_F = log_f
     print("running FleetPy....according to demand component result")
     print(f"{Fore.RED}Running Fleetpy from position 2 {Style.RESET_ALL}")
     ############################################# Ritun added #############################################
@@ -61,9 +60,7 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
     cc_fleetpy, sc_fleetpy = fleetpy.stage_inputs(cc, sc, study_area)
     fleetpy.run_scenarios(cc_fleetpy, sc_fleetpy, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=cfg.random_seed)
     fleetpy.warn_non_optimal_repositioning(cc_fleetpy, sc_fleetpy)
-    list_results = fleetpy.read_outputs_for_comparison(cc_fleetpy, sc_fleetpy)
-    all_scenario_assert_dict = {0: {"number users": 88}}
-    fleetpy.check_assertions(list_results, all_scenario_assert_dict, LOG_F)
+    # (FleetPy's example check of 88 users, which mismatched in every iteration, removed on 2026-11-24)
     print("FleetPy finishes. Now update the microtransit part in super-network.....","iteration:",iteration)
     wait_times = update.update_network_files(repositioning,microtransit_run,headway,virstop,M_operating_hrs,fleet_size,study_area,iteration,
                                 config.AGGREGATION)

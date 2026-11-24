@@ -250,6 +250,8 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
 - `microtransit.py`: FleetPy's result check `{"number users": 88}`.
 - `fleetpy_runner.create_config_files`: the vehicle type name `lemon_grove_vehtype`.
 - The `if study_area == "lemon_grove"` branches and `LG_*` paths (`docs/study_area_plan.md`, items 1-2).
+- 2026-11-24: all three removed (paths in Phase 1 step 1; the branches, the vehicle type name and the check of 88
+  users in Phase 2 step 1).
 
 ## Not supported for a new study area (for now)
 

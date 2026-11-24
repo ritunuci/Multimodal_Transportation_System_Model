@@ -335,11 +335,11 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                         route = int(data["route"])
 
                         if link_type == 5:  # adjust the microtransit waiting time according to fleetpy results
-                            if study_area == "lemon_grove":
-                                if from_node <= config.LAST_WALK_NODE:
-                                    census_tract = node_census_tract[from_node]
-                                    travel_time = census_tract_avg_wait_time[time_period][
-                                        census_tract]  # update the connector link travel time as the waiting time
+                            # (every study area since 2026-11-24; only "lemon_grove" before)
+                            if from_node <= config.LAST_WALK_NODE:
+                                census_tract = node_census_tract[from_node]
+                                travel_time = census_tract_avg_wait_time[time_period][
+                                    census_tract]  # update the connector link travel time as the waiting time
 
                         if link_type == 4:
                             travel_time = travel_time * time_detour_ratio[time_period]

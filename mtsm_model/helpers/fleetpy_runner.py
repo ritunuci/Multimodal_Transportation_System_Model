@@ -27,8 +27,8 @@ import src.misc.config as config
 from src.misc.init_modules import load_simulation_environment
 from src.misc.globals import G_RANDOM_SEED, G_SCENARIO_NAME, G_STUDY_NAME
 
-MOD_STR = "MoD_0"
-MM_STR = "Assertion"
+# (MOD_STR, MM_STR, read_outputs_for_comparison and check_assertions served only FleetPy's example check of 88
+# users, removed on 2026-11-24; docs/study_area_plan.md, Phase 2 decision 2)
 
 def staged_inputs(study_area):
     """FleetPy inputs of a study area besides the two config files; paths relative to both
@@ -165,30 +165,6 @@ def run_scenarios(constant_config_file, scenario_file, n_parallel_sim=1, n_cpu_p
                         rest_scenarios -= 1
 
 
-def read_outputs_for_comparison(constant_csv, scenario_csv):
-    """This function reads some output parameters for a test of meaningful results of the test cases.
-
-    :param constant_csv: constant parameter definition
-    :param scenario_csv: scenario definition
-    :return: list of standard_eval data frames
-    :rtype: list[DataFrame]
-    """
-    constant_cfg = config.ConstantConfig(constant_csv)
-    scenario_cfgs = config.ScenarioConfig(scenario_csv)
-    const_abs = os.path.abspath(constant_csv)
-    study_name = os.path.basename(os.path.dirname(os.path.dirname(const_abs)))
-    return_list = []
-    for scenario_cfg in scenario_cfgs:
-        complete_scenario_cfg = constant_cfg + scenario_cfg
-        scenario_name = complete_scenario_cfg[G_SCENARIO_NAME]
-        output_dir = os.path.join(mtsm.FLEETPY_DIR, "studies", study_name, "results", scenario_name)
-        standard_eval_f = os.path.join(output_dir, "standard_eval.csv")
-        tmp_df = pd.read_csv(standard_eval_f, index_col=0)
-        tmp_df.loc[G_SCENARIO_NAME, MOD_STR] = scenario_name
-        return_list.append((tmp_df))
-    return return_list
-
-
 def warn_non_optimal_repositioning(constant_csv, scenario_csv):
     """AlonsoMoraRepositioning writes 70_repo_am_opt_model_infeasible_*.lp whenever Gurobi ends without an optimal
     solution (e.g. TimeLimit hit) and then skips repositioning -> results may depend on machine speed."""
@@ -200,35 +176,6 @@ def warn_non_optimal_repositioning(constant_csv, scenario_csv):
         if lp_files:
             print(f"{Fore.RED}WARNING: {len(lp_files)} repositioning solves were not optimal (Gurobi status != OPTIMAL),"
                   f" results may not be reproducible: {output_dir}{Style.RESET_ALL}")
-
-
-def check_assertions(list_eval_df, all_scenario_assertion_dict, log_file):
-    """This function checks assertions of scenarios to give a quick impression if results are fitting.
-
-    :param list_eval_df: list of evaluation data frames
-    :param all_scenario_assertion_dict: dictionary of scenario id to assertion dictionaries
-    :param log_file: the result of each check is appended to this file
-    :return: list of (scenario_name, mismatch_flag, tmp_df) tuples
-    """
-    list_result_tuples = []
-    for sc_id, assertion_dict in all_scenario_assertion_dict.items():
-        tmp_df = list_eval_df[sc_id]
-        scenario_name = tmp_df.loc[G_SCENARIO_NAME, MOD_STR]
-        print("-"*80)
-        mismatch = False
-        for k, v in assertion_dict.items():
-            if tmp_df.loc[k, MOD_STR] != v:
-                tmp_df.loc[k, MM_STR] = v
-                mismatch = True
-        if mismatch:
-            prt_str = f"Scenario {scenario_name} has mismatch with assertions:/n{tmp_df}/n" + "-"*80 + "/n"
-        else:
-            prt_str = f"Scenario {scenario_name} results match assertions/n" + "-"*80 + "/n"
-        print(prt_str)
-        with open(log_file, "a") as fh:
-            fh.write(prt_str)
-        list_result_tuples.append((scenario_name, mismatch, tmp_df))
-    return list_result_tuples
 
 
 def create_config_files(sc,study_area,repositioning,fleet_size):
@@ -244,7 +191,7 @@ def create_config_files(sc,study_area,repositioning,fleet_size):
             op_module="PoolingIRSOnly"
             scenario_name="example_pool_repo_AM_sc_1"
             rq_file="%s_debug_False_fleetpy_demand.csv" % str(study_area)
-            op_fleet_composition="lemon_grove_vehtype:"+str(fleet_size)
+            op_fleet_composition="%s_vehtype:" % str(study_area) + str(fleet_size)  # lemon_grove_vehtype until 2026-11-24
             op_max_VR_con=int(3)
             forecast_f=" "
             op_repo_method="AlonsoMoraRepositioning"
@@ -257,7 +204,7 @@ def create_config_files(sc,study_area,repositioning,fleet_size):
             op_module = "PoolingIRSOnly"
             scenario_name = "example_pool_irsonly_sc_1"
             rq_file = "%s_debug_False_fleetpy_demand.csv" % str(study_area)
-            op_fleet_composition = "lemon_grove_vehtype:" + str(fleet_size)
+            op_fleet_composition = "%s_vehtype:" % str(study_area) + str(fleet_size)  # lemon_grove_vehtype until 2026-11-24
             writer_config.writerow({"op_module": op_module, "scenario_name": scenario_name, "rq_file": rq_file,
                                     "op_fleet_composition": op_fleet_composition})
     csvfile_config.close()

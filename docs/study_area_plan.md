@@ -254,3 +254,24 @@ Decisions:
 Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 1: per-area paths").
 Step 2 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 2: Lemon Grove's inputs in the target layout"); I-05 closed.
 Step 3 done 2026-11-24 (`docs/progress.md`, "Phase 1 step 3: area parameter file"). Phase 1 complete.
+
+### Phase 2: steps and decisions (user, 2026-11-24)
+
+Steps, one commit each, each ending with a full run that prints `REPRODUCED`:
+
+1. Remove the Lemon Grove logic: the `if study_area == "lemon_grove"` wrappers (FRT fare and microtransit start
+   fare, type-5 update, FRT line duration, the ridership file's `travel_time`), `<area>_vehtype` in
+   `create_config_files`, `.gitignore` patterns for any area; and decisions 2 and 3.
+2. Derive the node counts from the files (decision 3 of 2026-11-24): `N` = rows of FleetPy's `nodes.csv`, `M` = the
+   smallest node of the type-4 links of the microtransit super-network; stop if the files break the numbering rule.
+   `num_walk_nodes` and `microtransit_node_offset` leave the area file; and decision 1.
+
+Decisions:
+
+1. I-13: (a) the `micro_only` branch uses the area's last walk node (N - 1); `micro_only_max_walk_node` leaves the
+   area file.
+2. FleetPy's example check of 88 users: (a) removed.
+3. The startup check "only lemon_grove": (a) removed in step 1.
+4. The two steps above, one commit each.
+
+Step 1 done 2026-11-24 (`docs/progress.md`, "Phase 2 step 1: no Lemon Grove logic branches").

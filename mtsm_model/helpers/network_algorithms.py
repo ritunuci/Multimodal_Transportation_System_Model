@@ -349,14 +349,14 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     if transfer_penalty_on and link_type_pre == 1 and route != route_pre:  # route change at a shared stop
                         generalized_link_travel_time += bt_f_trfer
                 if link_type_ == 2:  # fixed route transit waiting link
-                    if study_area == "lemon_grove":
-                        if min_node <= last_walk_node and first_frt_stop <= edge <= last_frt_stop:
-                            if link_type_pre != 2:
-                                transit_fare = transit_fare_set
-                            if IsMicroLink==True:  # transfer discount after a microtransit trip leg (on boarding only, I-23)
-                                transit_fare = transit_fare_set* Micro2FixedFactor
-                        else:
-                            transit_fare = 0
+                    # FRT fare on boarding (every study area since 2026-11-24; only "lemon_grove" before)
+                    if min_node <= last_walk_node and first_frt_stop <= edge <= last_frt_stop:
+                        if link_type_pre != 2:
+                            transit_fare = transit_fare_set
+                        if IsMicroLink==True:  # transfer discount after a microtransit trip leg (on boarding only, I-23)
+                            transit_fare = transit_fare_set* Micro2FixedFactor
+                    else:
+                        transit_fare = 0
                     generalized_link_travel_time = bt_f_wt * link_travel_time / 60 + bt_t_fr * transit_fare
                     if transfer_penalty_on and min_node <= last_walk_node and (IsMicroLink or IsFixedLink):  # FRT boarding after a transit leg
                         generalized_link_travel_time += bt_f_trfer
@@ -369,11 +369,11 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
                     micro_fare = 0
                 if link_type_ == 5:  # microtransit waiting link
                     # microtransit start fare (with the transfer discount and the peak factor) and the rejection penalty
-                    if study_area == "lemon_grove":
-                        if min_node <= last_walk_node and first_micro_node <= edge <= last_micro_node:
-                            micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun (docs/open_issues.md, I-19)
-                        else:
-                            micro_fare = 0
+                    # (every study area since 2026-11-24; only "lemon_grove" before)
+                    if min_node <= last_walk_node and first_micro_node <= edge <= last_micro_node:
+                        micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun (docs/open_issues.md, I-19)
+                    else:
+                        micro_fare = 0
 
                     if iteration>0:
                         if link_travel_time==180:

@@ -1342,6 +1342,27 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `README.md` (parameters), `study_area_inputs.md` (section 1), `reference_results/README.md`.
 - Full run: **`REPRODUCED`** (26 files). Phase 1 is complete.
 
+## Phase 2 step 1: no Lemon Grove logic branches (2026-11-24)
+
+- `docs/study_area_plan.md`, Phase 2 (user's decisions of 2026-11-24 there).
+- The `if study_area == "lemon_grove"` wrappers are gone; the code inside them already works by node ranges and now
+  applies to every study area:
+  - `network_algorithms.generalized_cost_dijsktra_OD_heap`: the FRT fare on boarding (type 2) and the microtransit
+    start fare (type 5) (I-34, item 2: elsewhere both were $0);
+  - `update_network_files`: FleetPy's waiting times on the type-5 links (I-34, item 6);
+  - `output_performance_metrics`: the FRT line duration, and the ridership file's `travel_time`.
+- `fleetpy_runner.create_config_files`: the vehicle type `<area>_vehtype` (was `lemon_grove_vehtype`).
+- Decision 2: FleetPy's example check of 88 users removed (`microtransit.py`; it reported a mismatch in every
+  iteration, about 68 users, into the console and `standard_bugfix.log`), with `read_outputs_for_comparison`,
+  `check_assertions`, `MOD_STR`, `MM_STR` in `fleetpy_runner`. Their read of `standard_eval.csv` was the source of the
+  run's five pandas `FutureWarning`s, which are gone.
+- Decision 3: `config.check_run_config` no longer requires `study_area = lemon_grove`.
+- `.gitignore`: the run-output and FleetPy-staging patterns hold for any area (`mtsm_data/*/output/*`,
+  `fleetpy/data/networks/*_example_network/`, ...). Checked: they ignore the run files of `lemon_grove` and of an
+  invented area, not FleetPy's own example files (its two vehicle types are kept by `!` lines) or the `.gitkeep`
+  files; no tracked file matches an ignore pattern.
+- Full run: **`REPRODUCED`** (26 files, 3:57).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
