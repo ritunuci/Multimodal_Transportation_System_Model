@@ -319,3 +319,9 @@ complete.
 5. One step, one commit.
 
 Done 2026-11-24 (`docs/progress.md`, "Phase 4: input checker"). Phase 4 complete.
+
+### Phase 6: skipped for now (user, 2026-11-24)
+
+The user skips the synthetic test area for now. The decisions listed for it (how the files are made, shape, traveler
+attributes, name, how it is run, its parameters, reference, optimizer) are not taken. Downtown San Diego (I-34) stays
+open.
