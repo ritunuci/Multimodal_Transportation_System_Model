@@ -33,7 +33,7 @@ Paths are relative to the codebase root.
 | I-09 | The model's vehicle capacity is stored in FleetPy's vehicle file | Medium | Closed (2026-11-08) | 2026-11-07 |
 | I-10 | FleetPy's example data was overwritten with downtown San Diego data | Low | Closed (2026-11-08) | 2026-11-07 |
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Closed (2026-11-23) | 2026-11-07 |
-| I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Open | 2026-11-08 |
+| I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Closed (2026-11-23) | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Open | 2026-11-08 |
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
@@ -87,20 +87,6 @@ Paths are relative to the codebase root.
   silently wrong accessibility numbers.
 - **Fix:** take the node list from the network the scenario actually uses. If the node set is unchanged, the reference
   still reproduces; check with a full run and `compare_reference.py`.
-
-### I-12: FleetPy's example a) serves 90 users; its check expects 88
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 1).
-- **What:** `python run_examples.py` in `fleetpy/` runs example a) (`constant_config_ir.csv`, `example_ir_only.csv`)
-  on the restored upstream data (Munich, 7,617 nodes, 5 vehicles). It serves 90 of 100 users; the check, unchanged
-  since FleetPy's first release (2021-12-07), expects 88. The run otherwise completes normally.
-- **Not the cause:** the vehicle capacity (the same 90 with upstream's capacity 4) and the example data (restored
-  byte for byte).
-- **Likely cause, not verified:** the environment. Upstream FleetPy was written for numpy 1.19 / pandas 1.2; the
-  model's environment has numpy 2.2 / pandas 2.2, and four pandas-2 fixes in `src/`.
-- **Impact:** none on the Lemon Grove results. It means FleetPy's own example cannot be used as a pass/fail check
-  of FleetPy here.
-- **Fix:** run upstream `7019960` unchanged in an environment with its original requirements: 88 there confirms
-  the environment as the cause, and 90 can then be recorded as the expected value in this environment.
 
 ### I-13: The `micro_only` scenario uses the downtown San Diego node limit
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).
@@ -642,6 +628,47 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-12: FleetPy's example a) serves 90 users; its check expects 88
+- **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 1).
+- **What:** `python run_examples.py` in `fleetpy/` runs example a) (`constant_config_ir.csv`, `example_ir_only.csv`)
+  on the restored upstream data (Munich, 7,617 nodes, 5 vehicles). It serves 90 of 100 users; the check, unchanged
+  since FleetPy's first release (2021-12-07), expects 88. The run otherwise completes normally.
+- **Not the cause:** the vehicle capacity (the same 90 with upstream's capacity 4) and the example data (restored
+  byte for byte).
+- **Likely cause, not verified:** the environment. Upstream FleetPy was written for numpy 1.19 / pandas 1.2; the
+  model's environment has numpy 2.2 / pandas 2.2, and four pandas-2 fixes in `src/`.
+- **Impact:** none on the Lemon Grove results. It means FleetPy's own example cannot be used as a pass/fail check
+  of FleetPy here.
+- **Fix:** run upstream `7019960` unchanged in an environment with its original requirements: 88 there confirms
+  the environment as the cause, and 90 can then be recorded as the expected value in this environment.
+- **Checked 2026-11-23** (scripts and environments in the session scratchpad; nothing in the repo changed): example
+  a) only, run by a small driver that calls the tree's own `run_examples.run_scenarios` and
+  `read_outputs_for_comparison`; upstream `7019960` downloaded from GitHub as a zip.
+
+  | code | environment | number users |
+  |---|---|---|
+  | ours (`fleetpy/`) | `fleetpy` (Python 3.10.19, numpy 2.2.6, pandas 2.2.3) | 90 |
+  | ours | old: Python 3.8.20, numpy 1.19.5, pandas 1.2.0, networkx 2.3, scipy 1.5.4, pyproj 2.6.1.post1 (FleetPy's pins) | 90 |
+  | upstream `7019960`, unchanged | old | 90 |
+  | upstream `7019960`, unchanged | `fleetpy` | stops: `read_csv() got an unexpected keyword argument 'squeeze'` (the reason for the pandas-2 fixes) |
+
+  - All three runs that finish give the same `standard_eval.csv` values to the last digit (served 90 %, shared
+    rides 46.67 %, total vkm 212.3717404453077). `PYTHONHASHSEED` 0, 1, 2, 3, 12345 (ours, `fleetpy` env) and 0, 7
+    (upstream, old env) change nothing.
+  - Our `src/` differs from upstream only in the four pandas-2 files; `data/` and `studies/` are identical
+    (`diff`, line endings ignored).
+  - Upstream kept `"number users": 88` for example a) in later versions too (`1f736d3`, `ff372cb`, 2025); its
+    `run_examples.py` was moved in 2026-03.
+  - So the cause is not the environment and not the local changes: upstream's expected value does not match upstream's
+    own code and data at `7019960` (the 88 may come from an earlier FleetPy version or another platform; not
+    traced). 90 is the expected value of FleetPy `7019960` here.
+  - Side note: upstream's evaluation fails with `FileNotFoundError` when the FleetPy folder sits in a deep path (the
+    result file path then passes Windows' 260-character limit).
+- **Resolution:** the "likely cause" above is ruled out; upstream's check value is stale. 90 is recorded as the
+  expected value of example a) in `fleetpy/LOCAL_CHANGES.md`. `fleetpy/run_examples.py` keeps the 88 (user's
+  choice: docs only, no change to FleetPy), so its mismatch message for 90 is the expected result. No model code
+  changed; the Lemon Grove results are not affected.
 
 ### I-11: Old, unused MTSM files inside `fleetpy/`
 - **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-07 (comparison with upstream FleetPy).

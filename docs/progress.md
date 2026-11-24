@@ -1127,6 +1127,18 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   recreated; `compare_reference.py` **32 identical, `REPRODUCED`**. The older git-ignored run files of that folder were
   put back afterwards.
 
+## FleetPy example a): 90 users is the expected value (I-12, 2026-11-23)
+
+- Question: FleetPy's example a) serves 90 users here, its check expects 88; is the model's environment the cause?
+- Test (scratchpad only; nothing in the repo changed): upstream `7019960` downloaded from GitHub; an environment with
+  FleetPy's original versions (Python 3.8.20, numpy 1.19.5, pandas 1.2.0, networkx 2.3, pyproj 2.6.1.post1); example
+  a) run by a driver that calls the tree's own `run_examples` functions.
+- Result: ours in the `fleetpy` env, ours in the old env, and upstream unchanged in the old env all serve **90**, with
+  identical `standard_eval.csv` values; the hash seed changes nothing. Upstream unchanged does not run in the
+  `fleetpy` env (pandas 2 removed `squeeze=`). Upstream kept 88 in later versions (2025).
+- So upstream's check value is stale. User's choice: docs only. `fleetpy/LOCAL_CHANGES.md` records 90 as the expected
+  value; `run_examples.py` keeps 88 and prints a mismatch. I-12 closed.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

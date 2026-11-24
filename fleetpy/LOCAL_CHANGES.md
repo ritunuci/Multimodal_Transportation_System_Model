@@ -62,6 +62,12 @@ Removed on 2026-11-07 (they were commented-out debug prints, no effect): extra l
 FleetPy's own example a) (`python run_examples.py` in this folder) runs, but serves 90 users where its check
 expects 88 (I-12).
 
+**Expected value of example a) here: 90 users** (2026-11-23, I-12 closed). Upstream `7019960`, unchanged, in an
+environment with FleetPy's original versions (Python 3.8, numpy 1.19.5, pandas 1.2.0) also serves 90, with the same
+`standard_eval.csv` values as this folder in the model's environment; the hash seed changes nothing. Upstream's
+check value 88 does not match upstream's own code and data. `run_examples.py` keeps the 88 (user's choice: no change
+to FleetPy for this), so it prints a mismatch for 90; that mismatch is the expected result.
+
 FleetPy's original `requirements.txt` (numpy 1.19.5, pandas 1.2.0, ...) is not in this folder. The repository root's
 `requirements.txt` points to `env/`, the model's locked environment; the original list is in the git history
 (commit `6d311ee`).
