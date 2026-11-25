@@ -141,3 +141,12 @@ case (lines 2 and 4; the base row twice).
   independent calculation from the table, and `tot_sub` changed by exactly the change of `F_oper_cost`. No mode share,
   trip count, time or logsum changed; the other 25 files did not change. The file was replaced by the run's; a second
   full run printed `REPRODUCED`. The area manifest was rewritten for the new input.
+- **2026-11-24, scenario travelers outside the operating periods at the scenario's headway** (`docs/open_issues.md`
+  I-38, user's decision (a); `docs/progress.md`): in the scenario, travelers who depart outside the microtransit
+  operating periods (here after 20:00) ride the FRT at the scenario's `frt_headway` (10 min) instead of
+  `base_frt_headway` (20 min). A full run differed from the reference in 4 files: the evaluation file (34 values, all
+  in `FRT_and_micro`), the scenario's individual results (121 EV travelers) and FRT ridership file, and the FRT demand
+  file of FleetPy's demand folder. The base case (`FRT_only`, the `non_micro` files) and FleetPy's results did not
+  change. car users 3,444 -> 3,441, transit users 298 -> 301 (3 EV travelers from car to transit), `F_trips` 22 -> 25,
+  `F_revenue ($)` 65.08 -> 75.92, `tot_sub ($)` 7,806.04 -> 7,795.20 (-0.14 %), `tt_mob_lgsm_inc_with_micro` 903.05 ->
+  912.09 (+1.00 %), in 34 values of the evaluation file's `FRT_and_micro` column. The 4 files were replaced by the run's; a second full run printed `REPRODUCED`.

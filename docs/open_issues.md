@@ -59,7 +59,7 @@ Paths are relative to the codebase root.
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
-| I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Decision needed | 2026-11-24 |
+| I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Open | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
@@ -631,31 +631,6 @@ Paths are relative to the codebase root.
   - name it after what it is, and record where the nodes come from;
   - a change belongs to a new reference.
 
-### I-38: Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway
-- **Status:** Decision needed. **Severity:** High (can give wrong reported results, if not intended). **Found:**
-  2026-11-24 (writing the input specification, `docs/study_area_inputs.md`). Recorded on the user's request.
-- **What:** `paths.networks_for_traveler` sets `T_F_network = initial_super_network["non_micro"][BASE_FRT_HEADWAY]`
-  for every traveler. In a `micro` scenario, a traveler who departs outside the microtransit operating periods gets
-  `T_micro_network = T_F_network`, so `paths.micro_path` routes their transit trip on the FRT network at
-  `base_frt_headway` (Lemon Grove: 20 min, boarding wait 600 s) instead of the scenario's `frt_headway` (reference:
-  10 min, 300 s). That search uses the scenario's fare (`cfg.transit_fare`), so the traveler gets the scenario's
-  fare with the base case's headway. The scenario's FRT operating cost and vehicle miles are computed for
-  `frt_headway` over all `frt_operating_hours` (19 h). (Using `T_F_network` with `BASE_FRT_FARE` for the base
-  case's FRT path, `paths.frt_path`, is intended: I-28.)
-- **Since:** the original code. `v1-reproducible`, `run_examples_new_parking.py` line 884, uses `base_FRT_headway`,
-  with the scenario-headway version commented out just above it:
-  `# T_F_network = initial_super_network["non_micro"][headway]  # the fixed route transit network remain constant - won't feedback to it`.
-- **Impact:** in the reference the microtransit runs AM, MD and PM (5:00-20:00); 270 of the 3,742 travelers depart
-  after 20:00 (EV). When the scenario's headway is shorter than the base headway (as in the reference), their
-  transit cost is too high, so the transit share and the logsum for these travelers are too low; with a longer
-  scenario headway, the other way round. Not quantified.
-- **To decide:**
-  - (a) Outside the operating periods, use the FRT network at the scenario's headway. The run already writes it
-    (`initial_super_network_non_micro_hw_<headway>.csv`, `update_initial_network.py`) but does not read it.
-    Changes results: its own reference update, or the batched new reference.
-  - (b) Keep it, if the FRT is meant to run at the base headway outside the microtransit hours; then the FRT
-    operating cost should be computed that way too.
-
 ### I-39: Lemon Grove's FleetPy `crs.info` names the wrong coordinate system
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (writing the input specification).
 - **What:** `mtsm_data/lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info` says
@@ -732,6 +707,46 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-38: Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway
+- **Status:** Closed (2026-11-24); Decision needed until then. **Severity:** High (can give wrong reported results,
+  if not intended). **Found:** 2026-11-24 (writing the input specification, `docs/study_area_inputs.md`). Recorded on
+  the user's request.
+- **What:** `paths.networks_for_traveler` sets `T_F_network = initial_super_network["non_micro"][BASE_FRT_HEADWAY]`
+  for every traveler. In a `micro` scenario, a traveler who departs outside the microtransit operating periods gets
+  `T_micro_network = T_F_network`, so `paths.micro_path` routes their transit trip on the FRT network at
+  `base_frt_headway` (Lemon Grove: 20 min, boarding wait 600 s) instead of the scenario's `frt_headway` (reference:
+  10 min, 300 s). That search uses the scenario's fare (`cfg.transit_fare`), so the traveler gets the scenario's
+  fare with the base case's headway. The scenario's FRT operating cost and vehicle miles are computed for
+  `frt_headway` over all `frt_operating_hours` (19 h). (Using `T_F_network` with `BASE_FRT_FARE` for the base
+  case's FRT path, `paths.frt_path`, is intended: I-28.)
+- **Since:** the original code. `v1-reproducible`, `run_examples_new_parking.py` line 884, uses `base_FRT_headway`,
+  with the scenario-headway version commented out just above it:
+  `# T_F_network = initial_super_network["non_micro"][headway]  # the fixed route transit network remain constant - won't feedback to it`.
+- **Impact:** in the reference the microtransit runs AM, MD and PM (5:00-20:00); 270 of the 3,742 travelers depart
+  after 20:00 (EV). When the scenario's headway is shorter than the base headway (as in the reference), their
+  transit cost is too high, so the transit share and the logsum for these travelers are too low; with a longer
+  scenario headway, the other way round. Not quantified.
+- **To decide:**
+  - (a) Outside the operating periods, use the FRT network at the scenario's headway. The run already writes it
+    (`initial_super_network_non_micro_hw_<headway>.csv`, `update_initial_network.py`) but does not read it.
+    Changes results: its own reference update, or the batched new reference.
+  - (b) Keep it, if the FRT is meant to run at the base headway outside the microtransit hours; then the FRT
+    operating cost should be computed that way too.
+- **Resolution (2026-11-24):** user's decision (a), on `main` with a documented reference update. In a `micro`
+  scenario, a traveler outside the microtransit operating periods now rides the FRT-only network at the scenario's
+  `frt_headway` (`initial_super_network_non_micro_hw_<h>.csv`, written by `update_initial_network`, now also read:
+  `testing_scenario_creation.scen_create` and `networks.read_iteration_networks` keep it under its own key
+  `frt_scenario`, so it never replaces the base case's network when a scenario headway equals the base headway;
+  `paths.networks_for_traveler` uses it). The base case (FRT at `base_frt_headway` and `base_frt_fare`, I-28),
+  `micro_only` and the operating costs are unchanged. Full run against the reference: only the 121 EV travelers
+  (departures after 20:00; 270 in all) changed, all in the scenario's individual results; the base case's individual
+  results and the evaluation file's `FRT_only` column are identical, and FleetPy's inputs and results are unchanged.
+  Their FRT wait is now 300 s (half of 10 min) instead of 600 s; car users 3,444 -> 3,441, transit users 298 -> 301 (3 EV travelers from car to transit), `F_trips` 22 -> 25,
+  `F_revenue ($)` 65.08 -> 75.92, `tot_sub ($)` 7,806.04 -> 7,795.20 (-0.14 %), `tt_mob_lgsm_inc_with_micro` 903.05 ->
+  912.09 (+1.00 %), in 34 values of the evaluation file's `FRT_and_micro` column. 4 reference files replaced (the
+  evaluation file, the scenario's individual results and FRT ridership file, the FRT demand file); a second full
+  run printed `REPRODUCED` (`docs/reference_results/README.md`).
 
 ### I-13: The `micro_only` scenario uses the downtown San Diego node limit
 - **Status:** Closed (2026-11-24). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2).

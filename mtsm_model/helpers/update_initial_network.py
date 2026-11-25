@@ -23,6 +23,13 @@ def initial_micro_files(study_area, headway, virstop):
     return {p: (base + ".csv" if src == whole_day else f"{base}_{p}.csv") for p, src in templates.items()}
 
 
+def initial_frt_file(study_area, headway):
+    """the scenario's FRT-only network at `headway`, in initial_network/: initial_super_network_non_micro_hw_<h>.csv.
+    Read since 2026-11-24 (I-38) for the scenario's travelers outside the microtransit operating periods."""
+    return os.path.join(mtsm.area_paths(study_area).initial_network_dir,
+                        f"initial_super_network_non_micro_hw_{headway}.csv")
+
+
 def update_initial_net_with_bayesian_headway(headway, study_area, virstops):
     """Write the scenario networks of `headway`: every FRT boarding link (type 2, travel time not 0) gets
     headway x 60 / 2 s. The micro network for each share in `virstops`, the FRT-only network once."""
@@ -58,7 +65,7 @@ def update_initial_net_with_bayesian_headway(headway, study_area, virstops):
                                          "route": route_1})
 
     base_initial_net_file_non_micro = paths.super_network_frt_file  # was base_super_network_lemon_grove_non_micro_hw_10.csv
-    updated_initial_net_file_non_micro = os.path.join(initial_net_folder, f"initial_super_network_non_micro_hw_{headway}.csv")
+    updated_initial_net_file_non_micro = initial_frt_file(study_area, headway)
 
     with open(updated_initial_net_file_non_micro, 'w+', newline='') as updated_file_2:
         fieldnames_2 = ["from_node", "to_node", "distance", "travel_time", "link_type", "route"]

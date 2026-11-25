@@ -45,3 +45,8 @@ def read_iteration_networks(area, scen, iteration, converged):
         config.BASE_FRT_HEADWAY] = n_a.read_super_network(
         initial_super_network_dir["non_micro"][
             config.BASE_FRT_HEADWAY])
+    if microtransit_run == "micro":
+        # the FRT-only network at the scenario's headway (I-38, since 2026-11-24): for the scenario's travelers outside
+        # the microtransit operating periods
+        initial_super_network["frt_scenario"][headway] = n_a.read_super_network(
+            initial_super_network_dir["frt_scenario"][headway])

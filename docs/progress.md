@@ -1598,6 +1598,25 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   (fast-forward `TRA_resubmission`; the held data decisions there).
 - Docs only; no run.
 
+## Scenario travelers outside the operating periods at the scenario's headway; reference updated (I-38, 2026-11-24)
+
+- User's decision (a), on `main` with its own reference update, while revisiting the open items before moving to the
+  branch `TRA_resubmission`. In a `micro` scenario, a traveler outside the microtransit operating periods now rides
+  the FRT-only network at the scenario's `frt_headway` instead of `base_frt_headway` (so in the original code).
+- Code: `update_initial_network.initial_frt_file` (the scenario's FRT-only network, which the run already wrote but did
+  not read); `testing_scenario_creation.scen_create` and `networks.read_iteration_networks` keep it under the key
+  `frt_scenario` (not `non_micro`, so it never replaces the base case's network when a scenario headway equals the base
+  headway); `paths.networks_for_traveler` uses it outside the operating periods. Unchanged: the base case (I-28),
+  `micro_only`, the reused FRT path, the operating costs.
+- Full run against the reference: 4 files differ (the evaluation file in 34 values of `FRT_and_micro`; the scenario's
+  individual results and FRT ridership file; the FRT demand file). Only the 121 EV travelers changed (270 depart after
+  20:00); the base case's files and the `FRT_only` column are identical, FleetPy's inputs and results unchanged. Their
+  FRT wait is 300 s instead of 600 s; 3 of them now take transit instead of the car (their transit probability rose
+  above their unchanged random draw). Car users 3,444 -> 3,441, `F_trips` 22 -> 25, `tot_sub ($)` 7,806.04 ->
+  7,795.20 (-0.14 %), `tt_mob_lgsm_inc_with_micro` 903.05 -> 912.09 (+1.00 %).
+- Reference: the 4 files replaced by the run's (`docs/reference_results/README.md`); a second full run: **`REPRODUCED`**
+  (26 files, 4:01). I-38 closed; `study_area_inputs.md` (file 4).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

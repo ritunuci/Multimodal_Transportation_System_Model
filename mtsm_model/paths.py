@@ -52,9 +52,10 @@ class MicroPath:
 def networks_for_traveler(microtransit_run, iteration, time_period, operating_periods, initial_super_network,
                           final_super_network, auto_network, headway, virstop, M_operating_hrs, fleet_size):
     """The FRT-only network (T_F_network) and the network with microtransit (T_micro_network) for a traveler who
-    departs in time_period. Iteration 0 uses the initial super-network, later iterations the one updated with
-    FleetPy's results. Outside the microtransit operating periods: the FRT-only network ("micro") or the auto
-    network ("micro_only")."""
+    departs in time_period. T_F_network is the base case's: FRT at base_frt_headway (I-28). Iteration 0 uses the
+    initial super-network, later iterations the one updated with FleetPy's results. Outside the microtransit
+    operating periods: the FRT-only network at the scenario's headway ("micro"; since 2026-11-24, I-38, before at
+    base_frt_headway, the base case's network) or the auto network ("micro_only")."""
     # 1108 Siwei: read the initial super-network according to "microtransit", "fixed route trasnit headway","virstop", and "time_period"
     T_F_network = \
         initial_super_network["non_micro"][
@@ -65,7 +66,7 @@ def networks_for_traveler(microtransit_run, iteration, time_period, operating_pe
                 # the traveler's period (per-period initial networks since 2026-11-24)
                 T_micro_network = initial_super_network["micro"][headway][virstop][M_operating_hrs][time_period]
             else:
-                T_micro_network = T_F_network
+                T_micro_network = initial_super_network["frt_scenario"][headway]  # I-38: was T_F_network
         if microtransit_run == "micro_only":
             if time_period in operating_periods:
                 T_micro_network = initial_super_network["micro_only"][virstop][M_operating_hrs]
@@ -77,7 +78,7 @@ def networks_for_traveler(microtransit_run, iteration, time_period, operating_pe
             if time_period in operating_periods:
                 T_micro_network = final_super_network["micro"][headway][virstop][M_operating_hrs][time_period][fleet_size]
             else:
-                T_micro_network = T_F_network
+                T_micro_network = initial_super_network["frt_scenario"][headway]  # I-38: was T_F_network
         if microtransit_run == "micro_only":
             if time_period in operating_periods:
                 T_micro_network = final_super_network["micro_only"][virstop][M_operating_hrs][time_period][fleet_size]

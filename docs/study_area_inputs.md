@@ -196,7 +196,8 @@ ABM3 period; only the microtransit in-vehicle times (type 4) differ between them
 Link types 0, 1, 2: the walk and FRT links of file 3, without microtransit. Used for the base case and for the
 scenario's travelers outside the microtransit operating periods, in both cases at `base_frt_headway`, not at the
 scenario's `frt_headway` (`paths.networks_for_traveler`; so in the original code too; I-38). Lemon Grove: 3,088
-links.
+links. Since 2026-11-24 (I-38, user's decision): the scenario's travelers outside the operating periods use it at the
+scenario's `frt_headway` (the run writes that version); the base case keeps `base_frt_headway` (file 9).
 
 The base case runs on this network at `base_frt_headway`, supplied as file 9 (decision C: it stays an input). File 9
 is file 4 with every FRT boarding time (type 2, `travel_time` above 0) set to `base_frt_headway x 60 / 2`. Checked

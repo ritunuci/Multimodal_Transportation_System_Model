@@ -78,5 +78,11 @@ def scen_create(microtransit_setup_scenarios,virtual_stop_scenarios,operating_pe
                 else:
                     # print("WE ARE HERE!!!!!!!!!")
                     initial_super_network_dir[microtransit][base_FRT_headway] = base_frt_headway_file
+    # the FRT-only network at each scenario headway, for the scenario's travelers outside the microtransit operating
+    # periods (I-38, 2026-11-24; until then they used the base-headway network above); its own key, so that it does
+    # not replace the base case's network when a scenario headway equals the base headway
+    initial_super_network_dir["frt_scenario"] = OrderedDict(
+        (headway, init_net.initial_frt_file(study_area, headway)) for headway in headway_scenarios)
+    initial_super_network["frt_scenario"] = OrderedDict()
 
     return initial_super_network_dir,initial_super_network,final_super_network_dir,final_super_network
