@@ -1526,6 +1526,34 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `study_area_inputs.md` (area parameters), `README.md` (parameter files; "Add your own study area" step 2).
 - Full run: **`REPRODUCED`** (26 files, 4:01).
 
+## Period networks and car availability, step 4: microtransit super-network and car network per period (2026-11-24)
+
+- `docs/period_networks_and_car_availability_plan.md`, decision 2. File 3 (`super_network_micro_virstop_<v>.csv`)
+  and file 5 (`car_network.csv`) can each be given per time period (`..._<v>_<P>.csv`, `car_network_<P>.csv`, every
+  period of `time_periods`); otherwise one file for the whole day, as before. Files 4 and 9 stay whole-day.
+- `mtsm_paths`: `period_network_files` ({period: file}; the whole-day file for every period, or the period files;
+  ValueError for a missing period file or both forms), `AreaPaths.micro_network_files`, `car_network_files`.
+- The run: `config.derive_node_numbering` checks every file (one M for all); the car files are checked at startup.
+  `update_initial_network.initial_micro_files` names the scenario networks (whole day: the old name; per period:
+  `initial_super_network_micro_hw_<h>_virstop_<v>_<P>.csv`), and each is written from its period's file.
+  `scen_create` and `read_iteration_networks` keep {period: network} (`networks.read_period_networks`: each distinct
+  file read once; in iteration 0 the whole-day network was read four times before, with the same result);
+  `paths.networks_for_traveler` takes the traveler's period; the car network is {period: network}
+  (`StudyArea.auto_network`) and the car path is searched on the traveler's period; `update_network_files` writes each
+  period's final network from that period's scenario network.
+- `tools/check_study_area.py`: every distinct file 3 and 5 checked as before (link types, node ranges, FRT links of
+  file 6, walk and microtransit links = FleetPy's road edges, car network contains them); a trip's car reachability on
+  its period's file; the two errors of `period_network_files`. `tools/check_inputs.py` lists the period files.
+- Test (equivalence): Lemon Grove's files 3 and 5 replaced by four identical copies each (`_AM`, `_MD`, `_PM`, `_EV`;
+  the originals moved to the scratchpad and back afterwards; inputs match their manifests again). Checker 0 errors;
+  a missing `car_network_PM.csv` and a whole-day file 3 next to the period files each stop with their message. The
+  run's results: 25 of the 26 reference files identical; the 26th, the scenario network
+  `initial_super_network_micro_hw_10_virstop_75.csv`, is written per period instead, and each of the four period
+  files equals the reference file byte for byte. A test with different period files is the branch's (TRA's data).
+- Docs: `study_area_inputs.md` (files 3 and 5, what the run writes, not supported), `README.md` (inputs; the
+  `TRA_input_data_prep` table maps its period files).
+- Full run (whole day): **`REPRODUCED`** (26 files, 4:00).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -53,10 +53,48 @@ class AreaPaths:
     # (LG_TRANSIT_DIR and LG_TRANSIT_NETWORK_DIR: their files are in networks/ since 2026-11-24;
     # LG_INITIAL_NETWORK_0719_DIR and LG_MGRA_NODE_MAPPING_DIR, accessibility only, removed 2026-11-24)
 
-    def super_network_micro_file(self, virstop):
+    def super_network_micro_file(self, virstop, period=None):
         """file 3: the super-network with microtransit and `virstop` % virtual stops
-        (initial_network/base_super_network_lemon_grove_micro_hw_10_virstop_75.csv)"""
-        return os.path.join(self.networks_dir, "super_network_micro_virstop_%s.csv" % virstop)
+        (initial_network/base_super_network_lemon_grove_micro_hw_10_virstop_75.csv); with `period`, that period's file
+        super_network_micro_virstop_<v>_<P>.csv (since 2026-11-24)"""
+        suffix = "" if period is None else "_%s" % period
+        return os.path.join(self.networks_dir, "super_network_micro_virstop_%s%s.csv" % (virstop, suffix))
+
+    def car_network_period_file(self, period):
+        """file 5 of one time period: car_network_<P>.csv (since 2026-11-24)"""
+        return os.path.join(self.networks_dir, "car_network_%s.csv" % period)
+
+    def micro_network_files(self, virstop, periods):
+        """{period: file 3} for the time periods `periods`: one file per period, or the whole-day file for all
+        (period_network_files)"""
+        return period_network_files(self.super_network_micro_file(virstop),
+                                    {p: self.super_network_micro_file(virstop, p) for p in periods})
+
+    def car_network_files(self, periods):
+        """{period: file 5}: one file per period, or the whole-day file for all (period_network_files)"""
+        return period_network_files(self.car_network_file, {p: self.car_network_period_file(p) for p in periods})
+
+
+def period_network_files(whole_day_file, period_files):
+    """{period: file} of a network that can be given per time period (since 2026-11-24;
+    docs/period_networks_and_car_availability_plan.md, decision 2): the period files when all of them exist, the
+    whole-day file for every period when only it exists. ValueError for anything else (some period files missing,
+    or both forms, or neither)."""
+    present = [p for p, f in period_files.items() if os.path.isfile(f)]
+    whole_day = os.path.isfile(whole_day_file)
+    if not present and whole_day:
+        return {p: whole_day_file for p in period_files}
+    if len(present) == len(period_files) and not whole_day:
+        return dict(period_files)
+    if present and whole_day:
+        raise ValueError("both the whole-day network %s and period files (%s) exist; give one form"
+                         % (whole_day_file, ", ".join(present)))
+    if present:
+        missing = [p for p in period_files if p not in present]
+        raise ValueError("period files of %s are missing for the periods %s (given: %s)"
+                         % (whole_day_file, ", ".join(missing), ", ".join(present)))
+    raise ValueError("network missing: %s (or one file per time period, %s)"
+                     % (whole_day_file, ", ".join(os.path.basename(f) for f in period_files.values())))
 
 
 def area_paths(area):

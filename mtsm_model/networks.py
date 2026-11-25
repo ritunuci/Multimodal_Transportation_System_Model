@@ -7,6 +7,13 @@ from mtsm_model.helpers import network_algorithms as n_a
 from mtsm_model import config
 
 
+def read_period_networks(files):
+    """{period: network} from {period: file}, each distinct file read once: in whole-day mode one network object for
+    every period (since 2026-11-24; docs/period_networks_and_car_availability_plan.md, step 4)"""
+    networks = {f: n_a.read_super_network(f) for f in dict.fromkeys(files.values())}
+    return {period: networks[f] for period, f in files.items()}
+
+
 def read_iteration_networks(area, scen, iteration, converged):
     """Read the networks the travelers use in this iteration into initial_super_network / final_super_network:
     in iteration 0 the initial super-network with microtransit, later the final ones that the previous iteration
@@ -25,11 +32,11 @@ def read_iteration_networks(area, scen, iteration, converged):
             else:
                 final_super_network[microtransit_run][virstop][M_operating_hrs][time_period][fleet_size]=n_a.read_super_network(final_super_network_dir[microtransit_run][virstop][M_operating_hrs][time_period][fleet_size])
     elif microtransit_run=="micro":
-        for time_period in time_periods:
-            if iteration == 0:
-                #[microtransit][headway][virstop][M_operating_hrs][time_period]
-                initial_super_network[microtransit_run][headway][virstop][M_operating_hrs] = n_a.read_super_network(initial_super_network_dir[microtransit_run][headway][virstop][M_operating_hrs])
-            else:
+        if iteration == 0:
+            # {time period: network} (since 2026-11-24; until then one network, read again for each period)
+            initial_super_network[microtransit_run][headway][virstop][M_operating_hrs] = read_period_networks(initial_super_network_dir[microtransit_run][headway][virstop][M_operating_hrs])
+        else:
+            for time_period in time_periods:
                 try:
                     final_super_network[microtransit_run][headway][virstop][M_operating_hrs][time_period][fleet_size]=n_a.read_super_network(final_super_network_dir[microtransit_run][headway][virstop][M_operating_hrs][time_period][fleet_size])
                 except:

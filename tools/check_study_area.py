@@ -168,6 +168,16 @@ def _adjacency(links):
     return adjacency
 
 
+def _period_of(t, params):
+    """the time period of a departure at t (s), as config.period_of: the first whose end is at or after t, else the
+    last"""
+    periods, ends = params["time_periods"], params["period_end_h"]
+    for period, end_h in zip(periods[:-1], ends[:-1]):
+        if t <= end_h * 3600:
+            return period
+    return periods[-1]
+
+
 def check_study_area(area, params, n, m):
     """Check the inputs of `area`. params: the run's parameters (config.PARAMETERS); n, m: the number of walk nodes and
     the first microtransit node (config.derive_node_numbering). Returns a Report (errors, warnings)."""
@@ -197,18 +207,41 @@ def check_study_area(area, params, n, m):
         pairs = {pair for pair, k in counts.items() if k > 1}
         road_duplicates = frozenset(pairs | {(a + m, b + m) for a, b in pairs})
 
-    micro = {}
+    # files 3 and 5: one network for the whole day or one per time period (since 2026-11-24;
+    # docs/period_networks_and_car_availability_plan.md, step 4); each distinct file is checked
+    periods = params["time_periods"]
+    micro = {}  # {label: links}: file 3 of each virtual-stop share, and of each period when given per period
     for v in virstops:
-        micro[v] = _read_network(paths.super_network_micro_file(v), report, f"file 3 (virstop {v})")
-        if micro[v] is not None:
-            _check_link_types(micro[v], {0, 1, 2, 4, 5}, n, m, report, f"file 3 (virstop {v})")
-            _duplicates(micro[v], report, f"file 3 (virstop {v})", road_duplicates)
+        try:
+            files = paths.micro_network_files(v, periods)
+        except ValueError as e:
+            report.error(f"file 3 (virstop {v}): {e}")
+            continue
+        for p, f in files.items():
+            label = f"file 3 (virstop {v})" if f == paths.super_network_micro_file(v) else f"file 3 (virstop {v}, {p})"
+            if label in micro:
+                continue
+            micro[label] = _read_network(f, report, label)
+            if micro[label] is not None:
+                _check_link_types(micro[label], {0, 1, 2, 4, 5}, n, m, report, label)
+                _duplicates(micro[label], report, label, road_duplicates)
+    car = {}  # {period: links} of file 5
+    car_files = {}  # {file: (label, links)}, each distinct file once
+    try:
+        car_by_period = paths.car_network_files(periods)
+    except ValueError as e:
+        report.error(f"file 5: {e}")
+        car_by_period = {}
+    for p, f in car_by_period.items():
+        if f not in car_files:
+            label = "file 5" if f == paths.car_network_file else f"file 5 ({p})"
+            car_files[f] = (label, _read_network(f, report, label))
+        car[p] = car_files[f][1]
     frt = _read_network(paths.super_network_frt_file, report, "file 4")
     base = _read_network(paths.super_network_frt_base_headway_file, report, "file 9")
-    car = _read_network(paths.car_network_file, report, "file 5")
     links6 = _read_network(paths.frt_links_file, report, "file 6", distance_column="distance (meters)")
-    for links, allowed, label in ((frt, {0, 1, 2}, "file 4"), (base, {0, 1, 2}, "file 9"), (car, {7}, "file 5"),
-                                  (links6, {1}, "file 6")):
+    for links, allowed, label in ([(frt, {0, 1, 2}, "file 4"), (base, {0, 1, 2}, "file 9"), (links6, {1}, "file 6")]
+                                  + [(links, {7}, label) for label, links in car_files.values()]):
         if links is not None:
             _check_link_types(links, allowed, n, m, report, label)
             if label != "file 6":
@@ -219,7 +252,7 @@ def check_study_area(area, params, n, m):
         return sorted((l[0], l[1], l[5], l[2]) for l in links if l[4] == 1)
     reference = frt_links(links6) if links6 is not None else None
     if reference is not None:
-        for label, links in [(f"file 3 (virstop {v})", micro[v]) for v in virstops] + [("file 4", frt), ("file 9", base)]:
+        for label, links in list(micro.items()) + [("file 4", frt), ("file 9", base)]:
             if links is None:
                 continue
             other = frt_links(links)
@@ -264,7 +297,7 @@ def check_study_area(area, params, n, m):
         if any(not (0 <= a < n and 0 <= b < n) for a, b, d, t in fleet):
             report.error(f"FleetPy edges.csv: an edge has a node outside 0..{n - 1}")
         road = [(a, b, d) for a, b, d, t in fleet]
-        for label, links in [(f"file 3 (virstop {v})", micro[v]) for v in virstops] + [("file 4", frt)]:
+        for label, links in list(micro.items()) + [("file 4", frt)]:
             if links is None:
                 continue
             if not _same_edges([(l[0], l[1], l[2]) for l in links if l[4] == 0], road):
@@ -272,11 +305,13 @@ def check_study_area(area, params, n, m):
             if label.startswith("file 3") and not _same_edges(
                     [(l[0] - m, l[1] - m, l[2]) for l in links if l[4] == 4], road):
                 report.error(f"{label}: its microtransit links (type 4, minus {m}) are not FleetPy's road edges")
-        if car is not None:
-            car_edges = Counter((l[0], l[1], round(l[2], 6)) for l in car)
+        for label, links in car_files.values():
+            if links is None:
+                continue
+            car_edges = Counter((l[0], l[1], round(l[2], 6)) for l in links)
             missing = Counter((a, b, round(d, 6)) for a, b, d in road) - car_edges
             if missing:
-                report.error(f"file 5: {sum(missing.values())} of FleetPy's road edges are missing from the car network: "
+                report.error(f"{label}: {sum(missing.values())} of FleetPy's road edges are missing from the car network: "
                              f"{_examples(sorted(missing))}")
 
     # ---- demand (file 2) ----
@@ -309,17 +344,22 @@ def check_study_area(area, params, n, m):
                 report.error(f"file 2: auto_available must be True / False or 1 / 0, lines {_examples(invalid)}")
             else:
                 has_car = values
-        # every trip reaches its destination by walk + FRT (file 4), and by car (file 5) if the traveler has one
+        # every trip reaches its destination by walk + FRT (file 4), and by car (file 5 of its time period) if the
+        # traveler has one
         if not outside:
-            wanted = {"walk + FRT (file 4)": defaultdict(set), "car (file 5)": defaultdict(set)}
+            wanted_frt = defaultdict(set)
+            wanted_car = defaultdict(lambda: defaultdict(set))  # {car file: {origin: destinations}}
             for t, car_available in zip(trips, has_car):
                 if t[col["start"]] != t[col["end"]]:
-                    wanted["walk + FRT (file 4)"][t[col["start"]]].add(t[col["end"]])
-                    if car_available:
-                        wanted["car (file 5)"][t[col["start"]]].add(t[col["end"]])
-            for links, label in ((frt, "walk + FRT (file 4)"), (car, "car (file 5)")):
+                    wanted_frt[t[col["start"]]].add(t[col["end"]])
+                    if car_available and car:
+                        f = car_by_period[_period_of(t[col["rq_time"]], params)]
+                        wanted_car[f][t[col["start"]]].add(t[col["end"]])
+            checks = [(frt, "walk + FRT (file 4)", wanted_frt)]
+            checks += [(car_files[f][1], f"car ({car_files[f][0]})", w) for f, w in wanted_car.items()]
+            for links, label, wanted in checks:
                 if links is not None:
-                    unreachable = _reach(_adjacency(links), wanted[label])
+                    unreachable = _reach(_adjacency(links), wanted)
                     if unreachable:
                         report.error(f"{len(unreachable)} trips cannot reach their destination by {label}: "
                                      f"(origin, destination) {_examples(sorted(unreachable))}")

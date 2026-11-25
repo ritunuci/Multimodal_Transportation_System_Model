@@ -20,9 +20,9 @@ A study area is one folder, `mtsm_data/<area>/`. `<area>` is the study area's na
 |---|---|---|
 | 1 | `area_parameters.csv` | yes |
 | 2 | `demand/demand.csv` | yes |
-| 3 | `networks/super_network_micro_virstop_<v>.csv` | yes |
+| 3 | `networks/super_network_micro_virstop_<v>.csv`, or one per time period `..._<v>_<P>.csv` | yes |
 | 4 | `networks/super_network_frt.csv` | yes |
-| 5 | `networks/car_network.csv` | yes |
+| 5 | `networks/car_network.csv`, or one per time period `car_network_<P>.csv` | yes |
 | 6 | `networks/frt_links.csv` | yes (decision B) |
 | 7 | `networks/nodes.csv` | only with `aggregation = census_track` (decision G) |
 | 8 | `fleetpy/...` (FleetPy's own folder layout) | yes |
@@ -180,6 +180,14 @@ One row per traveler (Lemon Grove: 3,742). The rows need not be sorted.
 Link types 0, 1, 2, 4, 5 (see "Link types"). Lemon Grove: 7,534 links (2,816 walk, 130 FRT, 142 FRT boarding and
 alighting, 2,816 microtransit in-vehicle, 1,630 microtransit boarding and alighting).
 
+Per time period (since 2026-11-24, `docs/period_networks_and_car_availability_plan.md`, step 4): instead of the
+whole-day file, one file per period of `time_periods` (section 1), `super_network_micro_virstop_<v>_<P>.csv`, for
+every virtual-stop share. All periods must be there, and not the whole-day file as well (the run and the checker stop
+otherwise). A traveler then uses the file of their departure's period; each period's file must meet the rules for
+file 3 (node numbering, the FRT links of file 6, the road edges of FleetPy). `TRA_input_data_prep` writes one set per
+ABM3 period; only the microtransit in-vehicle times (type 4) differ between them. The FRT-only networks (files 4 and
+9) stay one for the whole day.
+
 ## 4. FRT-only super-network (`networks/super_network_frt.csv`)
 
 Link types 0, 1, 2: the walk and FRT links of file 3, without microtransit. Used for the base case and for the
@@ -197,6 +205,11 @@ equal to the base headway overwrote it until 2026-11-24 (I-05; since Phase 1 ste
 
 Link type 7 only, between walk node numbers. Lemon Grove: 2,816 links, row for row FleetPy's road edges (same
 `distance` and `travel_time`).
+
+Per time period (since 2026-11-24): one file per period, `car_network_<P>.csv`, instead of the whole-day file (all
+periods, not both forms). A traveler's car path is searched on the file of their departure's period; each file must
+contain FleetPy's road edges, and every trip of a traveler with a car must reach its destination on its period's file.
+Files 3 and 5 decide separately whether they are per period.
 
 ## 6. FRT links (`networks/frt_links.csv`)
 
@@ -306,8 +319,8 @@ except where it says "warning". Lemon Grove: no error, one warning (rule 9), in 
 
 ## What the run writes (not inputs)
 
-In `mtsm_data/<area>/`: the scenario networks (`initial_super_network_micro_hw_<h>_virstop_<v>.csv`,
-`initial_super_network_non_micro_hw_<h>.csv`), the final networks per period (`final_network/`), FleetPy's user
+In `mtsm_data/<area>/`: the scenario networks (`initial_super_network_micro_hw_<h>_virstop_<v>.csv`, or
+`..._virstop_<v>_<P>.csv` per period when file 3 is per period; `initial_super_network_non_micro_hw_<h>.csv`), the final networks per period (`final_network/`), FleetPy's user
 statistics per iteration (`indiv_output/`), and the results (`output/`: the evaluation file, the individual results
 and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and FleetPy's results.
 
@@ -315,7 +328,8 @@ and the FRT ridership files); in `fleetpy/`: the demand handed to FleetPy and Fl
 
 - `micro_only` (microtransit without FRT): it needs a network `initial_super_network_micro_only_virstop_<v>.csv`
   that no study area has (I-13).
-- Networks per time period (I-35).
+- Networks per time period (I-35): supported since 2026-11-24 for files 3 and 5 (sections 3 and 5) and FleetPy's
+  network (step 5 of `docs/period_networks_and_car_availability_plan.md`).
 
 ## History
 

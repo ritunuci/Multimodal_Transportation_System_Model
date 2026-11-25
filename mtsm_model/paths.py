@@ -62,7 +62,8 @@ def networks_for_traveler(microtransit_run, iteration, time_period, operating_pe
     if iteration == 0:
         if microtransit_run == "micro":
             if time_period in operating_periods:
-                T_micro_network = initial_super_network["micro"][headway][virstop][M_operating_hrs]
+                # the traveler's period (per-period initial networks since 2026-11-24)
+                T_micro_network = initial_super_network["micro"][headway][virstop][M_operating_hrs][time_period]
             else:
                 T_micro_network = T_F_network
         if microtransit_run == "micro_only":

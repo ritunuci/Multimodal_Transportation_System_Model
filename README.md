@@ -100,7 +100,9 @@ been tested with Lemon Grove only; no second study area has been run yet.
    - in `networks/`: the super-network with microtransit (`super_network_micro_virstop_<v>.csv`), the FRT-only
      super-network (`super_network_frt.csv`) and the same at the base FRT headway
      (`super_network_frt_base_headway.csv`), the car network (`car_network.csv`), the FRT links (`frt_links.csv`)
-     and the FRT route table (`frt_routes.csv`); a node file (`nodes.csv`) only with `aggregation = census_track`;
+     and the FRT route table (`frt_routes.csv`); a node file (`nodes.csv`) only with `aggregation = census_track`.
+     The microtransit super-network and the car network can instead be given per time period
+     (`..._virstop_<v>_<P>.csv`, `car_network_<P>.csv`);
    - in `fleetpy/data/`: FleetPy's road network (`networks/<area>_example_network/base/` with `nodes.csv`,
      `edges.csv`, `crs.info`) and the vehicles' start positions
      (`fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv`).
@@ -143,18 +145,19 @@ outputs and the files of this model:
 
 | `TRA_input_data_prep` output (`outputs_MGRA15/<area>/`) | File in `mtsm_data/<area>/` |
 |---|---|
-| `super_network/initial_super_network_micro_hw_<h>_virstop_<v>_<P>.csv` | `networks/super_network_micro_virstop_<v>.csv` |
-| `super_network/initial_super_network_non_micro_hw_<h>_<P>.csv` | `networks/super_network_frt.csv` |
+| `super_network/initial_super_network_micro_hw_<h>_virstop_<v>_<P>.csv` | `networks/super_network_micro_virstop_<v>_<P>.csv` (one per period), or one period's file as `..._virstop_<v>.csv` |
+| `super_network/initial_super_network_non_micro_hw_<h>_<P>.csv` | `networks/super_network_frt.csv` (one period's file: the FRT-only network is the same in every period) |
 | the same with `<h>` = `base_frt_headway` | `networks/super_network_frt_base_headway.csv` |
-| `super_network/auto_edges_<P>.csv` | `networks/car_network.csv` |
+| `super_network/auto_edges_<P>.csv` | `networks/car_network_<P>.csv` (one per period), or one period's file as `car_network.csv` |
 | `frt/frt_routes.csv` | `networks/frt_routes.csv` (as it is) |
 | `demand/<area>_trips_nodes_study_area_with_beta.csv` | `demand/demand.csv` (extra columns are ignored) |
 | `fleetpy_network/base/` (`nodes.csv`, `edges.csv`, `crs.info`) | `fleetpy/data/networks/<area>_example_network/base/` |
 | `fleetpy_initial_vehicle_distribution/imbalanced.csv` | `fleetpy/data/fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv` |
 
-- `<P>`: `TRA_input_data_prep` writes one set per time period; this model uses one network for the whole day, so take
-  one period's set (I-35). The headway `<h>` of the first two files does not matter: the run sets the FRT boarding
-  times for each scenario's headway.
+- `<P>`: `TRA_input_data_prep` writes one set per ABM3 time period. Since 2026-11-24 the model takes the microtransit
+  super-network and the car network per period when every period of the area's `time_periods` has its file (set the
+  area's periods to ABM3's, step 2), otherwise one file for the whole day. The headway `<h>` of the first two files
+  does not matter: the run sets the FRT boarding times for each scenario's headway.
 - Not written by `TRA_input_data_prep`: `area_parameters.csv` (step 2), the FleetPy vehicle type and constant configs
   (step 3), the node file (only for `census_track`) and `networks/frt_links.csv`: the FRT in-vehicle links (type 1)
   of the microtransit super-network, with the column `distance` named `distance (meters)`

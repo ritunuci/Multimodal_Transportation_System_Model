@@ -23,6 +23,7 @@ from mtsm_model.helpers import testing_scenario_creation as tst_scen_create
 from mtsm_model.helpers import update_initial_network as init_net
 from mtsm_model import config
 from mtsm_model import mtsm_global_parameters as gp
+from mtsm_model.networks import read_period_networks
 
 
 @dataclass
@@ -43,7 +44,7 @@ class StudyArea:
     MicroTransitNodes: Any  # super-network node -> FleetPy node
     microtransit_setup_scenarios: Any
     time_periods: Any
-    auto_network: Any
+    auto_network: Any  # {time period: car network} (since 2026-11-24; the same network for all in whole-day mode)
     initial_super_network_dir: Any
     initial_super_network: Any
     final_super_network_dir: Any
@@ -107,14 +108,15 @@ def load_study_area(cfg, study_area):
     microtransit_setup_scenarios = ["micro", "non_micro","micro_only"]
     time_periods = config.TIME_PERIODS  # the study area's periods (["AM", "MD", "PM", "EV"] until 2026-11-24)
 
-    auto_network_dir = paths.car_network_file  # networks/car_network.csv (until 2026-11-24 initial_network/auto_edges.csv)
-    auto_network = n_a.read_super_network(auto_network_dir)
+    # networks/car_network.csv (until 2026-11-24 initial_network/auto_edges.csv), or one file per time period
+    # (car_network_<P>.csv, since 2026-11-24): {period: network}, each distinct file read once
+    auto_network = read_period_networks(paths.car_network_files(time_periods))
 
     #### Create initial and final network scenarios
     initial_super_network_dir, initial_super_network, final_super_network_dir, final_super_network = tst_scen_create.scen_create(
         microtransit_setup_scenarios, config.VIRTUAL_STOP_SCENARIOS, config.OPERATING_PERIODS_SCENARIOS, time_periods,
         fleet_size_scenarios, headway_scenarios, initial_network_folder, final_network_folder, config.BASE_FRT_HEADWAY,
-        base_frt_headway_file=paths.super_network_frt_base_headway_file)
+        base_frt_headway_file=paths.super_network_frt_base_headway_file, study_area=study_area)
     #################################################
     # 1108: prepare for the request files - demand side
     ###################################################

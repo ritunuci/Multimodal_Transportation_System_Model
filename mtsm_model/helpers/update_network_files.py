@@ -2,6 +2,7 @@ from collections import OrderedDict
 import os
 import csv
 from mtsm_model.helpers import get_microtransit_skims as mt
+from mtsm_model.helpers import update_initial_network as init_net
 
 from csv import reader, writer
 import io
@@ -262,7 +263,9 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     if microtransit=="micro":
         for time_period in time_periods:
             final_super_network_dir = os.path.join(final_network_folder,"final_super_network_%s_fsize_%s_ophr_%s_%s_hw_%s_virstop_%s.csv" % (str(microtransit),str(fleet_size),str(M_operating_hrs),str(time_period), str(headway),str(virstop)))
-            initial_super_network_dir = os.path.join(initial_network_folder,"initial_super_network_%s_hw_%s_virstop_%s.csv" % (str(microtransit), str(headway), str(virstop)))# initial_super_network[microtransit][headway][virstop][time_period]=n_a.read_super_network(initial_super_network_dir)
+            # the period's scenario network (since 2026-11-24; the same file for every period in whole-day mode, until
+            # then always initial_super_network_micro_hw_<h>_virstop_<v>.csv)
+            initial_super_network_dir = init_net.initial_micro_files(study_area, headway, virstop)[time_period]
             #os.path.join(initial_network_folder,"initial_super_network_%s_hw_%s_virstop_%s.csv" % (str(microtransit), str(headway), str(virstop)))  # initial_super_network[microtransit][headway][virstop][time_period]=n_a.read_super_network(initial_super_network_dir)
 
 

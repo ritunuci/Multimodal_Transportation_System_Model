@@ -72,8 +72,10 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
 
                 state.agent_M_tot_travel_dist[rq_id] = 0
                 state.agent_F_tot_travel_dist[rq_id] = 0
+                # the car network of the traveler's period (area.auto_network: {period: network} since 2026-11-24)
+                period_auto_network = auto_network[time_period]
                 T_F_network, T_micro_network = paths.networks_for_traveler(microtransit_run, iteration, time_period, operating_periods,
-                                                                           initial_super_network, final_super_network, auto_network,
+                                                                           initial_super_network, final_super_network, period_auto_network,
                                                                            headway, virstop, M_operating_hrs, fleet_size)
 
                 # least generalized cost paths: car, and walk + FRT (the base case without microtransit); searched in
@@ -82,7 +84,7 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                 # transit with probability 1 (choice.choice_probabilities)
                 if rq_id not in fixed_paths:
                     if agent.auto_available:
-                        parking_dur, bt_c_gas, auto = paths.auto_path(study_area, auto_network, agent, cfg, iteration)
+                        parking_dur, bt_c_gas, auto = paths.auto_path(study_area, period_auto_network, agent, cfg, iteration)
                         auto = paths.dest_only(auto, dest)
                     else:
                         parking_dur, bt_c_gas, auto = agent.parking_dur, agent.bt_c_gas, None

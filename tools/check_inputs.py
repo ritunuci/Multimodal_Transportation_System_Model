@@ -49,8 +49,12 @@ def area_inputs(area):
                   (paths.demand_file, "travel demand (file 2)")]
     candidates += [(f, "super-network with microtransit (file 3)")
                    for f in sorted(glob.glob(os.path.join(paths.networks_dir, "super_network_micro_virstop_*.csv")))]
+    # (the glob above also takes the per-period files super_network_micro_virstop_<v>_<P>.csv, since 2026-11-24)
     candidates += [(paths.super_network_frt_file, "FRT-only super-network (file 4)"),
-                   (paths.car_network_file, "car network (file 5)"),
+                   (paths.car_network_file, "car network (file 5)")]
+    candidates += [(f, "car network of a time period (file 5)")
+                   for f in sorted(glob.glob(os.path.join(paths.networks_dir, "car_network_*.csv")))]
+    candidates += [
                    (paths.frt_links_file, "FRT links (file 6)"),
                    (paths.frt_routes_file, "FRT route table (file 10)"),
                    (paths.nodes_file, "node file (file 7, optional)"),

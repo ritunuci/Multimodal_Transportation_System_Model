@@ -243,9 +243,10 @@ PARKING_RATE_OFFPEAK = PARAMETERS[gp.G_PARKING_RATE_OFFPEAK]  # the other period
 # (0..NUM_WALK_NODES-1) is FleetPy node i and microtransit node MICROTRANSIT_NODE_OFFSET + i. Derived from the files
 # since 2026-11-24 (decision 3, docs/study_area_plan.md Phase 2 step 2); until then the parameters num_walk_nodes and
 # microtransit_node_offset (Lemon Grove: 1099, 1171) ----
-def derive_node_numbering(study_area, virstops):
+def derive_node_numbering(study_area, virstops, periods):
     """(N, M): N = the number of FleetPy road nodes (nodes.csv; node_index must be 0..N-1), M = the microtransit node
-    offset of the super-network with microtransit, the same in the file of every virtual-stop share. Every microtransit
+    offset of the super-network with microtransit, the same in the file of every virtual-stop share (and of every time
+    period in `periods` when the network is given per period, since 2026-11-24). Every microtransit
     boarding / alighting link (type 5) joins walk node i and microtransit node M + i, so M is taken from them. The
     microtransit in-vehicle links (type 4) use nodes in M..M+N-1, and the twins of the walk layer: a road node has walk
     links (type 0) exactly when its microtransit node M + i has type-4 links. A road node without them (a freeway node
@@ -259,8 +260,15 @@ def derive_node_numbering(study_area, virstops):
     if node_index != list(range(n)):
         sys.exit(f"ERROR: {nodes_file}: node_index must be 0, 1, ..., N-1 in this order (docs/study_area_inputs.md)")
     offsets = set()
+    # every file of each virtual-stop share: one for the whole day, or one per time period (since 2026-11-24)
+    network_files = []
     for virstop in virstops:
-        network_file = paths.super_network_micro_file(virstop)
+        try:
+            files = paths.micro_network_files(virstop, periods)
+        except ValueError as e:
+            sys.exit(f"ERROR: {e} (docs/study_area_inputs.md, file 3)")
+        network_files += [f for f in dict.fromkeys(files.values())]
+    for network_file in network_files:
         micro_nodes = set()
         walk_nodes = set()  # nodes of the walk links (type 0)
         waiting_links = []
@@ -296,7 +304,12 @@ def derive_node_numbering(study_area, virstops):
 
 
 NUM_WALK_NODES, MICROTRANSIT_NODE_OFFSET = derive_node_numbering(PARAMETERS[gp.G_STUDY_AREA],
-                                                                 PARAMETERS[gp.G_VIRTUAL_STOP_SCENARIOS])
+                                                                 PARAMETERS[gp.G_VIRTUAL_STOP_SCENARIOS], TIME_PERIODS)
+# the car network: one for the whole day or one per time period (since 2026-11-24); stop now if neither form is complete
+try:
+    mtsm.area_paths(PARAMETERS[gp.G_STUDY_AREA]).car_network_files(TIME_PERIODS)
+except ValueError as _e:
+    sys.exit(f"ERROR: {_e} (docs/study_area_inputs.md, file 5)")
 
 # ---- gas cost ----
 F_GAS_PER_MILE = PARAMETERS[gp.G_F_GAS_PER_MILE]  # The fuel cost for the CNG buses averaged $0.35 per mile
