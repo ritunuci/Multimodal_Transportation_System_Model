@@ -30,7 +30,8 @@ configuration was removed on 2026-11-08; the last version that has it is tagged 
 4. **Multimodal least generalized cost paths.** For each traveler, the least generalized cost path is found for the
    transit mode (walk, microtransit and FRT combined) and for the auto mode.
 5. **Binary logit mode choice.** Each traveler's probability of choosing composite transit or auto is computed
-   from the generalized costs.
+   from the generalized costs. A traveler without a car (`auto_available` False in the demand file, an optional
+   column) takes transit.
 6. **Convergence.** If the choice probabilities still change between iterations, the new set of transit and auto
    travelers goes back to step 2. Otherwise the run stops and writes its results.
 

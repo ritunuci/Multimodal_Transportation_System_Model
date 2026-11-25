@@ -64,6 +64,7 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                 state.agent_rq_time[rq_id] = rq_time
                 state.agent_income[rq_id]= agent.income
                 state.agent_transit_15min_acc[rq_id] = agent.transit_15min_acc
+                state.agent_auto_available[rq_id] = agent.auto_available
                 state.agent_beta_fare[rq_id] = agent.bt_t_fr
 
                 time_period = choice.time_period_of(rq_time)
@@ -76,11 +77,17 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                                                                            headway, virstop, M_operating_hrs, fleet_size)
 
                 # least generalized cost paths: car, and walk + FRT (the base case without microtransit); searched in
-                # the scenario's first iteration, then reused (only the values read below are kept)
+                # the scenario's first iteration, then reused (only the values read below are kept). A traveler without
+                # a car (auto_available False, since 2026-11-24) gets no car path: auto is None, and the choice gives
+                # transit with probability 1 (choice.choice_probabilities)
                 if rq_id not in fixed_paths:
-                    parking_dur, bt_c_gas, auto = paths.auto_path(study_area, auto_network, agent, cfg, iteration)
+                    if agent.auto_available:
+                        parking_dur, bt_c_gas, auto = paths.auto_path(study_area, auto_network, agent, cfg, iteration)
+                        auto = paths.dest_only(auto, dest)
+                    else:
+                        parking_dur, bt_c_gas, auto = agent.parking_dur, agent.bt_c_gas, None
                     frt = paths.frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, iteration)
-                    fixed_paths[rq_id] = (parking_dur, bt_c_gas, paths.dest_only(auto, dest), paths.dest_only(frt, dest))
+                    fixed_paths[rq_id] = (parking_dur, bt_c_gas, auto, paths.dest_only(frt, dest))
                 parking_dur, bt_c_gas, auto, frt = fixed_paths[rq_id]
                 # walk + microtransit + FRT; no path for "micro_only" outside the operating periods (only transit costs 0 are
                 # read then)

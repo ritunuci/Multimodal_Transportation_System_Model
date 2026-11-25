@@ -9,6 +9,7 @@ headway in the initial networks, FleetPy's scenario config) happens at the same 
 scenario that needs it. (Until 2026-11-24 the outer loop also computed the FRT-only accessibility; removed.)
 """
 import os
+import sys
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
@@ -54,6 +55,9 @@ class StudyArea:
     transit_link_pax: Any
     off_micro_transit_link_pax: Any  # the same for the fixed-route-only base case
     off_micro_transit_link_vmt: Any
+    # the demand file has the column auto_available (2026-11-24; docs/period_networks_and_car_availability_plan.md,
+    # step 2): the individual results then report it
+    has_auto_available: bool = False
 
 
 @dataclass
@@ -116,6 +120,15 @@ def load_study_area(cfg, study_area):
     ###################################################
     agent_list_ = n_a.read_request(demand_file)
     tt_num_agents=len(agent_list_)
+    has_auto_available = "auto_available" in n_a.demand_columns(demand_file)
+    no_car = sum(1 for agent in agent_list_ if not agent.auto_available)
+    if has_auto_available:
+        print("study_area:", study_area, "travelers without a car (auto_available False):", no_car)
+    if no_car and "micro_only" in config.MICROTRANSIT_RUNNING_SCENARIOS:
+        # micro_only offers no transit outside the microtransit operating periods: such a traveler has no option
+        sys.exit(f"ERROR: {demand_file}: {no_car} travelers have no car (auto_available False); the scenario "
+                 f"micro_only offers them no mode outside the microtransit operating periods "
+                 f"(docs/period_networks_and_car_availability_plan.md, decision 6)")
     print("study_area:", study_area,"total number of agents:",tt_num_agents,"\n")
 
     transit_link_list=output_metrics.get_transit_link_info(study_area)
@@ -127,7 +140,7 @@ def load_study_area(cfg, study_area):
                      microtransit_setup_scenarios, time_periods, auto_network, initial_super_network_dir,
                      initial_super_network, final_super_network_dir, final_super_network, agent_list_, tt_num_agents,
                      transit_link_list, transit_link_vmt, transit_link_pax, off_micro_transit_link_pax,
-                     off_micro_transit_link_vmt)
+                     off_micro_transit_link_vmt, has_auto_available)
 
 
 def scenarios(cfg, area, log_f):

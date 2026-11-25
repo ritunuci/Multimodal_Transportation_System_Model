@@ -92,6 +92,7 @@ class TravelerState:
 
     agent_income: OrderedDict = _od()
     agent_transit_15min_acc: OrderedDict = _od()  # None (written empty) if the demand file has no such column
+    agent_auto_available: OrderedDict = _od()  # False: no car (2026-11-24); True for all without the demand column
 
 
 @dataclass

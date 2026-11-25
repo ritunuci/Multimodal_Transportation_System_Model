@@ -32,6 +32,8 @@ NETWORK_COLUMNS = ["from_node", "to_node", "distance", "travel_time", "link_type
 DEMAND_COLUMNS = ["rq_time", "start", "end", "request_id", "bt_c_0", "bt_c_ivt", "bt_c_gas", "bt_t_0", "bt_t_wk",
                   "bt_m_wt", "bt_f_wt", "bt_m_ivt", "bt_f_ivt", "bt_f_trfer", "bt_t_fr", "income"]
 COEFFICIENTS = [c for c in DEMAND_COLUMNS if c.startswith("bt_")]
+# optional demand column auto_available (2026-11-24): the values network_algorithms.to_bool accepts
+AUTO_AVAILABLE_VALUES = {"true": True, "1": True, "1.0": True, "false": False, "0": False, "0.0": False}
 DISTANCE_TOLERANCE_M = 1e-3  # FRT link distances: file 6 differs from the super-networks in the 7th decimal place
 MAX_EXAMPLES = 3
 
@@ -298,15 +300,26 @@ def check_study_area(area, params, n, m):
             report.error(f"file 2: negative travel coefficients (bt_*) on lines {_examples(negative)}")
         if any(t[col["rq_time"]] < 0 for t in trips):
             report.error("file 2: negative rq_time")
-        # every trip reaches its destination by walk + FRT (file 4) and by car (file 5)
+        # optional auto_available (2026-11-24): True / False or 1 / 0; missing column = every traveler has a car
+        has_car = [True] * len(trips)
+        if rows and "auto_available" in rows[0]:
+            values = [AUTO_AVAILABLE_VALUES.get(str(r["auto_available"]).strip().lower()) for r in rows]
+            invalid = [i + 2 for i, v in enumerate(values) if v is None]
+            if invalid:
+                report.error(f"file 2: auto_available must be True / False or 1 / 0, lines {_examples(invalid)}")
+            else:
+                has_car = values
+        # every trip reaches its destination by walk + FRT (file 4), and by car (file 5) if the traveler has one
         if not outside:
-            wanted = defaultdict(set)
-            for t in trips:
+            wanted = {"walk + FRT (file 4)": defaultdict(set), "car (file 5)": defaultdict(set)}
+            for t, car_available in zip(trips, has_car):
                 if t[col["start"]] != t[col["end"]]:
-                    wanted[t[col["start"]]].add(t[col["end"]])
+                    wanted["walk + FRT (file 4)"][t[col["start"]]].add(t[col["end"]])
+                    if car_available:
+                        wanted["car (file 5)"][t[col["start"]]].add(t[col["end"]])
             for links, label in ((frt, "walk + FRT (file 4)"), (car, "car (file 5)")):
                 if links is not None:
-                    unreachable = _reach(_adjacency(links), wanted)
+                    unreachable = _reach(_adjacency(links), wanted[label])
                     if unreachable:
                         report.error(f"{len(unreachable)} trips cannot reach their destination by {label}: "
                                      f"(origin, destination) {_examples(sorted(unreachable))}")

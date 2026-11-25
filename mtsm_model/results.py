@@ -129,6 +129,9 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                       "dist_W (mi)","agent_M_tot_wait_time (s)","agent_F_tot_wait_time (s)","out_of_pock_cost ($)","parking_cost ($)","tt_saved_with_micro (s)",
                       "gen_cost_saved_with_micro","mob_logsum_increased_with_micro",
                       "agent_prob (auto,transit)","agent_ran_num","income (USD)","agent_transit_15min_acc"]
+        # auto_available (2026-11-24): only when the demand file has the column, so the files stay as before without it
+        no_car_column = {"auto_available"} if area.has_auto_available else set()
+        fieldnames += sorted(no_car_column)
 
         writer_indiv = csv.DictWriter(csvfile_indiv, fieldnames=fieldnames)
         writer_indiv.writeheader()
@@ -213,7 +216,8 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                  "out_of_pock_cost ($)":state.agent_op_cost[rq_id],"parking_cost ($)": state.agent_parking_cost[rq_id],"tt_saved_with_micro (s)": tt_saved_with_micro,"gen_cost_saved_with_micro": state.gen_cost_delta[rq_id],
                  "mob_logsum_increased_with_micro":state.mob_logsum_delta[rq_id],"agent_prob (auto,transit)":state.agent_choice_prob[rq_id],
                  "agent_ran_num": state.agent_ran_num[rq_id],
-                 "tt_W (s)": T_walking_time,"dist_W (mi)": state.ag_VMT_W[rq_id],"income (USD)":state.agent_income[rq_id],"agent_transit_15min_acc":state.agent_transit_15min_acc[rq_id]})
+                 "tt_W (s)": T_walking_time,"dist_W (mi)": state.ag_VMT_W[rq_id],"income (USD)":state.agent_income[rq_id],"agent_transit_15min_acc":state.agent_transit_15min_acc[rq_id],
+                 **{c: state.agent_auto_available[rq_id] for c in no_car_column}})
 
 
 
@@ -309,6 +313,8 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                           "agent_F_tot_wait_time (s)","out_of_pock_cost ($)","parking_cost ($)",
                           "tt_saved_with_micro (s)","gen_cost_saved_with_micro","mob_logsum_increased_with_micro",
                           "agent_prob (auto,transit)","agent_ran_num"]
+            no_car_column = {"auto_available"} if area.has_auto_available else set()  # 2026-11-24, as above
+            fieldnames += sorted(no_car_column)
             writer_indiv_fixed_only = csv.DictWriter(
                 csvfile_indiv_fixed_only,
                 fieldnames=fieldnames)
@@ -385,7 +391,8 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                              rq_id],
                      "dist_W (mi)":
                          base.off_micro_ag_VMT_W[
-                             rq_id]})
+                             rq_id],
+                     **{c: state.agent_auto_available[rq_id] for c in no_car_column}})
 
         microtransit_run = microtransit_run_pre
 

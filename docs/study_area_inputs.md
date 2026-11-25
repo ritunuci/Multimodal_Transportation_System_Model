@@ -155,6 +155,7 @@ One row per traveler (Lemon Grove: 3,742). The rows need not be sorted.
 | `transit_15min_acc` | number, optional | reported in the individual results only |
 | `transit_pass` | integer, optional | not used |
 | `parking_dur_min` | number, optional | parking duration (min); missing = 0 (no parking cost) |
+| `auto_available` | `True`/`False` or `1`/`0`, optional | since 2026-11-24: `False` = the traveler has no car and cannot choose it (transit with probability 1, no car path; the logsum has the transit term only); missing = every traveler has a car. When present, the individual results report it |
 
 - The coefficients are positive: the generalized cost is a disutility (a choice probability is `exp(-cost)` over the
   sum), and a negative link cost stops the run.
@@ -280,7 +281,8 @@ except where it says "warning". Lemon Grove: no error, one warning (rule 9), in 
 8. `<v>` in file 3's name equals `virtual_stop_scenarios`.
 9. No two links with the same `(from_node, to_node)`; a warning that names them, not an error (decision E). The road
    network's own duplicates are reported once (Lemon Grove: 8 pairs), not again for each network file.
-10. Every trip's origin can reach its destination on foot and FRT (file 4), and by car (file 5). Not checked: whether a
+10. Every trip's origin can reach its destination on foot and FRT (file 4), and by car (file 5) if the traveler has
+   one (`auto_available`, since 2026-11-24; its values must be `True`/`False` or `1`/`0`). Not checked: whether a
    network is one strongly connected part (Phase 4 decision 4: `TRA_input_data_prep` builds its networks that way, and
    this trip-level rule is what the model needs; Lemon Grove's current road network has 4 isolated islands of 11
    nodes with no trip and no FRT stop).

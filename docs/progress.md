@@ -1480,6 +1480,28 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `open_issues.md` (I-33, done note).
 - Full run: **`REPRODUCED`** (26 files, 4:01).
 
+## Period networks and car availability, step 2: `auto_available` (2026-11-24)
+
+- `docs/period_networks_and_car_availability_plan.md`, decisions 4-6.
+- Demand: optional column `auto_available` (`True`/`False` or `1`/`0`, `network_algorithms.to_bool`); missing = every
+  traveler has a car (one notice, as for the other optional columns).
+- A traveler without a car: no car path is searched (`iteration.run_iteration`; `fixed_paths` keeps `None`), the trip
+  costs have no car values (`choice.trip_costs`), transit has probability 1 with and without microtransit
+  (`choice.choice_probabilities`), and the logsum has the transit term only (`choice.mobility_logsum_delta`:
+  `(gen_cost_F - gen_cost_T) / bt_t_fr`). The random draw is still made, so the draw sequence does not change.
+- The individual results (scenario and base case) get an `auto_available` column only when the demand has it
+  (`StudyArea.has_auto_available`), so the files are unchanged without it. The run prints the number of travelers
+  without a car, and stops if any exist with the scenario `micro_only` (no mode outside the operating periods).
+- `tools/check_study_area.py`: `auto_available` values checked; the car reachability (rule 10) only for travelers with
+  a car.
+- Tested on a scratch area (Lemon Grove's inputs, every 4th traveler without a car: 984 of 3,742; removed afterwards):
+  checker 0 errors (and an invalid value caught); the run finished (5:20); all 984 travel by transit with
+  probabilities `[0, 1]` in both individual results; car users 3,444 -> 2,545 (scenario) and 3,493 -> 2,573 (base
+  case); the other columns as in Lemon Grove's files. Their logsum changes are finite; negative ones also occur in the
+  reference (766 travelers with a higher generalized cost with microtransit), so they are not new.
+- Docs: `study_area_inputs.md` (demand column, rule 10), `README.md` (how the model works, step 5).
+- Full run: **`REPRODUCED`** (26 files, 4:01).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

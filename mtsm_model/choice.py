@@ -90,6 +90,12 @@ def trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_ga
         agent_F_fare = micro.F_fare_visited_temp[dest]
         agent_M_fare = micro.M_fare_visited_temp[dest]
 
+    if auto is None:
+        # no car (auto_available False, 2026-11-24): no car values; choice_probabilities gives transit with
+        # probability 1, and the car values are never read
+        return TripCosts(None, None, None, None, None, gen_cost_T, gen_cost_F, travel_time_T, travel_time_F,
+                         travel_dist_T, travel_dist_F, agent_op_cost_T, agent_op_cost_F, agent_F_fare, agent_M_fare)
+
     # parking charge per started interval (30 min) of half the parking duration, at the rate of the period ($1 peak,
     # $0.5 off-peak). Until 2026-11-19 the factors PARKING_FACTOR_PEAK (1) / _OFFPEAK (0.5) stood where the rates are,
     # in the generalized cost only; the values are the same to the last digit.
@@ -112,7 +118,11 @@ def trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_ga
 def choice_probabilities(microtransit_run, in_operating_period, costs):
     """(prob_Auto, prob_T): car versus transit with microtransit; (prob_Auto_no_micro, prob_T_no_micro): car versus
     transit in the base case. Without transit ("micro_only" outside the operating periods, and the base case of
-    "micro_only"): car with probability 1."""
+    "micro_only"): car with probability 1. Without a car (costs.gen_cost_auto None; auto_available False, since
+    2026-11-24): transit with probability 1, with and without microtransit ("micro_only" then stops the run at
+    startup, scenarios.load_study_area)."""
+    if costs.gen_cost_auto is None:
+        return 0, 1, 0, 1
     if microtransit_run == "micro_only" and not in_operating_period:
         prob_Auto, prob_T = 1,0
     else:
@@ -132,7 +142,10 @@ def keeps_previous_mode(pre_iter_prob_T, prob_T):
 
 
 def mobility_logsum_delta(costs, beta_fare):
-    """The increase in the mobility logsum with microtransit, divided by the traveler's fare coefficient."""
+    """The increase in the mobility logsum with microtransit, divided by the traveler's fare coefficient. Without a car
+    (costs.gen_cost_auto None, 2026-11-24) the logsum has the transit term only: log(exp(-gen_cost)) = -gen_cost."""
+    if costs.gen_cost_auto is None:
+        return (costs.gen_cost_F - costs.gen_cost_T) / beta_fare
     # calculate the mobility logsum change (logsum delta)
     mob_logsum_micro = b_c.mobility_logsum(costs.gen_cost_auto, costs.gen_cost_T)
     mob_logsum_fixed = b_c.mobility_logsum(costs.gen_cost_auto, costs.gen_cost_F)

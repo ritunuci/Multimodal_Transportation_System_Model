@@ -49,7 +49,8 @@ class Link(object):
 class Agent(object):
 
     def __init__(self, rq_id=0, rq_O=0, rq_D=0, rq_time=0, bt_c_0=0, bt_c_ivt=0,bt_c_gas=0,bt_t_0=0, bt_t_wk=0, bt_m_wt=0,bt_f_wt=0,bt_m_ivt=0,
-                 bt_f_ivt=0,bt_f_trfer=0,bt_t_fr=0,income=0,transit_15min_acc=0,transit_pass=0,parking_dur=0):
+                 bt_f_ivt=0,bt_f_trfer=0,bt_t_fr=0,income=0,transit_15min_acc=0,transit_pass=0,parking_dur=0,
+                 auto_available=True):
 
         # ['rq_time', 'start','end','request_id', "bt_c_0","bt_c_ivt","bt_c_gas","bt_t_0","bt_t_wk","bt_t_wt","bt_m_ivt","bt_f_ivt","bt_f_trfer","bt_t_fr"]
         #trip related attributes
@@ -74,6 +75,7 @@ class Agent(object):
         self.transit_15min_acc = transit_15min_acc
         self.transit_pass = transit_pass
         self.parking_dur = parking_dur
+        self.auto_available = auto_available  # False: no car, the traveler cannot choose the car (2026-11-24)
 
 
 # Optional columns of the demand file (2026-11-19). If a column is missing, every traveler gets the default and one
@@ -84,19 +86,38 @@ OPTIONAL_DEMAND_COLUMNS = {
     "parking_dur_min": (0.0, "parking duration 0 for every traveler (no parking cost)"),
     "transit_15min_acc": (None, "agent_transit_15min_acc is left empty in the individual results"),
     "transit_pass": (None, "not set (the model does not use it)"),
+    # 2026-11-24 (docs/period_networks_and_car_availability_plan.md, step 2): True / False or 1 / 0
+    "auto_available": (True, "every traveler has a car"),
 }
+
+
+def to_bool(value):
+    """True / False or 1 / 0 (any case, also 1.0 / 0.0) -> bool; anything else -> ValueError"""
+    text = str(value).strip().lower()  # str(): a short row gives None
+    if text in ("true", "1", "1.0"):
+        return True
+    if text in ("false", "0", "0.0"):
+        return False
+    raise ValueError(value)
+
+
+def demand_columns(request_file):
+    """the column names of the demand file"""
+    with open(request_file, newline="") as f:
+        return next(csv.reader(f), [])
 
 
 def demand_value(data, column, convert, request_file, line_number):
     """The value of an optional demand column in one row (data: a csv.DictReader row): the default if the file has no
-    such column, else the converted value; stops with the row's line number if the value is empty or not a number."""
+    such column, else the converted value; stops with the row's line number if the value is empty or not valid (not a
+    number; for auto_available not True / False / 1 / 0)."""
     if column not in data:
         return OPTIONAL_DEMAND_COLUMNS[column][0]
     value = data[column]
     try:
         return convert(value)
     except (TypeError, ValueError):
-        raise ValueError("%s, line %d: %s = '%s' is not a number" % (request_file, line_number, column, value))
+        raise ValueError("%s, line %d: %s = '%s' is not valid" % (request_file, line_number, column, value))
 
 
 def read_request(request_file):
@@ -137,11 +158,13 @@ def read_request(request_file):
             transit_15min_acc = demand_value(data, "transit_15min_acc", float, request_file, csvreader.line_num)
             transit_pass = demand_value(data, "transit_pass", lambda v: int(float(v)), request_file, csvreader.line_num)
             parking_dur = demand_value(data, "parking_dur_min", float, request_file, csvreader.line_num)
+            auto_available = demand_value(data, "auto_available", to_bool, request_file, csvreader.line_num)
 
             agent_ = Agent(rq_id=request_id, rq_O=start, rq_D=end, rq_time=rq_time, bt_c_0=bt_c_0, bt_c_ivt=bt_c_ivt,
                            bt_c_gas=bt_c_gas,bt_t_0=bt_t_0, bt_t_wk=bt_t_wk, bt_m_wt=bt_m_wt,bt_f_wt=bt_f_wt,bt_m_ivt=bt_m_ivt,
                           bt_f_ivt=bt_f_ivt,bt_f_trfer=bt_f_trfer, bt_t_fr=bt_t_fr,income=income,
-                           transit_15min_acc=transit_15min_acc,transit_pass=transit_pass,parking_dur=parking_dur)
+                           transit_15min_acc=transit_15min_acc,transit_pass=transit_pass,parking_dur=parking_dur,
+                           auto_available=auto_available)
             agent_list.append(agent_)
 
     return agent_list
