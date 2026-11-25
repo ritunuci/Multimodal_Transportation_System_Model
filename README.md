@@ -38,7 +38,10 @@ configuration was removed on 2026-11-08; the last version that has it is tagged 
 Fares: FRT fare per boarding; microtransit start fare plus a distance-based fare, with a peak / off-peak factor and
 transfer discounts between microtransit and FRT (the former "fare scenario 10"; the parameters `transit_fare`,
 `microtransit_start_fare`, `microtransit_dist_based_rate`, `pk_fare_factor`, `off_pk_fare_factor`,
-`fixed2micro_factor`, `micro2fixed_factor` of `mtsm_constant_configurations.csv`).
+`fixed2micro_factor`, `micro2fixed_factor` of `mtsm_constant_configurations.csv`). Since 2026-11-25 the FRT
+discount applies to the first FRT boarding after a microtransit ride only, and never lowers the fare of microtransit
++ FRT below the FRT fare alone; every other FRT boarding pays the full fare. The transit path search is exact for these
+rules (`docs/open_issues.md` I-22, I-24, I-44).
 
 ## Running the model
 

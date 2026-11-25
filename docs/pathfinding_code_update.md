@@ -4,6 +4,10 @@ Status: **tried and taken back. Nothing of it is in the code.** The user's decis
 now; I-22 stays open (`docs/open_issues.md`). This file records the trial, so that the work can be taken up again
 without repeating it. After the code was restored, a full seed-0 run printed `32 identical, REPRODUCED`.
 
+**Update 2026-11-25: implemented on `main`** with new fare rules (I-24) and a fare floor; see the section
+"2026-11-25: the fare rules and the exact search" at the end. The sections before it record the trial of 2026-11-14
+and are kept as they were.
+
 Function: `generalized_cost_dijsktra_OD_heap` in `mtsm_model/helpers/network_algorithms.py`. It finds a traveler's
 least generalized cost path: by car (auto network), by walk + FRT (base case) and by walk + microtransit + FRT.
 
@@ -195,6 +199,10 @@ transit path is.
 **Not explained:** the logsum increase is lower with the label search (901.76 against 903.05), although it only
 finds cheaper paths on the same network. FleetPy's waiting times in the final networks differed (209.4 -> 210.5 s),
 but whether that accounts for it was not traced. To be traced before a new reference is made.
+**Explained 2026-11-25:** it is FleetPy's feedback. On the same final networks the label search raises the logsum
+increase (on the 2026-11-24 reference's networks 912.09 -> 915.10); on the label-search run's own final networks
+(waiting time 210.46 s against 209.39 s, from 3 more microtransit trips) both searches give less (907.84 and
+910.81), and 910.81 is that run's reported value.
 
 ## Side finding: very short microtransit rides that make the FRT fare free
 
@@ -297,3 +305,105 @@ tried: dropping labels that cannot win.
 - 2026-11-14: label search written and checked; full run compared with the reference; fare-rule trial in a copy;
   user's decision not to implement it now; code restored (`git status` clean, full run `REPRODUCED`); this file
   written.
+- 2026-11-25: trial of the fare rules and the label search in copies outside the repository; user's decisions; the
+  new rules with the floor and the label search implemented on `main`; new reference (section below).
+
+## 2026-11-25: the fare rules and the exact search
+
+Status: **implemented on `main`** (user's decisions; `docs/open_issues.md` I-22 and I-24 closed, I-44 open to revisit
+on the branch `TRA_resubmission`).
+
+### What was tried
+
+The user's rules:
+
+1. `micro2fixed_factor` for the next FRT boarding after a microtransit ride only (and `fixed2micro_factor` for the
+   next microtransit ride after an FRT ride only).
+2. No free FRT -> FRT re-boarding: every other FRT boarding pays the full fare (in microtransit -> FRT -> FRT the
+   second boarding pays the full fare; confirmed with the user).
+3. Two ways to close the loophole of very short microtransit rides: (a) a floor, the discounted boarding pays at
+   least `F - min(M, (1 - micro2fixed_factor) F)` (M: the microtransit fare since the last FRT boarding), so
+   microtransit + FRT never cost less in fare than the FRT alone; (b) `micro2fixed_factor` 0.5 instead of 0.
+4. Each with the search of today (one path per node) and with the exact search.
+
+Where: copies of the repository in `D:\Ritun\MTSM_fare_test` (not in git). One label search for all variants,
+chosen by environment variables (`tools_fare/` there holds the scripts). Checks of the trial code:
+
+- Run with today's rules and one path per node: the reference, `26 identical, REPRODUCED`.
+- On fixed networks (the reference's final networks for AM, MD, PM; the FRT network at the scenario headway for EV;
+  the base-headway FRT network for the base case), for all 3,742 travelers and every variant: the cost and fares of
+  each path recomputed link by link by separate code (no mismatch); for 30 travelers per period and path type (240
+  per variant) the cost equal to an independent search over the full path state (no failure); the exact search never
+  dearer than one path per node.
+- With the floor the exact search compares two paths with the same label on two values (cost; cost - `bt_t_fr` x
+  min(M, D)), because a dearer path with a larger M can make a later boarding cheaper.
+
+### Paths on fixed networks (AM-PM, 3,472 travelers)
+
+| | Today | Today, exact | Rules 1+2 | Rules 1+2, exact | Floor | Floor, exact | Factor 0.5 | Factor 0.5, exact |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Microtransit + FRT paths | 171 | 517 | 166 | 453 | 166 | 360 | 118 | 148 |
+| ... shortest microtransit ride under 30 s | 1 | 211 | 1 | 162 | 1 | 19 | 1 | 2 |
+| ... under 60 s | 14 | 284 | 14 | 221 | 14 | 83 | 8 | 11 |
+| Path cheaper / dearer than today's | - | 405 / 0 | 0 / 23 | 328 / 20 | 0 / 26 | 230 / 23 | 0 / 140 | 20 / 136 |
+| Exact search cheaper than one path per node, same rules | - | 405 | - | 334 | - | 235 | - | 40 |
+| Logsum increase (model formula) | 912.09 | 915.10 | 911.97 | 914.59 | 911.89 | 913.57 | 906.92 | 907.17 |
+
+- The search with one path per node hides the loophole under every rule (1 short ride).
+- With the floor the remaining short rides can only be chosen for time: the fare is not lower than the FRT fare.
+  A microtransit ride before the FRT then costs no extra fare as long as its fare is at most the FRT fare.
+- A factor closes the loophole only above 1 - start fare / FRT fare (about 0.34 here); the optimizer varies the
+  factor (0 to 1) and the fares, so the floor was chosen.
+- Rule 2 changed no base-case or EV path: on Lemon Grove's network a route change is mostly at a shared stop node,
+  without a boarding link (1,227 of the 1,774 base-case paths with FRT; I-44).
+
+### Full runs (column `FRT_and_micro`; the base case is the same in all)
+
+| | Reference (2026-11-24) | Today, exact | Rules 1+2 | Rules 1+2, exact | Floor | Floor, exact | Factor 0.5 | Factor 0.5, exact |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Mode changes | - | 2 car -> transit | 0 | 0 | 0 | 0 | 1 transit -> car | 1 transit -> car |
+| `M_pls_F_users` | 6 | 9 | 6 | 6 | 6 | 6 | 4 | 4 |
+| `F_trips` | 25 | 29 | 25 | 25 | 25 | 25 | 24 | 24 |
+| `tot_sub ($)` | 7,795.20 | 7,790.10 | 7,795.20 | 7,796.18 | 7,795.17 | 7,796.03 | 7,793.76 | 7,793.76 |
+| `tt_mob_lgsm_inc_with_micro` | 912.09 | 910.81 | 911.97 | 914.28 | 911.89 | 913.27 | 902.22 | 902.47 |
+| `M_avg_wait_time (s)` | 209.39 | 210.46 | 209.39 | 209.39 | 209.39 | 209.39 | 212.90 | 212.90 |
+| Files differing (of 26) | - | 17 | 2 | 14 | 2 | 14 | 16 | 16 |
+
+Separate and combined effects: I-22 alone (today's rules, exact) `tot_sub` -5.10, logsum -1.28; I-24 alone (rules 1+2,
+one path per node) logsum -0.12, no choice changed; both +0.98 and +2.19. The two interact: the exact search lowers
+the logsum under today's rules (FleetPy feedback, above) but raises it under the new ones. Run times (four runs at a
+time): 234-263 s with one path per node, 398-545 s exact.
+
+### The user's decisions (2026-11-25)
+
+Rules 1 and 2, the floor (3a), the exact search, on `main` with a reference update. The rules and the free route
+change at a shared stop are to be revisited on the branch (`docs/open_issues.md` I-44).
+
+### What is in the code
+
+`mtsm_model/helpers/network_algorithms.py`:
+
+- `transit_label_search`: the transit search (mode `"T"`), exact for the rules above. A label is
+  `(node, ready_f, ready_m, transit used, route)`: `ready_f` a microtransit ride since the last FRT boarding (kept
+  only if `micro2fixed_factor` != 1), `ready_m` an FRT ride since the last microtransit alighting (only if
+  `fixed2micro_factor` != 1), the last two only with the transfer penalty on (I-25). Each label instance also carries M.
+  Per label the search keeps the paths not dominated on (cost, cost - `bt_t_fr` x min(M, D)); a path taken from the
+  heap is dropped if one taken earlier has a second value at most as large. The first destination label taken from
+  the heap is the least-cost path. It returns the six values at the destination as one-entry dicts and the cost, time
+  and distance trajectories in the format of `getTrajectory_O_to_D` (a node can appear twice in a path).
+- `generalized_cost_dijsktra_OD_heap`: mode `"T"` calls `transit_label_search`; mode `"C"` is the car search of
+  before (Dijkstra over nodes), now with the car links only (it stops at any other link type).
+- The rejection penalty is on both microtransit waiting links (boarding and alighting), as before.
+
+`mtsm_model/paths.py`: `frt_path` and `micro_path` take the trajectories from the search.
+
+### Checks on `main`
+
+- Full run: identical to the trial's "floor, exact" run (25 of 26 files byte for byte; FleetPy's `00_config.json`
+  differs only in folder paths). Against the 2026-11-24 reference: 14 files differ; the evaluation file in 31 values,
+  all in `FRT_and_micro` (`tot_sub ($)` 7,795.20 -> 7,796.03, `tt_mob_lgsm_inc_with_micro` 912.09 -> 913.27,
+  `F_revenue ($)` 75.92 -> 76.07, `M_revenue ($)` 864.88 -> 863.89); no traveler changed mode; two transit users
+  changed path or fare (traveler 4729: a shorter microtransit ride, fare 4.48 -> 3.62 $; traveler 8153: the floor
+  raises the fare 3.59 -> 3.62 $); 597 travelers' logsum values changed.
+- The 14 reference files were replaced; a second full run printed `26 identical, REPRODUCED` (396 s; one path per
+  node about 240 s).

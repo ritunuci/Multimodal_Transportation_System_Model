@@ -150,3 +150,18 @@ case (lines 2 and 4; the base row twice).
   change. car users 3,444 -> 3,441, transit users 298 -> 301 (3 EV travelers from car to transit), `F_trips` 22 -> 25,
   `F_revenue ($)` 65.08 -> 75.92, `tot_sub ($)` 7,806.04 -> 7,795.20 (-0.14 %), `tt_mob_lgsm_inc_with_micro` 903.05 ->
   912.09 (+1.00 %), in 34 values of the evaluation file's `FRT_and_micro` column. The 4 files were replaced by the run's; a second full run printed `REPRODUCED`.
+- **2026-11-25, transfer fare rules and the exact transit search** (`docs/open_issues.md` I-22 and I-24, user's
+  decisions; `docs/pathfinding_code_update.md`, section "2026-11-25"): `micro2fixed_factor` applies to the first FRT
+  boarding after a microtransit ride only (before: every boarding after any microtransit link of the trip), with a
+  floor, so that microtransit + FRT never cost less in fare than the FRT alone; every other FRT boarding pays the full
+  fare (a re-boarding at the same walk node was free); `fixed2micro_factor` applies to the first microtransit ride
+  after an FRT ride only. The transit search keeps the least-cost path per label instead of per node, so it is exact
+  for these rules. A full run differed from the reference in 14 files: the evaluation file (31 values, all in
+  `FRT_and_micro`), the scenario's individual results (600 rows: 597 logsum values, 2 transit users with another path
+  or fare) and FRT ridership file, the MD final network, FleetPy's demand files, user statistics (iterations 0-4 and
+  final), `2-0_op-stats.csv` and `standard_eval.csv`. The base case (`FRT_only`, the `non_micro` files) did not
+  change. No traveler changed mode; `tot_sub ($)` 7,795.20 -> 7,796.03 (+0.01 %), `tt_mob_lgsm_inc_with_micro` 912.09
+  -> 913.27 (+0.13 %), `F_revenue ($)` 75.92 -> 76.07, `M_revenue ($)` 864.88 -> 863.89, `M_trips` 68 and `F_trips`
+  25 unchanged. The run was identical to the trial run of the same rules in a copy of the repository. The 14 files
+  were replaced by the run's; a second full run printed `REPRODUCED`. Run time about 400 s (before about 240 s).
+  Optimizer sessions before this change are not comparable for candidates with `micro2fixed_factor` < 1.

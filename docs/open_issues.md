@@ -43,9 +43,9 @@ Paths are relative to the codebase root.
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
 | I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Closed (2026-11-11) | 2026-11-09 |
 | I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Closed (2026-11-23) | 2026-11-10 |
-| I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Open | 2026-11-11 |
+| I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Closed (2026-11-25) | 2026-11-11 |
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
-| I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
+| I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Closed (2026-11-25) | 2026-11-11 |
 | I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (to turn on on the branch `TRA_resubmission`) | 2026-11-11 |
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 | I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
@@ -65,6 +65,7 @@ Paths are relative to the codebase root.
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
+| I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
 
 ---
 
@@ -124,47 +125,8 @@ Paths are relative to the codebase root.
   1, every microtransit trip gets the transfer discount on its start fare, not only trips after FRT.
 - **To decide:** is this intended? If not, apply the factor to the start fare only after an FRT leg, like the
   distance fare. This changes results for `Fixed2MicroFactor != 1` (not the reference).
-
-### I-22: The path search can miss the least-cost path when a transfer discount applies
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
-- **What:** in `network_algorithms.generalized_cost_dijsktra_OD_heap` the cost of a link depends on the path before
-  it: after a microtransit leg the FRT fare is multiplied by `Micro2FixedFactor`, after an FRT leg the microtransit
-  distance fare by `Fixed2MicroFactor`, and a boarding right after an alighting (shared walk node) pays no FRT fare.
-  The search keeps one path per node (Dijkstra), so at a node it keeps the cheapest path so far and drops a dearer
-  one that would make the rest of the trip cheaper, e.g. a microtransit leg that makes the following FRT ride free.
-- **Impact:** checked on the reference run's final networks (AM-PM, 3,472 travelers) against an exact search with
-  one label per (node, microtransit used, FRT used, previous link FRT waiting) and the same link costs: with the
-  reference factors (`fixed2micro_factor` 1, `micro2fixed_factor` 0) the model's transit path is not the least-cost
-  one for **405 travelers (11.7 %)**; mostly an FRT-only path where microtransit + FRT is cheaper (275). With both
-  factors 0.5: 49 travelers. Paths, costs, mode choice and all results depend on it.
-- **Fix:** search over the states (node, microtransit used, FRT used, previous link FRT waiting) instead of nodes
-  (up to 8 labels per node; slower). Changes results: make and document a new reference in
-  `docs/reference_results/`; together with the other changes that need one (I-19, I-21, I-25).
-- **Update 2026-11-14:** the fix was tried and taken back (user's decision: not now; nothing of it is in the code).
-  Record of the trial: `docs/pathfinding_code_update.md`. The label search gave a cheaper path for the 405 travelers
-  and changed the totals little, but it shows a loophole of the fare rules (very short microtransit rides that make
-  the FRT fare free; I-24). To be decided together with the fare rules.
-
-### I-24: Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged
-- **Status:** Open (to decide). **Severity:** Low. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
-- **What:** the fare rules of `network_algorithms.generalized_cost_dijsktra_OD_heap` at an FRT boarding (walk node ->
-  stop, link type 2; since I-23 the discount is set only there):
-  1. **The discount holds for the rest of the trip.** The condition is `IsMicroLink`: the path has used microtransit
-     *anywhere before*, not just before this boarding. In microtransit -> FRT -> walk -> FRT, the second FRT boarding
-     is also discounted (`transit_fare_set * Micro2FixedFactor`), although the rider comes from a bus. Likewise
-     `IsFixedLink`: after any FRT leg, every later microtransit link gets `Fixed2MicroFactor`.
-  2. **Re-boarding at a shared walk node.** A boarding right after an alighting at the same walk node
-     (`link_type_pre == 2`) pays no FRT fare: a free FRT -> FRT transfer. After a microtransit leg the discounted
-     fare is charged on that re-boarding instead, so the rider pays more than a rider without microtransit
-     (unless `Micro2FixedFactor` is 0). Transferring by walking to another stop pays the full fare again.
-- **Impact:** none in the reference run (`micro2fixed_factor` 0, `fixed2micro_factor` 1). Affects the optimizer's
-  candidates with other factors: the price of trips with more than one FRT boarding after microtransit, or with
-  microtransit after FRT.
-- **To decide:** (1) is the discount meant for the whole trip, or only for the boarding right after the other mode
-  (then the condition is the previous leg's mode, not "used before")? (2) Should a re-boarding after an alighting
-  stay free also after microtransit (move the discount inside `if link_type_pre != 2:`)? Neither changes the
-  reference, so a full run with `REPRODUCED` confirms the change; check the fares with factors other than 0 and 1
-  as for I-23. Related: I-19 (start fare), I-22 (search), I-25 (transfer penalty).
+- **2026-11-25 (I-24):** the distance fare now gets `Fixed2MicroFactor` on the first microtransit ride after an FRT
+  ride only (in `network_algorithms.transit_label_search`); the start fare still always gets it. Still open.
 
 ### I-25: Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference
 - **Status:** Open (reminder: turn the switch on later; user's decision 2026-11-11). **Severity:** Medium.
@@ -733,9 +695,123 @@ Paths are relative to the codebase root.
 - **Fix (later):** check how FleetPy upstream handles it for `PoolingIRSOnly`, or implement the update (recompute the
   current plans at the switch) as a local FleetPy change; or accept and document it.
 
+### I-44: Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain
+- **Status:** Open (to revisit on the branch `TRA_resubmission`; user's decision 2026-11-25). **Severity:** Medium.
+  **Found:** 2026-11-25 (trial of I-22 + I-24, `docs/pathfinding_code_update.md`).
+- **What:** three points of the fare rules set on 2026-11-25 (I-24), in `network_algorithms.transit_label_search`:
+  1. **The rules themselves:** `micro2fixed_factor` (with the floor) only for the first FRT boarding after a
+     microtransit ride, `fixed2micro_factor` only for the first microtransit ride after an FRT ride, and every other
+     FRT boarding pays the full fare, also a re-boarding at the same walk node right after an alighting (free before
+     2026-11-25).
+  2. **A route change at a shared stop node pays no fare.** Where several routes share one stop node (Lemon Grove's
+     network on `main`), a path can go from an FRT link of one route to an FRT link of another at that node without
+     an alighting and a boarding link, so no fare is charged: a free FRT -> FRT transfer under rule 1. On the
+     reference's networks 1,227 of the 1,774 base-case paths with FRT have such a route change; many may be label
+     artifacts (I-31: a shared link keeps one route's label), which is why it was left free on `main`.
+  3. **Very short microtransit rides remain** (added 2026-11-25, user's request). The floor removes the fare reason
+     for them (microtransit + FRT never cost less than the FRT alone), but a microtransit ride before the FRT then
+     costs no extra fare as long as its fare is at most the FRT fare, so a short access ride is chosen whenever its
+     ride and wait cost less than the walk it replaces. Least-cost paths on the new reference's final networks (AM-PM,
+     3,472 travelers): 19 microtransit + FRT paths have a ride under 30 s (17 MD, 2 PM; 211 with the old rules and the
+     exact search), no microtransit-only path. In the new reference run 7 of the 68 FleetPy requests have a direct
+     ride under 30 s by FleetPy's travel times (11-28 s; 40-110 s on the super-network; the 2026-11-24 reference had
+     6): travelers 4543, 6218, 4380, 5743 microtransit only (full microtransit fare, 3.24-3.96 $; not related to the
+     discount), 4729, 8153, 9747 microtransit + FRT (fare at least the FRT fare). Traveler 4543's least-cost path on
+     the final networks is walking; probably it kept an earlier microtransit choice (`mode_change_threshold`), not
+     traced.
+- **Why on the branch:** TRA's FRT network has one stop node per stop, route and direction, so every route change is
+  an alighting and a re-boarding: rule 1 charges each transfer the full fare, and point 2 does not arise. With the
+  transfer penalty on there (I-25), a transfer also costs `bt_f_trfer`.
+- **Impact on `main`:** in the new reference (I-22); rule "no free re-boarding" changed no base-case path there.
+- **To decide on the branch:** keep the full fare per FRT boarding, or a free or discounted FRT -> FRT transfer; on
+  networks with shared stop nodes, whether a route change pays a fare. Very short microtransit rides: accept them, or
+  set a minimum ride (distance or time) for the transfer discount, or for any microtransit request (then the search
+  needs the ride length in its label); neither was tried. A rule change needs its own reference update.
+
 ---
 
 ## Closed
+
+### I-24: Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged
+- **Status:** Closed (2026-11-25); Open (to decide) until then. **Severity:** Low. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
+- **What:** the fare rules of `network_algorithms.generalized_cost_dijsktra_OD_heap` at an FRT boarding (walk node ->
+  stop, link type 2; since I-23 the discount is set only there):
+  1. **The discount holds for the rest of the trip.** The condition is `IsMicroLink`: the path has used microtransit
+     *anywhere before*, not just before this boarding. In microtransit -> FRT -> walk -> FRT, the second FRT boarding
+     is also discounted (`transit_fare_set * Micro2FixedFactor`), although the rider comes from a bus. Likewise
+     `IsFixedLink`: after any FRT leg, every later microtransit link gets `Fixed2MicroFactor`.
+  2. **Re-boarding at a shared walk node.** A boarding right after an alighting at the same walk node
+     (`link_type_pre == 2`) pays no FRT fare: a free FRT -> FRT transfer. After a microtransit leg the discounted
+     fare is charged on that re-boarding instead, so the rider pays more than a rider without microtransit
+     (unless `Micro2FixedFactor` is 0). Transferring by walking to another stop pays the full fare again.
+- **Impact:** none in the reference run (`micro2fixed_factor` 0, `fixed2micro_factor` 1). Affects the optimizer's
+  candidates with other factors: the price of trips with more than one FRT boarding after microtransit, or with
+  microtransit after FRT.
+- **To decide:** (1) is the discount meant for the whole trip, or only for the boarding right after the other mode
+  (then the condition is the previous leg's mode, not "used before")? (2) Should a re-boarding after an alighting
+  stay free also after microtransit (move the discount inside `if link_type_pre != 2:`)? Neither changes the
+  reference, so a full run with `REPRODUCED` confirms the change; check the fares with factors other than 0 and 1
+  as for I-23. Related: I-19 (start fare), I-22 (search), I-25 (transfer penalty).
+- **Resolution (2026-11-25):** user's decisions after the trial of 2026-11-25 (`docs/pathfinding_code_update.md`):
+  1. **The discount for the next boarding only:** `micro2fixed_factor` applies to the first FRT boarding after a
+     microtransit ride; `fixed2micro_factor` to the distance fare of the first microtransit ride after an FRT ride.
+     The start fare is still always x `fixed2micro_factor` (I-19, open).
+  2. **No free FRT -> FRT re-boarding:** every other FRT boarding pays the full fare, also a boarding right after an
+     alighting at the same walk node (it was free). Confirmed with the user: in microtransit -> FRT -> FRT the second
+     boarding pays the full fare.
+  3. **A floor against very short microtransit rides bought only to make the FRT fare free:** the discounted boarding
+     pays at least the FRT fare minus the microtransit fare paid since the last FRT boarding,
+     `F - min(M, (1 - micro2fixed_factor) F)`, so microtransit + FRT never cost less in fare than the FRT alone. Chosen
+     over a fixed factor (0.5 was tried) because it holds for every optimizer candidate (`micro2fixed_factor` and the
+     fares vary there; a factor closes the loophole only above 1 - start fare / FRT fare, about 0.34 in the
+     reference).
+  With the exact search (I-22), on the reference's final networks, least-cost paths with a microtransit ride under
+  30 s: 211 (whole-trip discount), 162 (next boarding only), 19 (with the floor; these can only be chosen for time,
+  since the fare is no lower). Rule 2 changed no base-case path on Lemon Grove's network (a route change there is
+  mostly at a shared stop node, without a boarding link; I-44). In `network_algorithms.transit_label_search`;
+  checks, the new reference and its second run `REPRODUCED`: I-22. Revisit on the branch: I-44.
+
+### I-22: The path search can miss the least-cost path when a transfer discount applies
+- **Status:** Closed (2026-11-25). **Severity:** Medium. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
+- **What:** in `network_algorithms.generalized_cost_dijsktra_OD_heap` the cost of a link depends on the path before
+  it: after a microtransit leg the FRT fare is multiplied by `Micro2FixedFactor`, after an FRT leg the microtransit
+  distance fare by `Fixed2MicroFactor`, and a boarding right after an alighting (shared walk node) pays no FRT fare.
+  The search keeps one path per node (Dijkstra), so at a node it keeps the cheapest path so far and drops a dearer
+  one that would make the rest of the trip cheaper, e.g. a microtransit leg that makes the following FRT ride free.
+- **Impact:** checked on the reference run's final networks (AM-PM, 3,472 travelers) against an exact search with
+  one label per (node, microtransit used, FRT used, previous link FRT waiting) and the same link costs: with the
+  reference factors (`fixed2micro_factor` 1, `micro2fixed_factor` 0) the model's transit path is not the least-cost
+  one for **405 travelers (11.7 %)**; mostly an FRT-only path where microtransit + FRT is cheaper (275). With both
+  factors 0.5: 49 travelers. Paths, costs, mode choice and all results depend on it.
+- **Fix:** search over the states (node, microtransit used, FRT used, previous link FRT waiting) instead of nodes
+  (up to 8 labels per node; slower). Changes results: make and document a new reference in
+  `docs/reference_results/`; together with the other changes that need one (I-19, I-21, I-25).
+- **Update 2026-11-14:** the fix was tried and taken back (user's decision: not now; nothing of it is in the code).
+  Record of the trial: `docs/pathfinding_code_update.md`. The label search gave a cheaper path for the 405 travelers
+  and changed the totals little, but it shows a loophole of the fare rules (very short microtransit rides that make
+  the FRT fare free; I-24). To be decided together with the fare rules.
+- **Update 2026-11-25:** tried again in copies of the repository (outside it, `D:\Ritun\MTSM_fare_test`), with the
+  fare rules of I-24: seven variants (today's rules, the new rules, the new rules with a fare floor or with
+  `micro2fixed_factor` 0.5, each with one path per node and with the exact search). Record in
+  `docs/pathfinding_code_update.md`, section "2026-11-25". The lower logsum of 2026-11-14 is explained there: it comes
+  from FleetPy's longer waiting times (more microtransit trips), not from the search; on the same networks the exact
+  search raises the logsum (+3.0).
+- **Resolution (2026-11-25):** user's decision: the new fare rules with the floor (I-24) and the exact search, on
+  `main` with a reference update. `network_algorithms.transit_label_search` (called by
+  `generalized_cost_dijsktra_OD_heap` for mode `"T"`) keeps the least-cost path per label: the node, whether a
+  microtransit ride came since the last FRT boarding (if `micro2fixed_factor` != 1), whether an FRT ride came since
+  the last microtransit alighting (if `fixed2micro_factor` != 1), and, with the transfer penalty on (I-25), whether
+  transit was used and the route of the FRT link into the node. Because of the floor, two paths with the same label
+  are compared on two values (the cost, and the cost minus `bt_t_fr` x min(M, D); M the microtransit fare since the
+  last FRT boarding, D the largest FRT discount), and a path is dropped only if another is at most as large on both.
+  It returns the values at the destination and the finished trajectories (`paths.frt_path` / `micro_path` take them
+  as they are). The car search is unchanged (car links only; it now stops at any other link type). Checks: the
+  search code run with today's rules reproduced the reference (`REPRODUCED`); on fixed networks, for every traveler
+  and variant, the cost and fares of the path recomputed link by link by separate code (no mismatch), the cost equal
+  to an independent search over the full path state for 240 travelers per variant, and never dearer than the search
+  with one path per node; the run on `main` gave the trial's files (25 of 26 byte for byte, `00_config.json` differs
+  only in folder paths). New reference (14 files; `docs/reference_results/README.md`); a second full run printed
+  `REPRODUCED`. Run time 396 s (before about 240 s). Revisit on the branch: I-44.
 
 ### I-38: Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway
 - **Status:** Closed (2026-11-24); Decision needed until then. **Severity:** High (can give wrong reported results,

@@ -99,8 +99,10 @@ def auto_path(study_area, auto_network, agent, cfg, iteration):
 def frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, iteration):
     """Compute the walk + FRT path of the base case, with the base FRT fare."""
     visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F,F_fare_visited_temp_F,M_fare_visited_temp_F, path_F, time_path_F,dist_path_F = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_F_network, agent,config.BASE_FRT_FARE, cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
-    transit_time_path_all_F = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, time_path_F, visited_temp_F)
-    transit_dist_path_all_F = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, dist_path_F, dist_visited_temp_F)  # calculate fixed transit VMT
+    # the transit search returns the finished trajectories (since 2026-11-25, I-22; the FRT VMT is computed from the
+    # distance trajectory)
+    transit_time_path_all_F = time_path_F
+    transit_dist_path_all_F = dist_path_F
     frt = FrtPath(visited_temp_F, time_visited_temp_F, dist_visited_temp_F, fare_visited_temp_F, path_F, time_path_F,
                   transit_time_path_all_F, transit_dist_path_all_F)
     return frt
@@ -109,8 +111,9 @@ def frt_path(study_area, T_F_network, agent, cfg, total_rejection_penalty, itera
 def micro_path(study_area, T_micro_network, agent, cfg, total_rejection_penalty, iteration):
     """Compute the walk + microtransit + FRT path, with the scenario's fares."""
     visited_temp, time_visited_temp,dist_visited_temp,fare_visited_temp,F_fare_visited_temp,M_fare_visited_temp, path, time_path,dist_path = n_a.generalized_cost_dijsktra_OD_heap(study_area,T_micro_network,agent,cfg.transit_fare,cfg.microtransit_start_fare,cfg.microtransit_dist_based_rate,cfg.PkFareFactor,cfg.OffPkFareFactor,cfg.Fixed2MicroFactor,cfg.Micro2FixedFactor,mode="T",verbose=False, total_rejection_penalty=total_rejection_penalty, iteration=iteration)
-    transit_time_path_all_ = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, time_path, visited_temp)
-    transit_dist_path_all_ = n_a.getTrajectory_O_to_D(agent.rq_O, agent.rq_D, dist_path, dist_visited_temp)  # calculate microtransit and fixed transit VMT
+    # the finished trajectories, from the search (since 2026-11-25, I-22; microtransit and FRT VMT from the distance one)
+    transit_time_path_all_ = time_path
+    transit_dist_path_all_ = dist_path
     return MicroPath(visited_temp, time_visited_temp, dist_visited_temp, fare_visited_temp, F_fare_visited_temp,
                      M_fare_visited_temp, transit_time_path_all_, transit_dist_path_all_)
 

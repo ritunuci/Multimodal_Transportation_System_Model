@@ -1631,6 +1631,22 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   branch `TRA_resubmission` when TRA's networks built with this builder are in use (user's decision). Docs: `README.md`
   (repository layout), `open_issues.md` (I-33).
 
+## Transfer fare rules and the exact transit search; reference updated (I-22, I-24, 2026-11-25)
+
+- User's request: try in a copy how the fare rules and the exact search change the results, I-22 and I-24 apart and
+  together: discount for the next FRT boarding only; no free FRT -> FRT re-boarding; against the loophole a floor or
+  a factor above 0; then the exact search. Tried in `D:\Ritun\MTSM_fare_test` (outside the repository): seven
+  variants, each a full run and a path comparison on fixed networks (`docs/pathfinding_code_update.md`, section
+  "2026-11-25"). The lower logsum of the 2026-11-14 trial was traced to FleetPy's feedback.
+- User's decisions: the rules with the floor and the exact search, on `main` with a reference update; the rules and
+  the free route change at a shared stop to be revisited on the branch (new I-44).
+- Code: `mtsm_model/helpers/network_algorithms.py` (`transit_label_search`; the car search keeps only the car
+  links), `mtsm_model/paths.py` (trajectories from the search).
+- Checks: run identical to the trial run (25 of 26 files; `00_config.json` only paths); 14 reference files replaced
+  (no mode change; `tot_sub` 7,795.20 -> 7,796.03, logsum 912.09 -> 913.27); second full run `REPRODUCED` (396 s).
+- Docs: `open_issues.md` (I-22 and I-24 closed, I-44 new, I-19 note), `pathfinding_code_update.md`,
+  `reference_results/README.md`, `README.md` (fares).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
