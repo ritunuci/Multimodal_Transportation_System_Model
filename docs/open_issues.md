@@ -40,7 +40,7 @@ Paths are relative to the codebase root.
 | I-16 | The aggregate convergence test is unfinished | Low | Closed (2026-11-23) | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Closed (2026-11-25) | 2026-11-09 |
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
-| I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
+| I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Closed (2026-11-25) | 2026-11-09 |
 | I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Closed (2026-11-11) | 2026-11-09 |
 | I-21 | Three different meters-per-mile values (1609.34, 1609, 1.609 km) | Low | Closed (2026-11-23) | 2026-11-10 |
 | I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Closed (2026-11-25) | 2026-11-11 |
@@ -98,19 +98,10 @@ Paths are relative to the codebase root.
     `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
     that import.
   - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
-
-### I-19: The microtransit start fare always gets the FRT-to-microtransit transfer discount
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (dropping fare scenarios 0-9).
-- **What:** in the fare structure (the former fare scenario 10, `network_algorithms.generalized_cost_dijsktra_OD_heap`),
-  the microtransit distance fare is multiplied by `Fixed2MicroFactor` only after an FRT trip leg (`IsFixedLink`),
-  but the start fare at a microtransit waiting link is always multiplied by `Fixed2MicroFactor` (and by the peak
-  factor), also when no FRT leg came before.
-- **Impact:** none in the reference run (`Fixed2MicroFactor = 1`). When the optimizer sets `Fixed2MicroFactor` below
-  1, every microtransit trip gets the transfer discount on its start fare, not only trips after FRT.
-- **To decide:** is this intended? If not, apply the factor to the start fare only after an FRT leg, like the
-  distance fare. This changes results for `Fixed2MicroFactor != 1` (not the reference).
-- **2026-11-25 (I-24):** the distance fare now gets `Fixed2MicroFactor` on the first microtransit ride after an FRT
-  ride only (in `network_algorithms.transit_label_search`); the start fare still always gets it. Still open.
+- **2026-11-25 (user's decision):** `pre_process/` is out of date: the inputs are now prepared in the repository
+  `TRA_input_data_prep` (https://github.com/ritunuci/TRA_input_data_prep). On the branch `TRA_resubmission` the folder
+  is to be removed and the README to say that the data is prepared there; that closes I-14 on the branch. On `main`
+  the folder stays as the record of how the old Lemon Grove inputs were made.
 
 ### I-25: Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference
 - **Status:** Open (reminder: turn the switch on later; user's decision 2026-11-11). **Severity:** Medium.
@@ -715,6 +706,31 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-19: The microtransit start fare always gets the FRT-to-microtransit transfer discount
+- **Status:** Closed (2026-11-25); Open until then. **Severity:** Low. **Found:** 2026-11-09 (dropping fare scenarios 0-9).
+- **What:** in the fare structure (the former fare scenario 10, `network_algorithms.generalized_cost_dijsktra_OD_heap`),
+  the microtransit distance fare is multiplied by `Fixed2MicroFactor` only after an FRT trip leg (`IsFixedLink`),
+  but the start fare at a microtransit waiting link is always multiplied by `Fixed2MicroFactor` (and by the peak
+  factor), also when no FRT leg came before.
+- **Impact:** none in the reference run (`Fixed2MicroFactor = 1`). When the optimizer sets `Fixed2MicroFactor` below
+  1, every microtransit trip gets the transfer discount on its start fare, not only trips after FRT.
+- **To decide:** is this intended? If not, apply the factor to the start fare only after an FRT leg, like the
+  distance fare. This changes results for `Fixed2MicroFactor != 1` (not the reference).
+- **2026-11-25 (I-24):** the distance fare now gets `Fixed2MicroFactor` on the first microtransit ride after an FRT
+  ride only (in `network_algorithms.transit_label_search`); the start fare still always gets it. Still open.
+- **Resolution (2026-11-25):** user's decision (option 1 of three: the factor on the start fare only after an FRT
+  ride; or keep it as a general microtransit discount; or never on the start fare): the start fare gets
+  `fixed2micro_factor` only on the first microtransit ride after an FRT ride, like the distance fare, so the whole
+  transfer discount follows the rule of I-24 (`network_algorithms.transit_label_search`, the microtransit boarding
+  link; the label already holds whether an FRT ride came before). Checked on made-up paths (FRT fare 3 $, start fare
+  2 $, 1 $ distance fare per ride), old and new code: with `fixed2micro_factor` 0.5 a microtransit-only trip pays
+  3.0 $ (before 2.0 $), FRT -> microtransit 1.5 $ as before, microtransit -> FRT -> microtransit and FRT ->
+  microtransit -> walk -> microtransit 4.5 $ (before 3.5 $: only the ride after the FRT is discounted); with the
+  factor 1 all fares are unchanged. With `micro2fixed_factor` 0 the floor of I-24 counts the microtransit fare paid,
+  so the FRT boarding in microtransit -> FRT -> microtransit became free (1.0 $ before), since the first ride now
+  costs the full 3 $. No effect on the reference (`fixed2micro_factor` 1; the optimizer does not vary it): full run
+  `REPRODUCED`.
 
 ### I-17: Travelers who keep their transit choice resubmit only their last microtransit and FRT leg
 - **Status:** Closed (2026-11-25); Open until then. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 4).

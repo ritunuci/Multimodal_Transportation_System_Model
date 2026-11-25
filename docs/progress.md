@@ -1660,6 +1660,18 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   leg); the file replaced; second full run: **`REPRODUCED`** (26 files).
 - Docs: `open_issues.md` (I-17 closed), `reference_results/README.md`.
 
+## The microtransit start fare gets the transfer discount only after an FRT ride (I-19, 2026-11-25)
+
+- User's decision (option 1, recommended): the start fare gets `fixed2micro_factor` only on the first microtransit
+  ride after an FRT ride, like the distance fare since I-24 (before: always). Done on `main` before the branch
+  `TRA_resubmission` fast-forwards.
+- Code: `mtsm_model/helpers/network_algorithms.py` (`transit_label_search`, the microtransit boarding link; comments).
+- Checks: fares of four made-up paths with old and new code (`open_issues.md`, I-19): with the factor 0.5 only the
+  first microtransit ride after an FRT ride is discounted; with the factor 1 nothing changes. Full run (factor 1 in
+  the frozen file; the optimizer does not vary it): **`REPRODUCED`** (26 files).
+- Docs: `open_issues.md` (I-19 closed; I-14: `pre_process/` to be removed on the branch, user's decision),
+  `README.md` (fares).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

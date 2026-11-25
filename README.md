@@ -40,8 +40,9 @@ transfer discounts between microtransit and FRT (the former "fare scenario 10"; 
 `microtransit_start_fare`, `microtransit_dist_based_rate`, `pk_fare_factor`, `off_pk_fare_factor`,
 `fixed2micro_factor`, `micro2fixed_factor` of `mtsm_constant_configurations.csv`). Since 2026-11-25 the FRT
 discount applies to the first FRT boarding after a microtransit ride only, and never lowers the fare of microtransit
-+ FRT below the FRT fare alone; every other FRT boarding pays the full fare. The transit path search is exact for these
-rules (`docs/open_issues.md` I-22, I-24, I-44).
++ FRT below the FRT fare alone; every other FRT boarding pays the full fare. The microtransit discount applies to the
+start and distance fare of the first microtransit ride after an FRT ride only. The transit path search is exact for
+these rules (`docs/open_issues.md` I-19, I-22, I-24, I-44).
 
 ## Running the model
 

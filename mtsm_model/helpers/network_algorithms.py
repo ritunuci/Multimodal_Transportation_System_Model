@@ -272,8 +272,8 @@ def out_links(graph):
 #       F - min(M, (1 - micro2fixed_factor) x F)
 #   so microtransit + FRT never cost less in fare than the FRT alone. Until 2026-11-25 every FRT boarding after any
 #   microtransit link of the trip got the factor, without a floor.
-# - The distance fare of the first microtransit ride after an FRT ride is x fixed2micro_factor (until 2026-11-25 every
-#   microtransit link after any FRT link). The start fare is always x fixed2micro_factor (I-19).
+# - The first microtransit ride after an FRT ride pays its start fare and distance fare x fixed2micro_factor (until
+#   2026-11-25 the distance fare of every microtransit link after any FRT link, and the start fare always: I-19).
 # A link's cost then depends on the path before it, so the transit search keeps the least-cost path per label, not per
 # node (I-22; until 2026-11-25 a Dijkstra search over nodes, which missed cheaper paths). The car search has no such
 # link costs and is a Dijkstra search over nodes, as before.
@@ -300,7 +300,7 @@ def transit_label_search(graph, agent, transit_fare_set, microtransit_start_fare
       - ready_f: a microtransit ride since the last FRT boarding (the next FRT boarding gets the discount); only if
         micro2fixed_factor != 1;
       - ready_m: an FRT ride since the last microtransit alighting (the next microtransit ride gets fixed2micro_factor
-        on its distance fare); only if fixed2micro_factor != 1;
+        on its start and distance fare); only if fixed2micro_factor != 1;
       - with the transfer penalty on (I-25): whether transit was used, and the route of the FRT link into the node.
     Two paths with the same label are compared on two values, the cost and the cost minus bt_t_fr x min(M, D) (M: the
     microtransit fare since the last FRT boarding, D: the largest FRT discount); a path is dropped only if another one
@@ -391,7 +391,8 @@ def transit_label_search(graph, agent, transit_fare_set, microtransit_start_fare
                 n_used, n_ready_f, n_m = True, True, m_since + micro_fare
             elif link_type_ == 5:  # microtransit waiting link (boarding or alighting)
                 if node <= last_walk_node and first_micro_node <= edge <= last_micro_node:  # boarding: start fare
-                    micro_fare = microtransit_start_fare * Fixed2MicroFactor * peak_factor  # Ritun (I-19)
+                    # Ritun; x fixed2micro_factor only after an FRT ride (I-19, 2026-11-25; until then always)
+                    micro_fare = microtransit_start_fare * (Fixed2MicroFactor if ready_m else 1) * peak_factor
                     n_m = m_since + micro_fare
                 else:  # alighting: the ride after an FRT ride ends
                     n_ready_m = False
