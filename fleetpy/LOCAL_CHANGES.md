@@ -84,7 +84,8 @@ FleetPy's original `requirements.txt` (numpy 1.19.5, pandas 1.2.0, ...) is not i
 Current state (2026-11-23): `data/` and `studies/` match upstream; the 91 files below were removed (`git rm`; they
 are in the git history, the last commit that has them is `91c7486`). Before their removal, every tracked file in the
 repository was searched for their names: only the 13 configs (which name the old demand files) and old scripts in
-`standalone_scripts/` refer to them; nothing the model run, the optimizer or `tools/` uses.
+`standalone_scripts/` refer to them; nothing the model run, the optimizer or `tools/` uses. (`standalone_scripts/`
+was removed on 2026-11-25; it is in the git history.)
 
 State on 2026-11-08: `data/` and `studies/` matched upstream, except for files added for MTSM that the run does not
 read:

@@ -189,7 +189,6 @@ outputs and the files of this model:
 | `env/` | Locked Python environment |
 | `tools/` | `check_inputs.py`, `check_study_area.py` (a study area's inputs; also run at startup), `compare_reference.py`, `export_env.py` |
 | `docs/` | Progress log, open issues, reference results |
-| `standalone_scripts/` | Analysis and plotting scripts that the model run does not use |
 
 ## Code map
 

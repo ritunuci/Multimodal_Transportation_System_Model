@@ -55,7 +55,7 @@ Paths are relative to the codebase root.
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Open | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
-| I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Open | 2026-11-23 |
+| I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
@@ -98,6 +98,8 @@ Paths are relative to the codebase root.
     `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
     that import.
   - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
+  - 2026-11-25 (user's decision): `standalone_scripts/` removed from the repository (27 files, in the git history;
+    the last commit that has them is the parent of the removal commit), including the four scripts above.
 - **2026-11-25 (user's decision):** `pre_process/` is out of date: the inputs are now prepared in the repository
   `TRA_input_data_prep` (https://github.com/ritunuci/TRA_input_data_prep). On the branch `TRA_resubmission` the folder
   is to be removed and the README to say that the data is prepared there; that closes I-14 on the branch. On `main`
@@ -370,118 +372,6 @@ Paths are relative to the codebase root.
 - **Closes when** the new builder is in MTSM's `pre_process/` and the networks built with it are in use (a new
   reference; see I-34 and I-35).
 
-### I-34: Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove
-- **Status:** Open. **Severity:** High (blocks a planned run: downtown San Diego). **Found:** 2026-11-23 (planning the
-  FRT network from SANDAG's ABM3 transit data, in the input-preparation repository `TRA_input_data_prep`).
-- **Plan (user, 2026-11-23):** the model is to be made general in the study area, so that it runs for Lemon Grove and
-  downtown San Diego. The FRT network of both areas will be rebuilt from SANDAG's ABM3 transit network
-  (`EMMEOutputs.gdb`: `trrt`, `trlink`, `trstop`; the 2022 network of the ABM3 run behind the demand files), as
-  `pre_process/build_super_network.py` inputs (`frt_stops.csv`: `stop_id,pos_x,pos_y`; `frt_edges.csv`:
-  `from_stop,to_stop,distance,travel_time,route`). Decisions for that network:
-  - **One stop node per stop, route and direction** (several stop nodes can share one walk node). No two FRT links
-    share a node pair.
-  - **`route` = the route number** (4, 520, 856, ...), both directions; the direction is in the stop nodes.
-  - **Run time = the distance along the route / 30 mph**, buses and rail alike (as the old network and
-    `frt_speed_mph`).
-  - **One headway for all routes** (as now: `frt_headway`, boarding waits half of it). The ABM3 headways per route
-    and period are not used.
-  - **One variant per route and direction**; downtown leaves out the peak-only routes 110, 280 and 290. Routes with
-    one stop in the area (Coaster 398, 598, airport 994) have no link and drop out.
-  - **Each stop is joined to a street node** of the new road network (never a freeway node; I-33). The stop's
-    `pos_x/pos_y` are that node's coordinates, so `nearest_walk_nodes` finds it at 0 m.
-- **FRT plan, update (2026-11-23, later the same day):**
-  - The stop rule is now "a stop counts if it lies within 50 ft of the study area", so stops on boundary streets
-    count.
-  - As a result the airport route 994 (downtown) and route 851 (Lemon Grove) have links. Only 398 and 598 drop out.
-  - A route's line past its last stop inside the area is not in the network (e.g. the Lemon Grove trolley, route
-    520, west of Massachusetts Av station). Trips inside the area are not affected.
-  - Built 2026-11-23:
-    - Lemon Grove: routes 4, 520, 851, 856, 916, 917, 936; 12 variants, 122 stop nodes, 110 links.
-    - Downtown: 21 routes; 41 variants, 354 stop nodes, 326 links.
-- **What in the model is Lemon Grove only or assumes the old FRT network** (checked at `008c6ac`):
-  1. **FRT line length, duration, operating cost, VMT and ridership output.**
-     `output_performance_metrics.get_transit_line_dist`, `get_transit_line_duration`, `get_transit_link_info` and
-     `write_fixed_transit_link_vmt` set their input file only under `if study_area == "lemon_grove"`. For any other
-     area the file name is undefined, and `scenarios.py:90` stops with `UnboundLocalError`. They read the old file
-     `mtsm_data/lemon_grove/transit/super_network_transit_edges.csv` (columns `distance (meters)`, `route`), not the
-     new FRT edges.
-     - The line length is the sum of the *unique distance values* of a route's links. This halves the length only
-       because the old network copied each link into both directions with the same distance. In the ABM3 network the
-       two directions have different paths and distances, so the length would come out about 2 x, and the cost
-       formula multiplies by 2 again.
-     - The number of stops counts the from-nodes of both directions.
-     - Needed: a per-route length and stop count that the new network supplies (e.g. a route table written with the
-       FRT files), and the area's file paths.
-  2. **FRT fare and microtransit start fare.** `generalized_cost_dijsktra_OD_heap` (`network_algorithms.py:352` and
-     `:372`) sets them only under `if study_area == "lemon_grove"`. In any other area every FRT boarding and every
-     microtransit start costs $0, so FRT and microtransit revenue are 0.
-  3. **Parallel links are lost without a message.** `read_super_network` builds an `nx.DiGraph`. A second link with
-     the same `(from_node, to_node)` overwrites the first (route, time, link type). The planned FRT network has no
-     such pairs. Still, a check that stops on duplicate pairs would catch any input that has them.
-     - 2026-11-23: a test build in `TRA_input_data_prep` with the new inputs has no duplicate `(from_node, to_node)`
-       pairs. The duplicate-link check is still worth adding.
-  4. **A route change becomes a transfer.** With stop nodes per route, a change at the same stop is alighting (type
-     2, 0 s) and boarding (type 2, half the headway). The boarding pays no new fare, because `transit_fare` is not
-     set when the previous link is a waiting link. It adds `bt_f_trfer` when the transfer penalty is on
-     (`IsFixedLink`). The "route change at a shared stop" rule (`route != route_pre`, line 349) and its handling in
-     `trip_legs.py` no longer apply. The old network had no wait for this change, so results change; this belongs
-     to a new reference. I-31's label problem does not arise (every FRT link has exactly one route); I-25 can be
-     decided on the new network.
-  5. **Other places that name Lemon Grove:** a search for `"lemon_grove"` / `LG_` finds 70 lines, in
-     `output_performance_metrics.py` (27), `mtsm_paths.py` (14), `update_network_files.py` (7),
-     `folder_directory.py` (6), `fleetpy_runner.py` (6), `update_initial_network.py` (3), `network_algorithms.py` (2),
-     `get_microtransit_skims.py` (2), `config.py` (2) and `scenarios.py` (1). Also per area:
-     - `num_walk_nodes`, `microtransit_node_offset` and `micro_only_max_walk_node` in
-       `mtsm_constant_configurations.csv` (I-13);
-     - the FleetPy network and staged inputs (`fleetpy_runner.LG_STAGED_INPUTS`).
-     - 2026-11-24: the accessibility calculation was removed (I-37); `output_performance_metrics.py` went from
-       1,035 to 197 lines and the region and MGRA paths are gone from `mtsm_paths.py`.
-     - 2026-11-24 (`docs/study_area_plan.md`, Phase 1 step 1): the `LG_*` constants are replaced by
-       `mtsm_paths.area_paths(area)`; the branches that only chose a folder are gone (`folder_directory`,
-       `get_transit_line_dist`, `get_transit_link_info`, `write_fixed_transit_link_vmt`, `get_node_ct`,
-       `update_network_files`), so item 1's `UnboundLocalError` no longer occurs.
-       `fleetpy_runner.LG_STAGED_INPUTS` is `staged_inputs(area)`. Still for Lemon Grove only (Phase 2): the fares
-       (item 2), the type-5 update (item 6), the FRT line duration and the ridership file's `travel_time`, the
-       file names in `update_initial_network.py`, `lemon_grove_vehtype` in `create_config_files`, and the startup
-       check.
-     - 2026-11-24 (Phase 1 step 2 and Phase 2 step 1): all of these are gone. The file names come from
-       `mtsm_paths.area_paths`; the fares (item 2), the type-5 update (item 6), the FRT line duration and the
-       ridership file's `travel_time` apply to every area; `<area>_vehtype`; the startup check accepts any area.
-       Items 1 (line length from the new FRT network), 3 (duplicate-link check, Phase 4) and 4 remain.
-     - 2026-11-24 (Phase 3 step 1; user's decision (b2)): item 1 is done. The FRT line length and stops come from
-       the route table `networks/frt_routes.csv`, in the format `TRA_input_data_prep` writes (one row per route and
-       direction); the costs add up the rows. Lemon Grove's table gives each direction half of the route's link
-       distances: routes 856 and 916 had lost a link of equal length under the old distinct-distance rule (3,508 m
-       -> 3,702 m, 1,647 m -> 1,844 m). Reference updated (FRT vehicle miles +2.41 %, FRT operating cost +0.52 %).
-  6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
-     - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
-       keep.
-     - Even so, `update_network_files.update_network_files` calls `get_microtransit_skims.get_node_ct(study_area)`.
-       That function reads `pre_nodes.csv` (columns `census_tract`, `node_in_fleetpy`) only from the Lemon Grove
-       folder (`LG_TRANSIT_NETWORK_DIR`; there is no path for other areas), and it looks up a tract for every type-5
-       link.
-     - The new networks' `pre_nodes.csv` (`TRA_input_data_prep`) has these columns, with `census_tract = 0` for every
-       node. The whole-region branch therefore works on them once the path is per area. No census tract data is
-       needed.
-     - 2026-11-24: with `whole_region`, `get_node_ct` no longer reads `pre_nodes.csv`; every walk node is in one
-       zone (decision G, `docs/study_area_inputs.md`). The file is read only with `census_track`.
-     - In the "micro" branch, the type-5 links are updated only `if study_area == "lemon_grove"`
-       (`update_network_files.py:340`). In any other area they keep the initial 180 s. The micro_only branch uses
-       `micro_only_max_walk_node` (I-13).
-- **Impact:** a downtown San Diego run cannot start (item 1). Once it starts, its FRT and microtransit fares are 0
-  (item 2), and its microtransit waiting times stay at the initial 180 s (item 6). In both areas the new FRT network
-  changes transfers (item 4) and needs the line cost fixed (item 1).
-- **To do:**
-  - make the study area a setting that selects the paths, the node ranges and the FleetPy inputs;
-  - remove the `if study_area == "lemon_grove"` branches (fares for every area);
-  - compute line length and duration from the new FRT network;
-  - add a duplicate-link check to `read_super_network`;
-  - microtransit waiting times for every area (item 6): the `pre_nodes.csv` path per area in `get_node_ct`, and the
-    type-5 update in `update_network_files` without the Lemon Grove condition;
-  - rebuild the Lemon Grove reference with the new road and FRT networks;
-  - see also I-14 (downtown code in the old preprocessing), I-24 (transfer fare rules), I-33 (freeways) and I-35
-    (one super-network per time period).
-
 ### I-35: One super-network for the whole day; MTSM is to use one per time period
 - **Status:** In progress (since 2026-11-24: the model reads period networks; not yet run on period data). Open
   until 2026-11-24. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
@@ -707,6 +597,133 @@ Paths are relative to the codebase root.
 
 ## Closed
 
+### I-34: Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove
+- **Status:** Closed (2026-11-25); Open until then. **Severity:** High (blocked a planned run: downtown San
+  Diego). **Found:** 2026-11-23 (planning the
+  FRT network from SANDAG's ABM3 transit data, in the input-preparation repository `TRA_input_data_prep`).
+- **Plan (user, 2026-11-23):** the model is to be made general in the study area, so that it runs for Lemon Grove and
+  downtown San Diego. The FRT network of both areas will be rebuilt from SANDAG's ABM3 transit network
+  (`EMMEOutputs.gdb`: `trrt`, `trlink`, `trstop`; the 2022 network of the ABM3 run behind the demand files), as
+  `pre_process/build_super_network.py` inputs (`frt_stops.csv`: `stop_id,pos_x,pos_y`; `frt_edges.csv`:
+  `from_stop,to_stop,distance,travel_time,route`). Decisions for that network:
+  - **One stop node per stop, route and direction** (several stop nodes can share one walk node). No two FRT links
+    share a node pair.
+  - **`route` = the route number** (4, 520, 856, ...), both directions; the direction is in the stop nodes.
+  - **Run time = the distance along the route / 30 mph**, buses and rail alike (as the old network and
+    `frt_speed_mph`).
+  - **One headway for all routes** (as now: `frt_headway`, boarding waits half of it). The ABM3 headways per route
+    and period are not used.
+  - **One variant per route and direction**; downtown leaves out the peak-only routes 110, 280 and 290. Routes with
+    one stop in the area (Coaster 398, 598, airport 994) have no link and drop out.
+  - **Each stop is joined to a street node** of the new road network (never a freeway node; I-33). The stop's
+    `pos_x/pos_y` are that node's coordinates, so `nearest_walk_nodes` finds it at 0 m.
+- **FRT plan, update (2026-11-23, later the same day):**
+  - The stop rule is now "a stop counts if it lies within 50 ft of the study area", so stops on boundary streets
+    count.
+  - As a result the airport route 994 (downtown) and route 851 (Lemon Grove) have links. Only 398 and 598 drop out.
+  - A route's line past its last stop inside the area is not in the network (e.g. the Lemon Grove trolley, route
+    520, west of Massachusetts Av station). Trips inside the area are not affected.
+  - Built 2026-11-23:
+    - Lemon Grove: routes 4, 520, 851, 856, 916, 917, 936; 12 variants, 122 stop nodes, 110 links.
+    - Downtown: 21 routes; 41 variants, 354 stop nodes, 326 links.
+- **What in the model is Lemon Grove only or assumes the old FRT network** (checked at `008c6ac`):
+  1. **FRT line length, duration, operating cost, VMT and ridership output.**
+     `output_performance_metrics.get_transit_line_dist`, `get_transit_line_duration`, `get_transit_link_info` and
+     `write_fixed_transit_link_vmt` set their input file only under `if study_area == "lemon_grove"`. For any other
+     area the file name is undefined, and `scenarios.py:90` stops with `UnboundLocalError`. They read the old file
+     `mtsm_data/lemon_grove/transit/super_network_transit_edges.csv` (columns `distance (meters)`, `route`), not the
+     new FRT edges.
+     - The line length is the sum of the *unique distance values* of a route's links. This halves the length only
+       because the old network copied each link into both directions with the same distance. In the ABM3 network the
+       two directions have different paths and distances, so the length would come out about 2 x, and the cost
+       formula multiplies by 2 again.
+     - The number of stops counts the from-nodes of both directions.
+     - Needed: a per-route length and stop count that the new network supplies (e.g. a route table written with the
+       FRT files), and the area's file paths.
+  2. **FRT fare and microtransit start fare.** `generalized_cost_dijsktra_OD_heap` (`network_algorithms.py:352` and
+     `:372`) sets them only under `if study_area == "lemon_grove"`. In any other area every FRT boarding and every
+     microtransit start costs $0, so FRT and microtransit revenue are 0.
+  3. **Parallel links are lost without a message.** `read_super_network` builds an `nx.DiGraph`. A second link with
+     the same `(from_node, to_node)` overwrites the first (route, time, link type). The planned FRT network has no
+     such pairs. Still, a check that stops on duplicate pairs would catch any input that has them.
+     - 2026-11-23: a test build in `TRA_input_data_prep` with the new inputs has no duplicate `(from_node, to_node)`
+       pairs. The duplicate-link check is still worth adding.
+  4. **A route change becomes a transfer.** With stop nodes per route, a change at the same stop is alighting (type
+     2, 0 s) and boarding (type 2, half the headway). The boarding pays no new fare, because `transit_fare` is not
+     set when the previous link is a waiting link. It adds `bt_f_trfer` when the transfer penalty is on
+     (`IsFixedLink`). The "route change at a shared stop" rule (`route != route_pre`, line 349) and its handling in
+     `trip_legs.py` no longer apply. The old network had no wait for this change, so results change; this belongs
+     to a new reference. I-31's label problem does not arise (every FRT link has exactly one route); I-25 can be
+     decided on the new network.
+  5. **Other places that name Lemon Grove:** a search for `"lemon_grove"` / `LG_` finds 70 lines, in
+     `output_performance_metrics.py` (27), `mtsm_paths.py` (14), `update_network_files.py` (7),
+     `folder_directory.py` (6), `fleetpy_runner.py` (6), `update_initial_network.py` (3), `network_algorithms.py` (2),
+     `get_microtransit_skims.py` (2), `config.py` (2) and `scenarios.py` (1). Also per area:
+     - `num_walk_nodes`, `microtransit_node_offset` and `micro_only_max_walk_node` in
+       `mtsm_constant_configurations.csv` (I-13);
+     - the FleetPy network and staged inputs (`fleetpy_runner.LG_STAGED_INPUTS`).
+     - 2026-11-24: the accessibility calculation was removed (I-37); `output_performance_metrics.py` went from
+       1,035 to 197 lines and the region and MGRA paths are gone from `mtsm_paths.py`.
+     - 2026-11-24 (`docs/study_area_plan.md`, Phase 1 step 1): the `LG_*` constants are replaced by
+       `mtsm_paths.area_paths(area)`; the branches that only chose a folder are gone (`folder_directory`,
+       `get_transit_line_dist`, `get_transit_link_info`, `write_fixed_transit_link_vmt`, `get_node_ct`,
+       `update_network_files`), so item 1's `UnboundLocalError` no longer occurs.
+       `fleetpy_runner.LG_STAGED_INPUTS` is `staged_inputs(area)`. Still for Lemon Grove only (Phase 2): the fares
+       (item 2), the type-5 update (item 6), the FRT line duration and the ridership file's `travel_time`, the
+       file names in `update_initial_network.py`, `lemon_grove_vehtype` in `create_config_files`, and the startup
+       check.
+     - 2026-11-24 (Phase 1 step 2 and Phase 2 step 1): all of these are gone. The file names come from
+       `mtsm_paths.area_paths`; the fares (item 2), the type-5 update (item 6), the FRT line duration and the
+       ridership file's `travel_time` apply to every area; `<area>_vehtype`; the startup check accepts any area.
+       Items 1 (line length from the new FRT network), 3 (duplicate-link check, Phase 4) and 4 remain.
+     - 2026-11-24 (Phase 3 step 1; user's decision (b2)): item 1 is done. The FRT line length and stops come from
+       the route table `networks/frt_routes.csv`, in the format `TRA_input_data_prep` writes (one row per route and
+       direction); the costs add up the rows. Lemon Grove's table gives each direction half of the route's link
+       distances: routes 856 and 916 had lost a link of equal length under the old distinct-distance rule (3,508 m
+       -> 3,702 m, 1,647 m -> 1,844 m). Reference updated (FRT vehicle miles +2.41 %, FRT operating cost +0.52 %).
+  6. **Microtransit waiting times** (found 2026-11-23, checked at `a912056`).
+     - MTSM uses `aggregation,whole_region` (constant configuration), and the user confirms this is the branch to
+       keep.
+     - Even so, `update_network_files.update_network_files` calls `get_microtransit_skims.get_node_ct(study_area)`.
+       That function reads `pre_nodes.csv` (columns `census_tract`, `node_in_fleetpy`) only from the Lemon Grove
+       folder (`LG_TRANSIT_NETWORK_DIR`; there is no path for other areas), and it looks up a tract for every type-5
+       link.
+     - The new networks' `pre_nodes.csv` (`TRA_input_data_prep`) has these columns, with `census_tract = 0` for every
+       node. The whole-region branch therefore works on them once the path is per area. No census tract data is
+       needed.
+     - 2026-11-24: with `whole_region`, `get_node_ct` no longer reads `pre_nodes.csv`; every walk node is in one
+       zone (decision G, `docs/study_area_inputs.md`). The file is read only with `census_track`.
+     - In the "micro" branch, the type-5 links are updated only `if study_area == "lemon_grove"`
+       (`update_network_files.py:340`). In any other area they keep the initial 180 s. The micro_only branch uses
+       `micro_only_max_walk_node` (I-13).
+- **Impact:** a downtown San Diego run cannot start (item 1). Once it starts, its FRT and microtransit fares are 0
+  (item 2), and its microtransit waiting times stay at the initial 180 s (item 6). In both areas the new FRT network
+  changes transfers (item 4) and needs the line cost fixed (item 1).
+- **To do:**
+  - make the study area a setting that selects the paths, the node ranges and the FleetPy inputs;
+  - remove the `if study_area == "lemon_grove"` branches (fares for every area);
+  - compute line length and duration from the new FRT network;
+  - add a duplicate-link check to `read_super_network`;
+  - microtransit waiting times for every area (item 6): the `pre_nodes.csv` path per area in `get_node_ct`, and the
+    type-5 update in `update_network_files` without the Lemon Grove condition;
+  - rebuild the Lemon Grove reference with the new road and FRT networks;
+  - see also I-14 (downtown code in the old preprocessing), I-24 (transfer fare rules), I-33 (freeways) and I-35
+    (one super-network per time period).
+- **Resolution (2026-11-25, user's decision):** closed; the model no longer assumes Lemon Grove or the old FRT network
+  (`docs/study_area_plan.md`, Phases 1-4 and 7, 2026-11-24). Item by item:
+  1. FRT line length, stops, cost and ridership output: from the route table `networks/frt_routes.csv` in
+     `TRA_input_data_prep`'s format (Phase 3 step 1; reference updated 2026-11-24).
+  2. FRT fare and microtransit start fare: for every area (Phase 2 step 1).
+  3. Duplicate `(from_node, to_node)` pairs: `tools/check_study_area.py` warns at startup (Phase 4, decision E);
+     `read_super_network` still keeps the last link of a pair.
+  4. A route change on TRA's network is an alighting and a boarding: handled on the branch `TRA_resubmission` with
+     I-25 (transfer penalty on) and I-44 (fare rules: every boarding pays; whether a route change at a shared stop
+     pays).
+  5. Paths and names: `mtsm_paths.area_paths(area)`, `staged_inputs(area)`, `<area>_vehtype`; the startup check
+     accepts any area (Phases 1-2). The node ranges per area: I-13, closed 2026-11-24.
+  6. Microtransit waiting times: the type-5 update and the whole-region zone for every area (Phase 2 step 1).
+  Not part of this item: the downtown San Diego run itself, which needs downtown's inputs from `TRA_input_data_prep`
+  (next area in `docs/study_area_plan.md`), and the downtown parts of the old preprocessing (I-14).
 ### I-19: The microtransit start fare always gets the FRT-to-microtransit transfer discount
 - **Status:** Closed (2026-11-25); Open until then. **Severity:** Low. **Found:** 2026-11-09 (dropping fare scenarios 0-9).
 - **What:** in the fare structure (the former fare scenario 10, `network_algorithms.generalized_cost_dijsktra_OD_heap`),

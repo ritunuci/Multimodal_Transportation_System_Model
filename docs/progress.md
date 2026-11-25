@@ -1684,6 +1684,24 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   913.2664 -> 913.2677). The 3 files replaced; second full run: **`REPRODUCED`** (26 files).
 - Docs: `open_issues.md` (I-21, update), `reference_results/README.md`.
 
+## I-34 closed (2026-11-25)
+
+- User's decision: I-34 closed; its code items were done on 2026-11-24 (`docs/study_area_plan.md`). Item 4
+  (route changes on TRA's network) goes with I-25 and I-44 on the branch; the downtown San Diego run stays the
+  next area in the study-area plan. Record in `open_issues.md`, I-34.
+
+## `standalone_scripts/` removed (2026-11-25)
+
+- User's decision, on `main`: the folder goes, with the paper scripts (`plotting_code.py`, `equity_analysis*.py`,
+  `result_process.py`) and the older run and optimizer variants (`New folder/`). 27 tracked files removed (`git rm`;
+  they are in the git history); the untracked SacRT notebook (`Supernetwork_construction_SacRT_final.ipynb`, ignored
+  because its outputs show request data) deleted from disk, and its `.gitignore` entry removed. The standing rule
+  "leave `standalone_scripts/` untouched" ends.
+- Nothing the model run, the optimizer or `tools/` imports was there (checked: no import of `standalone_scripts` in
+  the tracked code), so no run is needed.
+- Docs: `README.md` (layout table), `fleetpy/LOCAL_CHANGES.md`, `open_issues.md` (I-14 note). Dated records that name
+  the folder are kept; so is the comment in `pre_process/build_super_network.py` (identical to TRA's copy).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

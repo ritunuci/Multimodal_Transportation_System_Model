@@ -30,9 +30,6 @@ mtsm_data/*/optimization_output/*
 # initial_network/ holds only what the run writes since 2026-11-24 (its inputs moved to networks/)
 mtsm_data/*/initial_network/*
 !mtsm_data/*/*/.gitkeep
-# SacRT super-network notebook: kept locally, not part of the repository (absolute paths to outside folders;
-# its saved outputs show rows of the request data)
-standalone_scripts/Supernetwork_construction_SacRT_final.ipynb
 # old evaluation outputs (2023), not produced by the current code
 eval_output_dir/
 *.log
