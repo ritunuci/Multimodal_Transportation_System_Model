@@ -386,6 +386,55 @@ def check_study_area(area, params, n, m):
                                  f"{_examples(stuck)}")
             if any(p < 0 for node, p in start) or not math.isclose(sum(p for node, p in start), 1.0, abs_tol=1e-6):
                 report.error("imbalanced.csv: the probabilities must be >= 0 and sum to 1")
+    # FleetPy's travel times per period (since 2026-11-24; docs/period_networks_and_car_availability_plan.md, step 5):
+    # network_dynamics.csv (simulation_time, travel_time_folder) and each folder's edges_td_att.csv
+    # (from_node, to_node, edge_tt), on FleetPy's road edges, with times > 0
+    network_dir = os.path.join(paths.fleetpy_inputs_dir, *paths.fleetpy_network_dir().split("/"))
+    dynamics_file = os.path.join(network_dir, "network_dynamics.csv")
+    time_folders = sorted(x for x in (os.listdir(network_dir) if os.path.isdir(network_dir) else [])
+                          if x.isdigit() and os.path.isdir(os.path.join(network_dir, x)))
+    if not os.path.isfile(dynamics_file):
+        if time_folders:
+            report.warning(f"FleetPy network folder: time folders {_examples(time_folders)} but no network_dynamics.csv; "
+                           f"the run stages only base/, so FleetPy uses base/ for the whole day")
+    else:
+        rows = _read_csv(dynamics_file, ["simulation_time", "travel_time_folder"], report, "network_dynamics.csv")
+        entries = None
+        if rows is not None:
+            entries = _convert(rows, ["simulation_time", "travel_time_folder"],
+                               {"simulation_time": lambda v: int(float(v)), "travel_time_folder": str.strip},
+                               report, "network_dynamics.csv")
+        if entries is not None:
+            times = [t for t, folder in entries]
+            if not entries:
+                report.error("network_dynamics.csv: no rows")
+            if len(set(times)) != len(times) or any(t < 0 for t in times):
+                report.error("network_dynamics.csv: simulation_time must be distinct and >= 0")
+            road_pairs = {(a, b) for a, b, d, t in fleet} if fleet is not None else None
+            for t, folder in entries:
+                label = f"FleetPy travel times {folder}/edges_td_att.csv"
+                rows = _read_csv(os.path.join(network_dir, folder, "edges_td_att.csv"),
+                                 ["from_node", "to_node", "edge_tt"], report, label)
+                if rows is None:
+                    continue
+                tts = _convert(rows, ["from_node", "to_node", "edge_tt"],
+                               {"from_node": int, "to_node": int, "edge_tt": float}, report, label)
+                if tts is None:
+                    continue
+                if road_pairs is not None:
+                    unknown = sorted({(a, b) for a, b, tt in tts} - road_pairs)
+                    if unknown:
+                        report.error(f"{label}: edges that are not in FleetPy's edges.csv: {_examples(unknown)}")
+                if any(not tt > 0 for a, b, tt in tts):
+                    report.error(f"{label}: edge_tt must be > 0")
+            # a switch inside the model's day that is not the start of a model period (decision 3: a warning)
+            day_start = params["period_start_h"] * 3600
+            starts = {day_start} | {e * 3600 for e in params["period_end_h"][:-1]}
+            off = [t for t in times if day_start <= t < params["period_end_h"][-1] * 3600 and t not in starts]
+            if off:
+                report.warning(f"network_dynamics.csv: FleetPy's travel times change at {_examples(off)} s, which is not "
+                               f"the start of a time period of the area ({sorted(starts)} s)")
+
     end_time = None
     for repositioning in params["repositioning_list"]:
         name = "%s_constant_config_ir_repo.csv" % area if repositioning else "%s_constant_config_ir.csv" % area

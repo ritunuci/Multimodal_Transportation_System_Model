@@ -152,6 +152,7 @@ outputs and the files of this model:
 | `frt/frt_routes.csv` | `networks/frt_routes.csv` (as it is) |
 | `demand/<area>_trips_nodes_study_area_with_beta.csv` | `demand/demand.csv` (extra columns are ignored) |
 | `fleetpy_network/base/` (`nodes.csv`, `edges.csv`, `crs.info`) | `fleetpy/data/networks/<area>_example_network/base/` |
+| `fleetpy_network/network_dynamics.csv` and its folders (`0/`, `10800/`, ...: `edges_td_att.csv`) | the same in `fleetpy/data/networks/<area>_example_network/` (optional: FleetPy's travel times per period; without them `base/` for the whole day) |
 | `fleetpy_initial_vehicle_distribution/imbalanced.csv` | `fleetpy/data/fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv` |
 
 - `<P>`: `TRA_input_data_prep` writes one set per ABM3 time period. Since 2026-11-24 the model takes the microtransit

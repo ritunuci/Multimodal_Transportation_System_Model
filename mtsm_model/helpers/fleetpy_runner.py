@@ -31,8 +31,30 @@ from src.misc.globals import G_RANDOM_SEED, G_SCENARIO_NAME, G_STUDY_NAME
 
 def staged_inputs(study_area):
     """FleetPy inputs of a study area besides the two config files; paths relative to both
-    mtsm_data/<area>/fleetpy/ and fleetpy/ (until 2026-11-24 the Lemon Grove list LG_STAGED_INPUTS)."""
-    return list(mtsm.area_paths(study_area).fleetpy_staged)
+    mtsm_data/<area>/fleetpy/ and fleetpy/ (until 2026-11-24 the Lemon Grove list LG_STAGED_INPUTS). Since 2026-11-24
+    also FleetPy's travel times per period, if the area has them (network_dynamics.csv and its folders)."""
+    paths = mtsm.area_paths(study_area)
+    return list(paths.fleetpy_staged) + paths.fleetpy_dynamic_inputs()
+
+
+def clear_staged_dynamics(study_area):
+    """Remove network_dynamics.csv and the time folders (integer names) from FleetPy's copy of the area's network
+    folder before staging (since 2026-11-24): FleetPy reads every integer-named folder there when the scenario names
+    no network_dynamics file, so a folder left from an earlier run would change a whole-day run."""
+    network_dir = os.path.join(mtsm.FLEETPY_DIR, *mtsm.area_paths(study_area).fleetpy_network_dir().split("/"))
+    if not os.path.isdir(network_dir):
+        return
+    for name in os.listdir(network_dir):
+        p = os.path.join(network_dir, name)
+        if name == "network_dynamics.csv" and os.path.isfile(p):
+            os.remove(p)
+        elif name.isdigit() and os.path.isdir(p):
+            shutil.rmtree(p)
+
+
+def has_network_dynamics(study_area):
+    """the area gives FleetPy travel times per period (network_dynamics.csv in its FleetPy network folder)"""
+    return bool(mtsm.area_paths(study_area).fleetpy_dynamic_inputs())
 
 
 def stage_inputs(constant_config_file, scenario_file, study_area):
@@ -46,6 +68,7 @@ def stage_inputs(constant_config_file, scenario_file, study_area):
         raise ValueError(f"FleetPy config file {constant_config_file} is not in {fleetpy_inputs_dir}")
     if os.path.relpath(scenario_file, mtsm.FLEETPY_DIR).startswith(".."):
         raise ValueError(f"FleetPy scenario file {scenario_file} is not in {mtsm.FLEETPY_DIR} (scenario_config_file)")
+    clear_staged_dynamics(study_area)
     for rel in [rel_cc] + staged_inputs(study_area):
         dst = os.path.join(mtsm.FLEETPY_DIR, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -197,12 +220,16 @@ def warn_non_optimal_repositioning(constant_csv, scenario_csv):
 # FleetPy's operator settings are fixed here (op_module, op_max_VR_con, repositioning method, horizons, timestep, the
 # scenario names): docs/open_issues.md I-41
 def create_config_files(sc,study_area,repositioning,fleet_size):
+    # FleetPy's travel times per period (since 2026-11-24): the column nw_dynamic_f only when the area has
+    # network_dynamics.csv, so that the scenario file (and FleetPy's 00_config.json) stays as before without it
+    dynamics = {"nw_dynamic_f": "network_dynamics.csv"} if has_network_dynamics(study_area) else {}
 
     with open(sc, 'w+', newline='') as csvfile_config:
         if repositioning == True:
             fieldnames_config = ["op_module", "scenario_name", "rq_file", "op_fleet_composition","op_max_VR_con","forecast_f","op_repo_method","op_repo_horizons","op_repo_timestep"]
         else:
             fieldnames_config = ["op_module", "scenario_name", "rq_file", "op_fleet_composition"]
+        fieldnames_config += list(dynamics)
         writer_config = csv.DictWriter(csvfile_config, fieldnames=fieldnames_config)
         writer_config.writeheader()
         if repositioning == True:
@@ -217,12 +244,13 @@ def create_config_files(sc,study_area,repositioning,fleet_size):
             op_repo_timestep=int(300)
             writer_config.writerow({"op_module": op_module, "scenario_name": scenario_name, "rq_file": rq_file,
                                     "op_fleet_composition": op_fleet_composition,"op_max_VR_con": op_max_VR_con, "forecast_f": forecast_f,
-                                    "op_repo_method": op_repo_method, "op_repo_horizons": op_repo_horizons,"op_repo_timestep": op_repo_timestep})
+                                    "op_repo_method": op_repo_method, "op_repo_horizons": op_repo_horizons,"op_repo_timestep": op_repo_timestep,
+                                    **dynamics})
         else:
             op_module = "PoolingIRSOnly"
             scenario_name = "example_pool_irsonly_sc_1"
             rq_file = "%s_debug_False_fleetpy_demand.csv" % str(study_area)
             op_fleet_composition = "%s_vehtype:" % str(study_area) + str(fleet_size)  # lemon_grove_vehtype until 2026-11-24
             writer_config.writerow({"op_module": op_module, "scenario_name": scenario_name, "rq_file": rq_file,
-                                    "op_fleet_composition": op_fleet_composition})
+                                    "op_fleet_composition": op_fleet_composition, **dynamics})
     csvfile_config.close()

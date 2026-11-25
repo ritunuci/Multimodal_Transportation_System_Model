@@ -62,6 +62,9 @@ def area_inputs(area):
     for staged in paths.fleetpy_staged:
         role = next(r for end, r in FLEETPY_ROLES.items() if staged.endswith(end))
         candidates.append((os.path.join(paths.fleetpy_inputs_dir, *staged.split("/")), role))
+    for staged in paths.fleetpy_dynamic_inputs():  # FleetPy's travel times per period (since 2026-11-24)
+        role = "FleetPy network dynamics" if staged.endswith("network_dynamics.csv") else "FleetPy period travel times"
+        candidates.append((os.path.join(paths.fleetpy_inputs_dir, *staged.split("/")), role))
     for f in sorted(glob.glob(os.path.join(paths.fleetpy_scenarios_dir, "*.csv"))):
         role = "FleetPy constant config" if "_constant_config_" in os.path.basename(f) else "FleetPy scenario config"
         candidates.append((f, role))

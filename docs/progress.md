@@ -1554,6 +1554,37 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `TRA_input_data_prep` table maps its period files).
 - Full run (whole day): **`REPRODUCED`** (26 files, 4:00).
 
+## Period networks and car availability, step 5: FleetPy travel times per period (2026-11-24)
+
+- `docs/period_networks_and_car_availability_plan.md`, decision 3. When the area's FleetPy network folder
+  (`fleetpy/data/networks/<area>_example_network/`) has `network_dynamics.csv`, the run stages it and the
+  `edges_td_att.csv` of every folder it names (`AreaPaths.fleetpy_dynamic_inputs`, `fleetpy_runner.staged_inputs`) and
+  writes `nw_dynamic_f,network_dynamics.csv` into FleetPy's scenario file (`create_config_files`; the column only
+  then, so the file and FleetPy's `00_config.json` stay as before without it). Without the file: `base/` only.
+- Before each staging the run removes `network_dynamics.csv` and integer-named folders from FleetPy's copy of the
+  network folder (`clear_staged_dynamics`): FleetPy reads every integer-named folder there when the scenario names no
+  dynamics file, so a folder left from an earlier run would change a whole-day run.
+- FleetPy: `src/routing/NetworkBasic.py` `load_tt_file`: `.iteritems()` -> `.items()` (pandas 2; old line kept as a
+  comment), recorded in `fleetpy/LOCAL_CHANGES.md`.
+- `tools/check_study_area.py`: with `network_dynamics.csv`: distinct times >= 0, every folder's `edges_td_att.csv`
+  present, its edges FleetPy's road edges, `edge_tt` > 0; warnings for a switch inside the model's day that is not a
+  period start, and for time folders without `network_dynamics.csv`. `tools/check_inputs.py` lists the files.
+- Tests on Lemon Grove (folders 0, 18000, 36000, 54000, 72000 written into the area's FleetPy network folder and
+  removed afterwards; inputs match their manifests again):
+  - checker: 0 errors as set up; an edge not in `edges.csv` and an `edge_tt` of 0 are errors; a switch at 40000 s and
+    folders without `network_dynamics.csv` give their warnings.
+  - A (the base times in every folder): FleetPy's log shows the dynamics file loaded; 25 of the 26 reference files
+    identical, the 26th `00_config.json` (one line more: `nw_dynamic_f`).
+  - B (MD folder 36000 with twice the times): the results change (17 files), so FleetPy uses the folders. FleetPy
+    named its vehicle evaluation `standard_mod-0.0_veh_eval.csv` there: 3 requests had no operator id, so pandas read
+    the column as float (FleetPy's behaviour whenever a request gets no operator; MTSM does not read the file). Its
+    log warns at each switch that the operator does not implement `inform_network_travel_time_update`: I-43.
+  - C (restored): FleetPy's copy holds only `base/` again.
+- Docs: `study_area_inputs.md` (section 8, rule 11), `README.md` (TRA table), `fleetpy/LOCAL_CHANGES.md`,
+  `open_issues.md` (I-43).
+- Full run (C, whole day): **`REPRODUCED`** (26 files, 3:58). B was repeated afterwards to look at FleetPy's files; a
+  last whole-day run cleared its staged folders again (FleetPy's copy: `base/` only): **`REPRODUCED`** (3:57).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

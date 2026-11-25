@@ -64,6 +64,7 @@ Paths are relative to the codebase root.
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Open | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
+| I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
 
 ---
 
@@ -700,6 +701,20 @@ Paths are relative to the codebase root.
 - **Fix (later):** an optimizer option `--config <file>`: the base file of the candidates' copies (and so the study
   area); the output folder named after the area or by an option. A code change: full run `REPRODUCED` and a short
   optimizer run.
+
+### I-43: With FleetPy travel times per period, the operator does not replan at a switch
+- **Status:** Open. **Severity:** Medium (affects runs with `network_dynamics.csv`, e.g. the new Lemon Grove data on
+  the branch `TRA_resubmission`; not the reference). **Found:** 2026-11-24
+  (`docs/period_networks_and_car_availability_plan.md`, step 5, test with MD travel times x 2).
+- **What:** when FleetPy loads a period's travel times (`NetworkBasic.update_network`), it calls the operator's
+  `inform_network_travel_time_update`. The operator MTSM uses, `PoolingIRSOnly` (`PoolingInsertionHeuristicOnly`),
+  does not implement it (`FleetControlBase` only logs "inform_network_travel_time_update not implemented for this
+  operator", once per switch in `00_simulation.log`). The routing engine has the new times, so later offers and
+  insertions use them, but the plans of vehicles already assigned are not recomputed at the switch.
+- **Impact:** unknown; near a switch, offers and vehicle plans can mix the old and the new period's times. The
+  pooling operators with batch optimization (`RidePoolingBatchOptimizationFleetControlBase`) do implement it.
+- **Fix (later):** check how FleetPy upstream handles it for `PoolingIRSOnly`, or implement the update (recompute the
+  current plans at the switch) as a local FleetPy change; or accept and document it.
 
 ---
 

@@ -51,9 +51,14 @@ holds no model parameter or input of MTSM.
 | `src/misc/config.py:126` | `pd.read_csv(..., squeeze=True)` → `pd.read_csv(...).squeeze("columns")` (old line kept as a comment) | pandas 2 removed `squeeze=` |
 | `src/evaluation/standard.py:132` | same as above | same |
 | `src/simulation/Vehicles.py:44` | same as above | same |
+| `src/routing/NetworkBasic.py:250` | `.iteritems()` → `.items()` in `load_tt_file` (old line kept as a comment); 2026-11-24 | pandas 2 removed `Series.iteritems`; needed once a network has travel-time folders (`network_dynamics.csv`, MTSM's travel times per period) |
 | `run_examples.py` | `import csv` added (unused); `.astype(object)` added in `read_outputs_for_comparison` (line 157); examples b) to j) commented out, so only example a) runs | avoids a pandas dtype warning in `check_assertions`; only the first example was needed |
 
-The model's environment has pandas 2.2.3 (`env/`), so the four pandas changes are required.
+The model's environment has pandas 2.2.3 (`env/`), so the four pandas changes are required (five since 2026-11-24).
+MTSM's runner stages a study area's `network_dynamics.csv` and travel-time folders into
+`data/networks/<area>_example_network/` when the area has them, and names the file in the scenario file
+(`nw_dynamic_f`); before each staging it removes such folders left there, because FleetPy reads every integer-named
+folder of a network when the scenario names no `network_dynamics` file.
 
 Removed on 2026-11-07 (they were commented-out debug prints, no effect): extra lines in `src/FleetSimulationBase.py`,
 `src/routing/NetworkBasic.py`, `src/routing/routing_imports/Router.py` and two in `run_examples.py`. These three

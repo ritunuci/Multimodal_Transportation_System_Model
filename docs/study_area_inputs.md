@@ -270,6 +270,8 @@ into its outputs keep the area prefix (decision 4).
 |---|---|
 | `data/networks/<area>_example_network/base/nodes.csv` | `node_index` (0 to N - 1), `is_stop_only`, `pos_x`, `pos_y` |
 | `data/networks/<area>_example_network/base/edges.csv` | `from_node, to_node, distance` (m), `travel_time` (s), `source_edge_id` |
+| `data/networks/<area>_example_network/network_dynamics.csv` (optional, since 2026-11-24) | FleetPy's travel times per period: `simulation_time` (s) and `travel_time_folder`; without it FleetPy uses `base/` for the whole day |
+| `data/networks/<area>_example_network/<folder>/edges_td_att.csv` (with `network_dynamics.csv`) | `from_node, to_node, edge_tt` (s): the travel times FleetPy uses from that folder's `simulation_time` on |
 | `data/networks/<area>_example_network/base/crs.info` | coordinate system of `pos_x, pos_y`, e.g. `EPSG:2230` (Lemon Grove's is wrong: I-39) |
 | `data/fleetctrl/initial_vehicle_distribution/<area>_example_network/imbalanced.csv` | `node_index, probability`: where vehicles start; probabilities sum to 1 (Lemon Grove: 5 nodes, 0.2 each; I-36) |
 | `data/vehicles/<area>_vehtype.csv` | FleetPy vehicle type (Lemon Grove: capacity 8) |
@@ -314,7 +316,10 @@ except where it says "warning". Lemon Grove: no error, one warning (rule 9), in 
    nodes with no trip and no FRT stop).
 11. FleetPy: `nodes.csv`, `edges.csv`, `crs.info`, `imbalanced.csv` and the vehicle type exist; the vehicle start
    nodes are walk nodes with a road edge in `edges.csv` (since 2026-11-24: a vehicle on a freeway node without one
-   never moves) and their probabilities sum to 1; each constant config of the run (`repositioning_list`) names
+   never moves) and their probabilities sum to 1; with `network_dynamics.csv` (since 2026-11-24): distinct times
+   >= 0, every folder's `edges_td_att.csv` there, its edges FleetPy's road edges and `edge_tt` > 0; a warning for a
+   switch inside the model's day that is not the start of a time period, and for time folders without
+   `network_dynamics.csv` (the run then stages only `base/`); each constant config of the run (`repositioning_list`) names
    `<area>_example_network` and `<area>_example_demand`, and `imbalanced.csv` as the start distribution.
 
 ## What the run writes (not inputs)

@@ -4,6 +4,7 @@ Every path is derived from the location of this file, so the codebase keeps work
 A study area's folders and input files come from area_paths(area) (since 2026-11-24; docs/study_area_plan.md,
 Phase 1 steps 1-2); until then they were the Lemon Grove constants LG_*.
 """
+import csv
 import os
 from dataclasses import dataclass
 
@@ -59,6 +60,24 @@ class AreaPaths:
         super_network_micro_virstop_<v>_<P>.csv (since 2026-11-24)"""
         suffix = "" if period is None else "_%s" % period
         return os.path.join(self.networks_dir, "super_network_micro_virstop_%s%s.csv" % (virstop, suffix))
+
+    def fleetpy_network_dir(self):
+        """FleetPy's network folder, relative to fleetpy_inputs_dir and fleetpy/: data/networks/<area>_example_network"""
+        return "data/networks/%s_example_network" % self.area
+
+    def fleetpy_dynamic_inputs(self):
+        """FleetPy's travel times per period, relative to fleetpy_inputs_dir and fleetpy/ (since 2026-11-24;
+        docs/period_networks_and_car_availability_plan.md, step 5): network_dynamics.csv in FleetPy's network folder
+        and the edges_td_att.csv of each folder it names (column travel_time_folder); [] without network_dynamics.csv
+        (FleetPy then uses base/ for the whole day). Unreadable entries are left to tools/check_study_area.py."""
+        rel = self.fleetpy_network_dir() + "/network_dynamics.csv"
+        path = os.path.join(self.fleetpy_inputs_dir, *rel.split("/"))
+        if not os.path.isfile(path):
+            return []
+        with open(path, newline="") as f:
+            folders = [row.get("travel_time_folder", "") for row in csv.DictReader(f)]
+        return [rel] + ["%s/%s/edges_td_att.csv" % (self.fleetpy_network_dir(), str(x).strip()) for x in folders
+                        if str(x).strip()]
 
     def car_network_period_file(self, period):
         """file 5 of one time period: car_network_<P>.csv (since 2026-11-24)"""

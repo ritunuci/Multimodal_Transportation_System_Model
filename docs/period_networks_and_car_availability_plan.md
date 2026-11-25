@@ -58,3 +58,4 @@ Step 1 done 2026-11-24 (`docs/progress.md`, "Period networks and car availabilit
 Step 2 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 2").
 Step 3 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 3").
 Step 4 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 4").
+Step 5 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 5").
