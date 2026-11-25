@@ -46,7 +46,7 @@ Paths are relative to the codebase root.
 | I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Open | 2026-11-11 |
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Open (to decide) | 2026-11-11 |
-| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (waits for I-31) | 2026-11-11 |
+| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (to turn on on the branch `TRA_resubmission`) | 2026-11-11 |
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 | I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
 | I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
@@ -205,6 +205,26 @@ Paths are relative to the codebase root.
 - **User's decision 2026-11-13:** the switch stays `False` for now, because the route labels cannot be checked (I-31;
   the raw transit file is not at hand). Offered and not taken for now: a second switch, so that only the boardings
   after a transit leg are charged (they do not read the route label) and the route changes at a shared stop wait.
+- **Update 2026-11-24:** the comparison repeated against the reference of 2026-11-24 (after the FRT route table and
+  I-38): a full seed-0 run with the switch on, through `--config` (a copy of the model file; the frozen file and the
+  reference unchanged; a normal run afterwards printed `REPRODUCED`). 19 of 26 files differ, 5 iterations as before.
+  Evaluation file, base case / with microtransit:
+  - car users 3,493 -> 3,497 / 3,441 -> 3,449; transit-mode users 249 -> 245 / 301 -> 293;
+  - FRT trips 19 -> 14 / 25 -> 12; pure FRT users 19 -> 14 / 18 -> 12; microtransit + FRT users 6 -> 0; pure
+    microtransit users 62 -> 66; FRT passenger miles 19.43 -> 11.01 / 30.15 -> 11.02;
+  - FRT revenue 47.50 -> 35.00 / 75.92 -> 43.38; microtransit revenue 864.9 -> 926.6; `tot_sub ($)` 2,333 -> 2,345 /
+    7,795 -> 7,768 (the optimizer's subsidy objective, scenario minus base, 5,462 -> 5,423);
+  - `tt_mob_lgsm_inc_with_micro` 912.1 -> 935.5 (the penalty lowers the base case more); microtransit wait 209 ->
+    196 s; mode switches 52 -> 48.
+  - Individual results: 1,651 (scenario) and 1,282 (base case) of 3,742 rows differ, since every transit path with a
+    transfer costs more; 8 (scenario) and 4 (base case) travelers change mode, all transit -> car.
+  - The same direction and size as the trial of 2026-11-13. On this network most of the counted transfers are route
+    changes at the four shared stops, whose labels I-31 cannot confirm.
+- **User's decision 2026-11-24:** (b) the switch stays `False` on `main` (its reference unchanged) and is turned on
+  on the branch `TRA_resubmission` with the new Lemon Grove inputs from `TRA_input_data_prep`, whose FRT network has
+  one stop node per stop, route and direction (every route change a real transfer; I-31 does not arise there). The
+  user asked to be reminded to turn it on there. It is a parameter of the model file, so both branches keep the same
+  code.
 
 ### I-30: The evaluation file holds one scenario; its base column is empty for runs without a base case
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-12 (I-29).
