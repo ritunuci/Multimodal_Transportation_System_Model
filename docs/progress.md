@@ -1647,6 +1647,19 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `open_issues.md` (I-22 and I-24 closed, I-44 new, I-19 note), `pathfinding_code_update.md`,
   `reference_results/README.md`, `README.md` (fares).
 
+## Kept transit choices resubmit every leg; reference updated (I-17, 2026-11-25)
+
+- User's decision: fix I-17 on `main`, so the branch `TRA_resubmission` gets it with its fast-forward (the branch had no
+  commits of its own; `main` was 10 commits ahead).
+- Count first (reference of 2026-11-25): nobody changes choice after iteration 0, so every transit user resubmits
+  stored legs in iterations 1-5; one traveler (11650) had two FRT legs and lost one in the FRT demand file (24 rows,
+  `F_trips` 25); no traveler had two microtransit legs.
+- Code: `mtsm_model/iteration.py` (a list of legs per traveler, cleared when transit is chosen; every leg resubmitted;
+  microtransit wait summed per leg), `mtsm_model/state.py` (comments).
+- Checks: full run against the reference: only the FRT demand file differs (one row more, traveler 11650's first FRT
+  leg); the file replaced; second full run: **`REPRODUCED`** (26 files).
+- Docs: `open_issues.md` (I-17 closed), `reference_results/README.md`.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

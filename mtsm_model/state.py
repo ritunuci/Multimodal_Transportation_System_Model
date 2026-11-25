@@ -49,8 +49,8 @@ class TravelerState:
     # the previous iteration, used when a traveler keeps the mode (change_mode=False)
     pre_iter_prob_T: OrderedDict = _od()  # transit probability
     pre_iter_mode: OrderedDict = _od()  # "T" or "C"
-    pre_iter_M_info: OrderedDict = _od()  # the FleetPy request (rq_time, start, end, request_id)
-    pre_iter_F_info: OrderedDict = _od()  # the FRT trip (depart_time, start, end, request_id)
+    pre_iter_M_info: OrderedDict = _od()  # list of the FleetPy requests of the path (rq_time, start, end, request_id)
+    pre_iter_F_info: OrderedDict = _od()  # list of the FRT legs of the path (depart_time, start, end, request_id)
 
     ag_VMT_F: OrderedDict = _od()  # FRT miles
     ag_VMT_M: OrderedDict = _od()  # microtransit miles

@@ -327,7 +327,8 @@ The user's rules:
 4. Each with the search of today (one path per node) and with the exact search.
 
 Where: copies of the repository in `D:\Ritun\MTSM_fare_test` (not in git). One label search for all variants,
-chosen by environment variables (`tools_fare/` there holds the scripts). Checks of the trial code:
+chosen by environment variables (`tools_fare/` there holds the scripts). The copy was deleted on 2026-11-25 (user's
+decision, after the rules were on `main`); the numbers are recorded here. Checks of the trial code:
 
 - Run with today's rules and one path per node: the reference, `26 identical, REPRODUCED`.
 - On fixed networks (the reference's final networks for AM, MD, PM; the FRT network at the scenario headway for EV;

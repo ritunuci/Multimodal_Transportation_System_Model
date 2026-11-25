@@ -202,6 +202,10 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                         state.ag_num_W_trips[rq_id] = 0
                         state.ag_num_M_trips[rq_id] = 0
                         state.ag_num_F_trips[rq_id] = 0
+                        # all legs of this path, resubmitted while the traveler keeps the choice (I-17, 2026-11-25; until then
+                        # one leg per traveler, each leg overwriting the previous one, and never cleared)
+                        state.pre_iter_M_info[rq_id] = []
+                        state.pre_iter_F_info[rq_id] = []
 
 
 
@@ -231,7 +235,7 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                             M_rq_id_list.append(rq_id_fleetpy)
                             #document the previous iteration microtransit information
                             #rq_time, start, end, request_id
-                            state.pre_iter_M_info[rq_id]=(request_time,MicroTransitNodes[M_origin_node],MicroTransitNodes[M_dest_node],rq_id_fleetpy)
+                            state.pre_iter_M_info[rq_id].append((request_time,MicroTransitNodes[M_origin_node],MicroTransitNodes[M_dest_node],rq_id_fleetpy))
 
                             totals.num_M_trips += 1
                             state.ag_num_M_trips[rq_id] +=1
@@ -242,7 +246,7 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
                             writer_F.writerow({'depart_time':request_time , 'start': F_origin_node,'end': F_dest_node,'request_id': rq_id})
                             # document the previous iteration fixed route transit information
                             # rq_time, start, end, request_id
-                            state.pre_iter_F_info[rq_id]=(request_time,F_origin_node,F_dest_node,rq_id)
+                            state.pre_iter_F_info[rq_id].append((request_time,F_origin_node,F_dest_node,rq_id))
                         for M_wait_time in legs.M_wait:
                             state.agent_M_tot_wait_time[rq_id] += M_wait_time
                         for F_wait_time in legs.F_wait:
@@ -317,24 +321,28 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
 
                         trip_legs.count_transit_user(totals, state.ag_num_M_trips[rq_id], state.ag_num_F_trips[rq_id])
 
-                        if rq_id in state.pre_iter_M_info:
+                        # every leg of the kept path again (I-17, 2026-11-25; until then only the last microtransit and FRT leg)
+                        M_legs_kept = state.pre_iter_M_info.get(rq_id, [])
+                        M_wait_kept = 0
+                        for (pre_iter_rq_time, pre_iter_start, pre_iter_end, pre_iter_request_id) in M_legs_kept:
                             # rq_time, start, end, request_id
-                            (pre_ier_rq_time, pre_iter_start,pre_iter_end, pre_iter_request_id) = state.pre_iter_M_info[rq_id]
                             rq_id_fleetpy = trip_legs.free_request_id(pre_iter_request_id, M_rq_id_list)
-                            writer_M.writerow({'rq_time': pre_ier_rq_time,'start': pre_iter_start,'end': pre_iter_end,'request_id':rq_id_fleetpy})
+                            writer_M.writerow({'rq_time': pre_iter_rq_time,'start': pre_iter_start,'end': pre_iter_end,'request_id':rq_id_fleetpy})
                             M_rq_id_list.append(rq_id_fleetpy)
 
 
                             # Ritun added: March 2nd, 2026
-                            pre_iter_period = choice.time_period_of(pre_ier_rq_time)
+                            pre_iter_period = choice.time_period_of(pre_iter_rq_time)
                             if pre_iter_period not in operating_periods:  # until 2026-11-24: == "EV"
                                 print("!!!! MICRO USER OUTSIDE THE OPERATING PERIODS DETECTED !!!!")
-                            state.agent_M_tot_wait_time[rq_id] = wait_times[pre_iter_period] * state.ag_num_M_trips[rq_id]
+                            # the period's average wait per leg (until 2026-11-25: the last leg's period x the number of legs)
+                            M_wait_kept += wait_times[pre_iter_period]
+                        if M_legs_kept:
+                            state.agent_M_tot_wait_time[rq_id] = M_wait_kept
 
-                        if rq_id in state.pre_iter_F_info:
+                        for (pre_iter_rq_time_F, pre_iter_start_F, pre_iter_end_F, pre_iter_request_id_F) in state.pre_iter_F_info.get(rq_id, []):
                             #(request_time,F_origin_node,F_dest_node,rq_id)
-                            (pre_ier_rq_time_F, pre_iter_start_F,pre_iter_end_F, pre_iter_request_id_F) = state.pre_iter_F_info[rq_id]
-                            writer_F.writerow({'depart_time': pre_ier_rq_time_F, 'start': pre_iter_start_F,'end': pre_iter_end_F, 'request_id': pre_iter_request_id_F})
+                            writer_F.writerow({'depart_time': pre_iter_rq_time_F, 'start': pre_iter_start_F,'end': pre_iter_end_F, 'request_id': pre_iter_request_id_F})
                         state.agent_travel_time[rq_id]=state.agent_M_tot_wait_time[rq_id]+state.agent_M_tot_travel_time[rq_id]+state.agent_F_tot_travel_time[rq_id]+state.agent_F_tot_wait_time[rq_id]+state.agent_tot_walk_time[rq_id]
 
                     else:

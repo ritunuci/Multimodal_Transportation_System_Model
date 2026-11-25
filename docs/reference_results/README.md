@@ -165,3 +165,9 @@ case (lines 2 and 4; the base row twice).
   25 unchanged. The run was identical to the trial run of the same rules in a copy of the repository. The 14 files
   were replaced by the run's; a second full run printed `REPRODUCED`. Run time about 400 s (before about 240 s).
   Optimizer sessions before this change are not comparable for candidates with `micro2fixed_factor` < 1.
+- **2026-11-25, travelers who keep their transit choice resubmit every leg** (`docs/open_issues.md` I-17, user's
+  decision; `docs/progress.md`): before, only the last microtransit and the last FRT leg of a kept transit path were
+  written again. A full run differed from the reference only in the FRT demand file of FleetPy's demand folder
+  (`debug_False_F_transit_demand_2_op_hr_15_hw_10_virstop_75.csv`): one row more, `63287,1107,1101,11650`, the first
+  of the two FRT legs of traveler 11650 (25 legs, as `F_trips`). No reported value and no FleetPy input or result
+  changed. The file was replaced by the run's; a second full run printed `REPRODUCED`.

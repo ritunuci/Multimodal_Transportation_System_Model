@@ -38,7 +38,7 @@ Paths are relative to the codebase root.
 | I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Closed (2026-11-23) | 2026-11-09 |
-| I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Open | 2026-11-09 |
+| I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Closed (2026-11-25) | 2026-11-09 |
 | I-18 | In later fare scenarios, every traveler gets the parking values of one traveler | Medium | Closed (2026-11-09) | 2026-11-09 |
 | I-19 | The microtransit start fare always gets the FRT-to-microtransit transfer discount | Low | Open | 2026-11-09 |
 | I-20 | The skim modules and their functions in `network_algorithms.py` are not used by the run | Low | Closed (2026-11-11) | 2026-11-09 |
@@ -98,22 +98,6 @@ Paths are relative to the codebase root.
     `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
     that import.
   - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
-
-### I-17: Travelers who keep their transit choice resubmit only their last microtransit and FRT leg
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 4).
-- **What:** in an iteration, a traveler whose transit probability changed by at most `MODE_CHANGE_THRESHOLD` keeps
-  the previous choice (`change_mode == False`). If that choice was transit, `run_examples_new_parking.py` writes the
-  traveler's previous microtransit request to the FleetPy demand file and the previous FRT trip to the FRT demand
-  file again. But `state.pre_iter_M_info` and `state.pre_iter_F_info` hold one leg per traveler: each leg of the
-  path overwrites the previous one. A traveler with two microtransit legs therefore sends one request to FleetPy,
-  while `num_M_trips` still counts two trips (`ag_num_M_trips`), and the waiting time is the period average of the
-  last leg times the number of legs. The same holds for FRT legs.
-- **Impact:** unknown: it depends on how many travelers have more than one microtransit or FRT leg and keep their
-  choice. FleetPy then sees less demand than the model counts. Not checked in the reference run.
-- **To decide / fix:** if each leg should be resubmitted, keep a list of legs per traveler (`pre_iter_M_info[rq_id]`
-  as a list) and write all of them. This changes the FleetPy demand and the results, so it needs a new reference.
-  First count how often it happens in the reference run.
-
 
 ### I-19: The microtransit start fare always gets the FRT-to-microtransit transfer discount
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-09 (dropping fare scenarios 0-9).
@@ -731,6 +715,37 @@ Paths are relative to the codebase root.
 ---
 
 ## Closed
+
+### I-17: Travelers who keep their transit choice resubmit only their last microtransit and FRT leg
+- **Status:** Closed (2026-11-25); Open until then. **Severity:** Medium. **Found:** 2026-11-09 (restructuring the entry script, step 4).
+- **What:** in an iteration, a traveler whose transit probability changed by at most `MODE_CHANGE_THRESHOLD` keeps
+  the previous choice (`change_mode == False`). If that choice was transit, `run_examples_new_parking.py` writes the
+  traveler's previous microtransit request to the FleetPy demand file and the previous FRT trip to the FRT demand
+  file again. But `state.pre_iter_M_info` and `state.pre_iter_F_info` hold one leg per traveler: each leg of the
+  path overwrites the previous one. A traveler with two microtransit legs therefore sends one request to FleetPy,
+  while `num_M_trips` still counts two trips (`ag_num_M_trips`), and the waiting time is the period average of the
+  last leg times the number of legs. The same holds for FRT legs.
+- **Impact:** unknown: it depends on how many travelers have more than one microtransit or FRT leg and keep their
+  choice. FleetPy then sees less demand than the model counts. Not checked in the reference run.
+- **To decide / fix:** if each leg should be resubmitted, keep a list of legs per traveler (`pre_iter_M_info[rq_id]`
+  as a list) and write all of them. This changes the FleetPy demand and the results, so it needs a new reference.
+  First count how often it happens in the reference run.
+- **Count in the reference of 2026-11-25 (before the fix):** no traveler's transit probability changed by more
+  than the threshold after iteration 0 (the run log prints 0 in every iteration), so from iteration 1 on every transit
+  user resubmitted stored legs. Of 301 transit users, one had two legs of a kind: traveler 11650 (PM), two FRT legs,
+  so the FRT demand file listed 24 legs while `F_trips` counted 25. No traveler had two microtransit legs, so FleetPy's
+  demand was complete (68 requests = `M_trips` 68). The FRT demand file is written only; the model does not read it.
+  A second, smaller fault: the stored legs were never cleared, so a traveler whose new transit path had no
+  microtransit (or FRT) leg would have resubmitted the old one (not hit in the run).
+- **Resolution (2026-11-25):** user's decision: fix on `main` before the branch `TRA_resubmission` fast-forwards to it
+  (on TRA's network every route change makes a second FRT leg). `mtsm_model/iteration.py`: when a traveler chooses
+  transit, `state.pre_iter_M_info[rq_id]` and `state.pre_iter_F_info[rq_id]` start as empty lists and get every leg of
+  the path; a traveler who keeps the transit choice resubmits every leg (each microtransit leg gets its own free
+  FleetPy request id, as before), and the microtransit wait is the sum of the period averages of the legs (before:
+  the last leg's period average x the number of legs; the same for one leg). `mtsm_model/state.py`: comments. A full
+  run differed from the reference only in the FRT demand file: one row more, `63287,1107,1101,11650` (the first FRT
+  leg of traveler 11650); no reported value changed. The file was replaced by the run's; a second full run printed
+  `REPRODUCED`.
 
 ### I-24: Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged
 - **Status:** Closed (2026-11-25); Open (to decide) until then. **Severity:** Low. **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
