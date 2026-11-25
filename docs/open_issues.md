@@ -393,6 +393,13 @@ Paths are relative to the codebase root.
   the new networks therefore also means relaxing that rule (type-4 nodes a subset of `M..M+N-1`, `M` found another
   way) and the checker's node rules with it. Until then the README tells users of `TRA_input_data_prep` to build the
   streets-only network (`--no-freeways`). Not run: no `TRA_input_data_prep` outputs are in this repository.
+- **Done 2026-11-24** (`docs/period_networks_and_car_availability_plan.md`, step 1; user confirmed the layout from
+  `TRA_input_data_prep`'s `build_super_network.py`: walk node n -> microtransit node offset + n, freeway nodes keep
+  their numbers in both layers without links): `derive_node_numbering` takes `M` from the waiting links (type 5),
+  allows unused twins in `M..M+N-1`, and requires the type-4 nodes to be the twins of the walk links' nodes; the
+  checker also requires the vehicle start nodes to have a road edge. Tested on TRA's new Lemon Grove network (the
+  user's untracked `new_LG_data/`: N = 1,067, M = 1,189) and on four broken copies (all stopped); Lemon Grove's
+  numbering unchanged (1,099, 1,171). The README's `--no-freeways` advice is replaced.
 - **Closes when** the new builder is in MTSM's `pre_process/` and the networks built with it are in use (a new
   reference; see I-34 and I-35).
 

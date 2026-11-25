@@ -157,9 +157,9 @@ outputs and the files of this model:
   (step 3), the node file (only for `census_track`) and `networks/frt_links.csv`: the FRT in-vehicle links (type 1)
   of the microtransit super-network, with the column `distance` named `distance (meters)`
   ([`docs/study_area_inputs.md`](docs/study_area_inputs.md#6-frt-links-networksfrt_linkscsv)).
-- Freeways: with freeways, `TRA_input_data_prep` keeps walking and microtransit off them, so the freeway nodes have no
-  microtransit link. This model's node numbering does not allow that yet (I-33): use its streets-only network
-  (`--no-freeways`).
+- Freeways: with freeways, `TRA_input_data_prep` keeps walking and microtransit off them; the freeway nodes keep their
+  numbers but have no walk or microtransit link, and only the car network uses them. The model accepts this since
+  2026-11-24 (I-33; [Node numbering](docs/study_area_inputs.md#node-numbering)).
 - The model derives the node counts from the files; `super_network_info.csv` is not needed. Lemon Grove's demand
   from `TRA_input_data_prep` has no `parking_dur_min`; without it the car has no parking cost.
 - Not tested yet: a run on `TRA_input_data_prep`'s outputs (Lemon Grove's inputs were built before it).

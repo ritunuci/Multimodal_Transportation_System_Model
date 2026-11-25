@@ -1462,6 +1462,24 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - `docs/open_issues.md`: new I-42 (the optimizer works only on the frozen file's study area; fixed folder name); I-33:
   `TRA_input_data_prep`'s networks with freeways do not fit the node-numbering rule yet (found reading its README).
 
+## Period networks and car availability, step 1: freeway nodes in the node numbering (2026-11-24)
+
+- `docs/period_networks_and_car_availability_plan.md` (new): the user's request (period-specific networks for the
+  super-network and FleetPy; `auto_available` in the path finding), the decisions and the steps. Built on `main`, then
+  the branch `TRA_resubmission` is fast-forwarded.
+- `config.derive_node_numbering`: `M` from the microtransit waiting links (type 5; microtransit node minus walk node,
+  one value); the type-4 nodes must lie in `M..M+N-1` and be the twins of the walk links' nodes, so a freeway node
+  (no walk or microtransit link, I-33) leaves its twin unused. Until now `M` = the smallest type-4 node and every twin
+  had to be used, which stopped the run on `TRA_input_data_prep`'s networks with freeways.
+- `tools/check_study_area.py`: vehicle start nodes (`imbalanced.csv`) need a road edge in FleetPy's `edges.csv`.
+- Tested: TRA's new Lemon Grove network (the user's untracked `new_LG_data/`, MD, 75 %) gives N = 1,067, M = 1,189
+  (as its `super_network_info.csv`); four broken copies stop with their message (a street node's twin without
+  type-4 links, a type-4 link to a freeway twin, a waiting link with another offset, a type-4 node above M+N-1).
+  Lemon Grove: 1,099, 1,171 as before; checker 0 errors, 1 warning.
+- Docs: `study_area_inputs.md` (node numbering, rule 11), `README.md` (the `--no-freeways` advice replaced),
+  `open_issues.md` (I-33, done note).
+- Full run: **`REPRODUCED`** (26 files, 4:01).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

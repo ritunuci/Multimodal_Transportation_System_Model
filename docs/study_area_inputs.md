@@ -54,6 +54,13 @@ Every network file uses one set of integer node numbers. The code relies on this
   Since 2026-11-24 (Phase 2 step 2, `config.derive_node_numbering`); until then they were parameters. The run stops
   with a message if FleetPy's `node_index` is not 0..N-1, if the type-4 nodes are not M..M+N-1 (the same in every
   virtual-stop share's file), or if a type-5 link does not join walk node i and microtransit node M + i.
+- Since 2026-11-24 (`docs/period_networks_and_car_availability_plan.md`, step 1), for networks with car-only roads:
+  `M` is taken from the microtransit waiting links (type 5: microtransit node minus walk node, one value for all
+  of them; Lemon Grove 1,171 as before). The type-4 nodes must lie in `M..M+N-1` but need not use all of it: a road
+  node has walk links (type 0) exactly when its twin `M + i` has type-4 links, and a road node with neither (a
+  freeway node, reached only by car; I-33) keeps its number. The run stops if the type-4 nodes are not the twins of
+  the walk links' nodes. `TRA_input_data_prep`'s Lemon Grove network: N = 1,067 with 20 freeway nodes (1047-1066),
+  M = 1,189.
 - Every trip starts and ends at a walk node. The car network uses the walk node numbers.
 
 ## Link types
@@ -278,7 +285,8 @@ except where it says "warning". Lemon Grove: no error, one warning (rule 9), in 
    this trip-level rule is what the model needs; Lemon Grove's current road network has 4 isolated islands of 11
    nodes with no trip and no FRT stop).
 11. FleetPy: `nodes.csv`, `edges.csv`, `crs.info`, `imbalanced.csv` and the vehicle type exist; the vehicle start
-   nodes are walk nodes and their probabilities sum to 1; each constant config of the run (`repositioning_list`) names
+   nodes are walk nodes with a road edge in `edges.csv` (since 2026-11-24: a vehicle on a freeway node without one
+   never moves) and their probabilities sum to 1; each constant config of the run (`repositioning_list`) names
    `<area>_example_network` and `<area>_example_demand`, and `imbalanced.csv` as the start distribution.
 
 ## What the run writes (not inputs)

@@ -324,6 +324,13 @@ def check_study_area(area, params, n, m):
         if start is not None:
             if any(not 0 <= node < n for node, p in start):
                 report.error(f"imbalanced.csv: vehicle start nodes outside 0..{n - 1}")
+            elif fleet is not None:
+                # a vehicle placed on a node without a road edge (e.g. a freeway node, I-33) can never move
+                on_edges = {x for a, b, d, t in fleet for x in (a, b)}
+                stuck = sorted(node for node, p in start if node not in on_edges)
+                if stuck:
+                    report.error(f"imbalanced.csv: vehicle start nodes without a road edge in FleetPy's edges.csv: "
+                                 f"{_examples(stuck)}")
             if any(p < 0 for node, p in start) or not math.isclose(sum(p for node, p in start), 1.0, abs_tol=1e-6):
                 report.error("imbalanced.csv: the probabilities must be >= 0 and sum to 1")
     end_time = None

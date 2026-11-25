@@ -198,10 +198,13 @@ PARKING_RATE_OFFPEAK = PARAMETERS[gp.G_PARKING_RATE_OFFPEAK]  # MD and EV, $ per
 # since 2026-11-24 (decision 3, docs/study_area_plan.md Phase 2 step 2); until then the parameters num_walk_nodes and
 # microtransit_node_offset (Lemon Grove: 1099, 1171) ----
 def derive_node_numbering(study_area, virstops):
-    """(N, M): N = the number of FleetPy road nodes (nodes.csv; node_index must be 0..N-1), M = the smallest node of
-    the microtransit in-vehicle links (type 4) of the super-network with microtransit, whose nodes must be exactly
-    M..M+N-1, the same in the file of every virtual-stop share; every microtransit boarding / alighting link (type 5)
-    must join walk node i and microtransit node M + i. Stops with a message if a file breaks the rule."""
+    """(N, M): N = the number of FleetPy road nodes (nodes.csv; node_index must be 0..N-1), M = the microtransit node
+    offset of the super-network with microtransit, the same in the file of every virtual-stop share. Every microtransit
+    boarding / alighting link (type 5) joins walk node i and microtransit node M + i, so M is taken from them. The
+    microtransit in-vehicle links (type 4) use nodes in M..M+N-1, and the twins of the walk layer: a road node has walk
+    links (type 0) exactly when its microtransit node M + i has type-4 links. A road node without them (a freeway node
+    of a network with car-only roads, I-33) keeps its number, and M + i stays unused. Stops with a message if a file
+    breaks the rule. (Until 2026-11-24: M = the smallest type-4 node, and the type-4 nodes had to be all of M..M+N-1.)"""
     paths = mtsm.area_paths(study_area)
     nodes_file = os.path.join(paths.fleetpy_inputs_dir, *paths.fleetpy_staged[0].split("/"))  # FleetPy's nodes.csv
     with open(nodes_file, newline="") as f:
@@ -213,24 +216,32 @@ def derive_node_numbering(study_area, virstops):
     for virstop in virstops:
         network_file = paths.super_network_micro_file(virstop)
         micro_nodes = set()
+        walk_nodes = set()  # nodes of the walk links (type 0)
         waiting_links = []
         with open(network_file, newline="") as f:
             for row in csv.DictReader(f):
                 link_type = int(row["link_type"])
                 if link_type == 4:
                     micro_nodes.update((int(row["from_node"]), int(row["to_node"])))
+                elif link_type == 0:
+                    walk_nodes.update((int(row["from_node"]), int(row["to_node"])))
                 elif link_type == 5:
                     waiting_links.append((int(row["from_node"]), int(row["to_node"])))
-        m = min(micro_nodes) if micro_nodes else None
-        if m is None or micro_nodes != set(range(m, m + n)):
-            sys.exit(f"ERROR: {network_file}: the nodes of the microtransit links (type 4) must be M..M+N-1, with "
-                     f"N = {n} FleetPy nodes (docs/study_area_inputs.md, node numbering)")
+        # M from the waiting links: microtransit node - walk node, the same for all of them
+        shifts = {b - a if a < n else a - b for a, b in waiting_links if (a < n) != (b < n)}
+        if not waiting_links or len(shifts) != 1 or any((a < n) == (b < n) for a, b in waiting_links):
+            sys.exit(f"ERROR: {network_file}: every microtransit waiting link (type 5) must join a walk node i and "
+                     f"microtransit node M + i, with one M for all of them (docs/study_area_inputs.md, node numbering)")
+        m = shifts.pop()
         if m < n:
-            sys.exit(f"ERROR: {network_file}: the first microtransit node ({m}) must come after the {n} walk nodes")
-        wrong = [(a, b) for a, b in waiting_links if not ((a < n and b == a + m) or (b < n and a == b + m))]
-        if wrong:
-            sys.exit(f"ERROR: {network_file}: {len(wrong)} microtransit waiting links (type 5) do not join walk node i "
-                     f"and microtransit node {m} + i, e.g. {wrong[0]}")
+            sys.exit(f"ERROR: {network_file}: the microtransit node offset ({m}) must come after the {n} walk nodes")
+        if not micro_nodes or not all(m <= x < m + n for x in micro_nodes):
+            sys.exit(f"ERROR: {network_file}: the nodes of the microtransit links (type 4) must lie in M..M+N-1 = "
+                     f"{m}..{m + n - 1}, with N = {n} FleetPy nodes (docs/study_area_inputs.md, node numbering)")
+        if {x - m for x in micro_nodes} != walk_nodes:
+            sys.exit(f"ERROR: {network_file}: the microtransit links (type 4) must use the twins M + i of the nodes i "
+                     f"of the walk links (type 0), M = {m}: {len({x - m for x in micro_nodes} ^ walk_nodes)} nodes "
+                     f"differ (docs/study_area_inputs.md, node numbering)")
         offsets.add(m)
     if len(offsets) != 1:
         sys.exit(f"ERROR: the super-networks of the virtual-stop shares {virstops} number their microtransit nodes "
