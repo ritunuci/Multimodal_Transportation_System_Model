@@ -34,15 +34,9 @@ class TripCosts:
 
 
 def time_period_of(t):
-    """The time period of a time of day t (s): AM until 10 h, MD until 15 h, PM until 20 h, then EV."""
-    if t <= config.AM_END:
-        return "AM"
-    elif t <= config.MD_END:
-        return "MD"
-    elif t <= config.PM_END:
-        return "PM"
-    else:
-        return "EV"
+    """The time period of a time of day t (s): the study area's periods (config.period_of; Lemon Grove AM until 10 h,
+    MD until 15 h, PM until 20 h, then EV, written in the code until 2026-11-24)."""
+    return config.period_of(t)
 
 
 def trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_gas, frt, micro, dest, time_period):
@@ -101,7 +95,7 @@ def trip_costs(microtransit_run, in_operating_period, auto, parking_dur, bt_c_ga
     # in the generalized cost only; the values are the same to the last digit.
     parking_dur_trip = parking_dur / 2
     parking_dur_30_min_count = math.ceil(parking_dur_trip / config.PARAMETERS[gp.G_PARKING_CHARGE_INTERVAL_MIN])
-    if time_period in ["AM","PM"]:  # Ritun added for parking fee
+    if time_period in config.PEAK_PERIODS:  # Ritun added for parking fee (peak periods: ["AM","PM"] until 2026-11-24)
         gen_cost_auto = auto.visited_temp[dest] + bt_c_gas * parking_dur_30_min_count * config.PARKING_RATE_PEAK
         parking_cost_auto = parking_dur_30_min_count * config.PARKING_RATE_PEAK
     else:

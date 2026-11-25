@@ -52,9 +52,9 @@ for vehicle repositioning).
 3. **Set the parameters.** They are in two files, one row per parameter,
    `parameter_name,parameter_value,description` (the description is for people; no code reads it):
    - the model file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`: the study area (`study_area`),
-     design parameters, `random_seed`, iterations and convergence, time periods, scenario lists, ...;
+     design parameters, `random_seed`, iterations and convergence, scenario lists, ...;
    - the study area's file `mtsm_data/<area>/area_parameters.csv`: its virtual-stop share, base FRT service, FRT
-     line data and local prices and costs.
+     line data, local prices and costs, and its time periods (names, start and end hours, peak periods).
 
    The names and types are in `mtsm_model/mtsm_global_parameters.py` (`AREA_PARAMETERS`: the area file's keys);
    lists are written `5;10;15`. Both are frozen inputs: to change model values, copy the model file, edit the copy
@@ -109,7 +109,8 @@ been tested with Lemon Grove only; no second study area has been run yet.
    node per walk node): [Node numbering](docs/study_area_inputs.md#node-numbering). Most of these files can be built
    with `TRA_input_data_prep` (below).
 2. **Area parameters.** Copy `mtsm_data/lemon_grove/area_parameters.csv` into the area folder and set the area's
-   values: base FRT headway and fare, FRT line data, operating costs, fuel and parking prices.
+   values: base FRT headway and fare, FRT line data, operating costs, fuel and parking prices, and the time periods
+   (`time_periods`, `period_start_h`, `period_end_h`, `peak_periods`; e.g. SANDAG ABM3's `EA;AM;MD;PM;EV`).
    `virtual_stop_scenarios` must be the `<v>` in the microtransit super-network's file name.
 3. **FleetPy settings.** Copy Lemon Grove's vehicle type and its two FleetPy constant configs to the same places in
    the area folder, with `lemon_grove` replaced by `<area>` in the file names:

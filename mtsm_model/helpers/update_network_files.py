@@ -43,6 +43,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
 
     wait_times = OrderedDict()
 
+    # the study area's time periods (config.TIME_PERIODS, since 2026-11-24); Lemon Grove:
     # "AM"=5-10AM
     # "MD"=10-15
     # "PM"=15-20
@@ -53,7 +54,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
     print("node_census_tract", len(node_census_tract))
 
 
-    for time_period in ["AM", "MD", "PM", "EV"]:
+    for time_period in config.TIME_PERIODS:  # (the four names until 2026-11-24)
         census_tract_tt_wait_time[time_period] = OrderedDict()
         census_tract_num_rq[time_period] = OrderedDict()
         census_tract_avg_wait_time[time_period] = OrderedDict()
@@ -138,88 +139,37 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                 #######################################################
                 start_node_ct = node_census_tract[start_node]
 
-                if rq_time <= config.AM_END:
-                    time_period = "AM"
-                    rq_served_period[time_period] += 1
-                    tt_wait_time_period[time_period] += wait_time_
-
-                    census_tract_tt_wait_time[time_period][start_node_ct] += wait_time_
-                    census_tract_num_rq[time_period][start_node_ct] += 1
-                    # model rejection rate
-                    census_tract_rq_served_num[time_period][start_node_ct] += 1
-                elif rq_time <= config.MD_END:
-                    time_period = "MD"
-                    rq_served_period[time_period] += 1
-                    tt_wait_time_period[time_period] += wait_time_
-                    census_tract_tt_wait_time[time_period][start_node_ct] += wait_time_
-                    census_tract_num_rq[time_period][start_node_ct] += 1
-                    # model rejection rate
-                    census_tract_rq_served_num[time_period][start_node_ct] += 1
-                elif rq_time <= config.PM_END:
-                    time_period = "PM"
-                    rq_served_period[time_period] += 1
-                    tt_wait_time_period[time_period] += wait_time_
-                    census_tract_tt_wait_time[time_period][start_node_ct] += wait_time_
-                    census_tract_num_rq[time_period][start_node_ct] += 1
-                    # model rejection rate
-                    census_tract_rq_served_num[time_period][start_node_ct] += 1
-                else:
-                    time_period = "EV"
-                    rq_served_period[time_period] += 1
-                    tt_wait_time_period[time_period] += wait_time_
-                    census_tract_tt_wait_time[time_period][start_node_ct] += wait_time_
-                    census_tract_num_rq[time_period][start_node_ct] += 1
-                    # model rejection rate
-                    census_tract_rq_served_num[time_period][start_node_ct] += 1
+                # the request's time period (config.period_of; until 2026-11-24 one branch per period AM / MD / PM / EV,
+                # each with this body)
+                time_period = config.period_of(rq_time)
+                rq_served_period[time_period] += 1
+                tt_wait_time_period[time_period] += wait_time_
+                census_tract_tt_wait_time[time_period][start_node_ct] += wait_time_
+                census_tract_num_rq[time_period][start_node_ct] += 1
+                # model rejection rate
+                census_tract_rq_served_num[time_period][start_node_ct] += 1
 
                 ########################################################
                 # Calculate the average time detour ratio by time of day
                 #######################################################
                 start_node_ct = node_census_tract[start_node]
-                if rq_time <= config.AM_END:
-                    time_period = "AM"
-                    time_tt_drive_time[time_period] += drive_time_
-                    time_tt_direct_time[time_period] += direct_route_travel_time
-
-                elif rq_time <= config.MD_END:
-                    time_period = "MD"
-                    time_tt_drive_time[time_period] += drive_time_
-                    time_tt_direct_time[time_period] += direct_route_travel_time
-                elif rq_time <= config.PM_END:
-                    time_period = "PM"
-                    time_tt_drive_time[time_period] += drive_time_
-                    time_tt_direct_time[time_period] += direct_route_travel_time
-                else:
-                    time_period = "EV"
-                    time_tt_drive_time[time_period] += drive_time_
-                    time_tt_direct_time[time_period] += direct_route_travel_time
+                time_period = config.period_of(rq_time)  # (one branch per period until 2026-11-24)
+                time_tt_drive_time[time_period] += drive_time_
+                time_tt_direct_time[time_period] += direct_route_travel_time
             else:
                 start_node_ct = node_census_tract[start_node]
-                if rq_time <= config.AM_END:
-                    time_period = "AM"
-                    # model rejection rate
-                    census_tract_rq_reject_num[time_period][start_node_ct] += 1
-                elif rq_time <= config.MD_END:
-                    time_period = "MD"
-                    # model rejection rate
-                    census_tract_rq_reject_num[time_period][start_node_ct] += 1
-                elif rq_time <= config.PM_END:
-                    time_period = "PM"
-                    # model rejection rate
-                    census_tract_rq_reject_num[time_period][start_node_ct] += 1
-                else:
-                    time_period = "EV"
-                    # model rejection rate
-                    census_tract_rq_reject_num[time_period][start_node_ct] += 1
+                time_period = config.period_of(rq_time)  # (one branch per period until 2026-11-24)
+                # model rejection rate
+                census_tract_rq_reject_num[time_period][start_node_ct] += 1
 
-    for time_period in ["AM", "MD", "PM", "EV"]:
+    for time_period in config.TIME_PERIODS:  # (the four names until 2026-11-24)
         try:
             wait_times[time_period] = tt_wait_time_period[time_period]/rq_served_period[time_period]
         except Exception:
             wait_times[time_period] = config.PARAMETERS[gp.G_DEFAULT_MICRO_WAIT_TIME]
 
     total_demand_ = 0
-    for time_period in ["AM", "MD", "PM", "EV"]:
+    for time_period in config.TIME_PERIODS:  # (the four names until 2026-11-24)
         if time_tt_direct_time[time_period] == 0:
             time_detour_ratio[time_period] = 1
         else:
@@ -248,7 +198,8 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                     if rq_served_period[time_period]!=0:
                         census_tract_avg_wait_time[time_period][census_tract] = tt_wait_time_period[time_period] / rq_served_period[time_period]
                     else:
-                        census_tract_avg_wait_time[time_period][census_tract]=tt_wait_time_period["AM"] / rq_served_period["AM"] # no service in this time period - 180 waiting time
+                        fallback = config.WAIT_TIME_FALLBACK_PERIOD  # the first peak period ("AM" until 2026-11-24)
+                        census_tract_avg_wait_time[time_period][census_tract]=tt_wait_time_period[fallback] / rq_served_period[fallback] # no service in this time period - 180 waiting time
                 else:
                     census_tract_avg_wait_time[time_period][census_tract] = census_tract_tt_wait_time[time_period][census_tract] / census_tract_num_rq[time_period][census_tract] + (census_tract_reject_rate[time_period][census_tract] * 1800)
             if aggregation=="whole_region":
@@ -256,14 +207,15 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
                     # if rejection rate=1.00, then penalty is= 600sec (10 minutes)
                     # census_tract_avg_wait_time[time_period][census_tract] = tt_wait_time_period[time_period] / rq_served_period[time_period] + (census_tract_reject_rate[time_period][census_tract] * 1800) # if rejection rate=1.00, then penalty is= 1,800sec (30 minutes)
                     census_tract_avg_wait_time[time_period][census_tract] = tt_wait_time_period[time_period] / rq_served_period[time_period]
-                elif rq_served_period["AM"] != 0:
-                    census_tract_avg_wait_time[time_period][census_tract] = tt_wait_time_period["AM"] / rq_served_period["AM"]  # no service in this time period - 180 waiting time
+                elif rq_served_period[config.WAIT_TIME_FALLBACK_PERIOD] != 0:  # the first peak period ("AM" until 2026-11-24)
+                    fallback = config.WAIT_TIME_FALLBACK_PERIOD
+                    census_tract_avg_wait_time[time_period][census_tract] = tt_wait_time_period[fallback] / rq_served_period[fallback]  # no service in this time period - 180 waiting time
                 else:
                     census_tract_avg_wait_time[time_period][census_tract] = config.PARAMETERS[gp.G_DEFAULT_MICRO_WAIT_TIME]
 
 
     print("total microtransit demand", total_demand_, "number of requests served:", num_rq_served)
-    for time_period in ["AM", "MD", "PM", "EV"]:
+    for time_period in config.TIME_PERIODS:  # (the four names until 2026-11-24)
         print("time_period", time_period, "microtransit demand", demand_period[time_period],
               "number of requests served:", rq_served_period[time_period], "\n", "waiting time",
               census_tract_avg_wait_time[time_period], "\n", "detour_ratio", time_detour_ratio[time_period], "\n",
@@ -302,7 +254,7 @@ def update_network_files(repositioning,microtransit,headway,virstop,M_operating_
 
     headway_scenarios = [20, 30, 60]
     # microtransit_scenarios = ["micro", "non_micro"]
-    time_periods = ["AM", "MD", "PM", "EV"]
+    time_periods = config.TIME_PERIODS  # (["AM", "MD", "PM", "EV"] until 2026-11-24)
 
     # for virstop in [50, 75, 100]:
     #     for headway in headway_scenarios:
@@ -400,7 +352,7 @@ def cal_iter_micro_link_diff(headway,virstop,M_operating_hrs,fleet_size,study_ar
     # STALE:     final_network_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/final_network"
     # STALE:     fleetpy_demand_folder = "D:/Ritun/Siwei_Micro_Transit/FleetPy_SanDiego/data/demand/lemon_grove_example_demand/matched/example_network"
     # STALE:     output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
-    time_periods = ["AM", "MD", "PM", "EV"]
+    time_periods = config.TIME_PERIODS  # (["AM", "MD", "PM", "EV"] until 2026-11-24)
     microtransit = "micro"
     micro_transit_travel_link=OrderedDict()
     micro_transit_waiting_link=OrderedDict()
@@ -460,34 +412,23 @@ def cal_iter_micro_link_diff(headway,virstop,M_operating_hrs,fleet_size,study_ar
                                                  str(microtransit), str(fleet_size),
                                                  str(M_operating_hrs), str(headway), str(virstop)))
     with open(debug_network_trvl_time_diff_dir, 'w+', newline='') as csvfile_diff:
-        fieldnames = ["from_node","to_node","link_type","diff_AM", "diff_MD", "diff_PM", "diff_EV"]
+        # one column per time period (diff_AM, diff_MD, diff_PM, diff_EV written out until 2026-11-24)
+        fieldnames = ["from_node","to_node","link_type"] + ["diff_%s" % p for p in time_periods]
         writer = csv.DictWriter(csvfile_diff, fieldnames=fieldnames)
         writer.writeheader()
-        time_period="AM"
-        for (from_node,to_node) in micro_transit_travel_link_diff[time_period]:
-            link_type=4
-            diff_AM = micro_transit_travel_link_diff["AM"][(from_node,to_node)]
-            diff_MD = micro_transit_travel_link_diff["MD"][(from_node, to_node)]
-            diff_PM = micro_transit_travel_link_diff["PM"][(from_node, to_node)]
-            diff_EV = micro_transit_travel_link_diff["EV"][(from_node, to_node)]
-            writer.writerow({'from_node': from_node, 'to_node': to_node, "link_type": link_type,'diff_AM': diff_AM, 'diff_MD': diff_MD,
-                             "diff_PM":diff_PM,"diff_EV":diff_EV
-                 })
-
-        for (from_node,to_node) in micro_transit_waiting_link_diff[time_period]:
-            link_type=5
-            diff_AM = micro_transit_waiting_link_diff["AM"][(from_node,to_node)]
-            diff_MD = micro_transit_waiting_link_diff["MD"][(from_node, to_node)]
-            diff_PM = micro_transit_waiting_link_diff["PM"][(from_node, to_node)]
-            diff_EV = micro_transit_waiting_link_diff["EV"][(from_node, to_node)]
-            writer.writerow({'from_node': from_node, 'to_node': to_node, "link_type": link_type,'diff_AM': diff_AM, 'diff_MD': diff_MD,
-                             "diff_PM":diff_PM,"diff_EV":diff_EV
-                 })
+        time_period = time_periods[0]  # the links are those of the first period ("AM" until 2026-11-24)
+        for link_type, link_diff in ((4, micro_transit_travel_link_diff), (5, micro_transit_waiting_link_diff)):
+            for (from_node,to_node) in link_diff[time_period]:
+                row = {'from_node': from_node, 'to_node': to_node, "link_type": link_type}
+                row.update({"diff_%s" % p: link_diff[p][(from_node, to_node)] for p in time_periods})
+                writer.writerow(row)
 
     # return None
 
 if __name__ == '__main__':
     study_area = "lemon_grove"
+    # (a manual run of the debug tool, written for Lemon Grove's periods; the model reads the study area's periods
+    # from its area file since 2026-11-24)
     operating_period_1 = ["AM", "PM"]  # 10 hr
     operating_period_2 = ["AM", "MD", "PM"]  # 15hr
     operating_period_3 = ["AM", "MD", "PM", "EV"]  # 19hr

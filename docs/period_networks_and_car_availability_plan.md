@@ -56,3 +56,4 @@ but brought up to date with `git switch TRA_resubmission` and `git merge --ff-on
 
 Step 1 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 1").
 Step 2 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 2").
+Step 3 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 3").

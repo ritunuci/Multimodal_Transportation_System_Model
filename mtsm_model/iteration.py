@@ -325,8 +325,8 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
 
                             # Ritun added: March 2nd, 2026
                             pre_iter_period = choice.time_period_of(pre_ier_rq_time)
-                            if pre_iter_period == "EV":
-                                print("!!!! EVENING MICRO USER DETECTED !!!!")
+                            if pre_iter_period not in operating_periods:  # until 2026-11-24: == "EV"
+                                print("!!!! MICRO USER OUTSIDE THE OPERATING PERIODS DETECTED !!!!")
                             state.agent_M_tot_wait_time[rq_id] = wait_times[pre_iter_period] * state.ag_num_M_trips[rq_id]
 
                         if rq_id in state.pre_iter_F_info:

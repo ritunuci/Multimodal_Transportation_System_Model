@@ -105,7 +105,7 @@ def load_study_area(cfg, study_area):
         MicroTransitNodes[config.MICROTRANSIT_NODE_OFFSET + i] = i #lemon_grove: microtransit node 1171 - corresponding to - walking node 0 (microtransit node 0 in fleetpy)
     ########
     microtransit_setup_scenarios = ["micro", "non_micro","micro_only"]
-    time_periods = ["AM", "MD", "PM", "EV"]
+    time_periods = config.TIME_PERIODS  # the study area's periods (["AM", "MD", "PM", "EV"] until 2026-11-24)
 
     auto_network_dir = paths.car_network_file  # networks/car_network.csv (until 2026-11-24 initial_network/auto_edges.csv)
     auto_network = n_a.read_super_network(auto_network_dir)

@@ -124,6 +124,19 @@ the model file and this file and stops if a key is in the wrong file, missing or
 | `car_gas_cost_per_meter` ($/m) | 0.00025 | same |
 | `parking_rate_peak`, `parking_rate_offpeak` ($ per interval) | 1, 0.5 | same |
 | `parking_charge_interval_min` | 30 | same |
+| `time_periods` | `AM;MD;PM;EV` | since 2026-11-24 (before: the four names written in the code) |
+| `period_start_h` | 5 | `day_start_h` |
+| `period_end_h` | `10;15;20;24` | `am_end_h`, `md_end_h`, `pm_end_h`, `day_end_h` |
+| `peak_periods` | `AM;PM` | since 2026-11-24 (before: written in the code) |
+
+The time periods (since 2026-11-24, `docs/period_networks_and_car_availability_plan.md`, step 3): names in order,
+the start of the first and the end of each in hours (decimals allowed: `15.5` = 15:30), and the peak periods (peak
+fare factor `pk_fare_factor`, peak parking rate; the others are off-peak). A departure at time `t` belongs to the
+first period whose end is at or after `t`; before the start: the first period, after the last end: the last. The
+names must be distinct, the times must increase, and the model file's `operating_periods_scenarios` may name only
+these periods; the run stops otherwise. A period without served microtransit requests gets the FleetPy waiting time
+of the first peak period (Lemon Grove AM, as before). Example with SANDAG ABM3's periods: `EA;AM;MD;PM;EV`, start
+`3`, ends `6;9;15.5;19;27`, peak `AM;PM`.
 
 The study area's name is not in this file: it is `study_area` in the model file (`test_area` until 2026-11-24;
 Phase 1 decision 1), which selects `mtsm_data/<area>/`.
@@ -131,7 +144,7 @@ Phase 1 decision 1), which selects `mtsm_data/<area>/`.
 Removed from the parameter files on 2026-11-24 (Phase 2 step 2; they were in this file from Phase 1 step 3 until
 then): `num_walk_nodes`, `microtransit_node_offset` (derived from the files, decision 3) and
 `micro_only_max_walk_node` (the `micro_only` branch uses the area's last walk node, I-13). Lemon Grove's file has
-15 parameters.
+15 parameters; 19 since 2026-11-24 (the time periods moved here from the model file).
 
 ## 2. Demand (`demand/demand.csv`)
 

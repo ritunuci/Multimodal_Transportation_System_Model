@@ -1502,6 +1502,30 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `study_area_inputs.md` (demand column, rule 10), `README.md` (how the model works, step 5).
 - Full run: **`REPRODUCED`** (26 files, 4:01).
 
+## Period networks and car availability, step 3: time periods as area parameters (2026-11-24)
+
+- `docs/period_networks_and_car_availability_plan.md`, decision 1. The area file gets `time_periods` (`AM;MD;PM;EV`),
+  `period_start_h` (5), `period_end_h` (`10;15;20;24`) and `peak_periods` (`AM;PM`); the model file loses
+  `day_start_h`, `am_end_h`, `md_end_h`, `pm_end_h`, `day_end_h`. Both are frozen inputs: changed on purpose, manifests
+  rewritten (`tools/check_inputs.py --write lemon_grove`). New parameter types `number` / `number_list`: an int when
+  whole (hours appear in file names, `op_hr_15`), so `15.5` = 15:30 is possible.
+- `config`: `TIME_PERIODS`, `PEAK_PERIODS`, `PERIOD_ENDS`, `period_of(t)` (the first period whose end is at or after
+  `t`; else the last, as before), `PERIOD_HOURS` and `microtransit_operating_hours` from the start and ends (an int
+  when whole), `WAIT_TIME_FALLBACK_PERIOD` (the first peak period). The run stops on repeated names, ends that do not
+  increase, unknown peak periods, or `operating_periods_scenarios` naming a period the area does not have.
+- The four names and the peak periods leave the code: `choice.time_period_of` and the parking rate,
+  `network_algorithms` (peak fare factor), `scenarios` (period list), `update_network_files` (FleetPy's per-period
+  statistics: three if/elif chains of identical bodies -> one lookup each; the waiting time of a period without
+  service: the first peak period, AM as before; the debug tool's columns), `output_performance_metrics` (ridership
+  columns `rdrs_<P>`, sum in period order), `iteration` (a printed notice: microtransit user outside the operating
+  periods, before `== "EV"`). Left: the `__main__` example of `update_network_files` (a manual debug run).
+- Tested: Lemon Grove's values give the old periods, hours `AM 5, MD 5, PM 5, EV 4`, operating hours 15 (int), and the
+  same period at the boundaries (36000 s -> AM, 36001 s -> MD). ABM3's periods (`EA;AM;MD;PM;EV`, 3,
+  `6;9;15.5;19;27`): hours `3, 3, 6.5, 3.5, 8`, AM;MD;PM = 13; five broken definitions each stop with their message.
+  Note: a departure exactly at a period end belongs to the earlier period (as before), e.g. 6:00:00 -> EA with ABM3.
+- Docs: `study_area_inputs.md` (area parameters), `README.md` (parameter files; "Add your own study area" step 2).
+- Full run: **`REPRODUCED`** (26 files, 4:01).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

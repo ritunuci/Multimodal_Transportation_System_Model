@@ -152,8 +152,10 @@ def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,v
     with open(transit_link_vmt_output, 'w+', newline='') as csvfile:
         #from_node	to_node	distance (meters)	travel_time	link_type	route
 
-        fieldnames = ["from_node", "to_node", "distance (meters)","travel_time","link_type","route",
-                      "rdrs_AM","rdrs_MD","rdrs_PM","rdrs_EV","tt_rdrs"]
+        # one ridership column per time period (rdrs_AM, rdrs_MD, rdrs_PM, rdrs_EV for Lemon Grove; written out until
+        # 2026-11-24), then their sum
+        fieldnames = (["from_node", "to_node", "distance (meters)", "travel_time", "link_type", "route"]
+                      + ["rdrs_%s" % p for p in config.TIME_PERIODS] + ["tt_rdrs"])
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -168,19 +170,15 @@ def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,v
                 travel_time = float(data["travel_time"])  # every study area since 2026-11-24 (only "lemon_grove" before)
                 link_type = int(1)
                 route = int(data["route"])
-                vmt_AM = float(transit_link_vmt["AM"][(from_node, to_node)])
-                vmt_MD = float(transit_link_vmt["MD"][(from_node, to_node)])
-                vmt_PM = float(transit_link_vmt["PM"][(from_node, to_node)])
-                vmt_EV = float(transit_link_vmt["EV"][(from_node, to_node)])
+                # (the per-period VMT, vmt_AM ... vmt_EV, was read here but never written)
+                rdrs = {p: float(transit_link_pax[p][(from_node, to_node)]) for p in config.TIME_PERIODS}
+                tt_rdrs = sum(rdrs.values())  # in period order, as rdrs_AM + rdrs_MD + rdrs_PM + rdrs_EV before
 
-                rdrs_AM = float(transit_link_pax["AM"][(from_node, to_node)])
-                rdrs_MD = float(transit_link_pax["MD"][(from_node, to_node)])
-                rdrs_PM = float(transit_link_pax["PM"][(from_node, to_node)])
-                rdrs_EV = float(transit_link_pax["EV"][(from_node, to_node)])
-                tt_rdrs = rdrs_AM + rdrs_MD + rdrs_PM + rdrs_EV
-
-                writer.writerow({"from_node": from_node, "to_node": to_node, "distance (meters)": distance,"travel_time": travel_time,"link_type": link_type,
-                                 "route": route,"rdrs_AM": rdrs_AM,"rdrs_MD": rdrs_MD,"rdrs_PM": rdrs_PM,"rdrs_EV": rdrs_EV,"tt_rdrs":tt_rdrs})
+                row = {"from_node": from_node, "to_node": to_node, "distance (meters)": distance,"travel_time": travel_time,"link_type": link_type,
+                       "route": route}
+                row.update({"rdrs_%s" % p: rdrs[p] for p in config.TIME_PERIODS})
+                row["tt_rdrs"] = tt_rdrs
+                writer.writerow(row)
 
         transit_network.close()
     csvfile.close()

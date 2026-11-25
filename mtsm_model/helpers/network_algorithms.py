@@ -292,15 +292,10 @@ def generalized_cost_dijsktra_OD_heap(study_area,graph, agent,transit_fare_set,m
     # Peak and off-peak factor of the microtransit fares. The model has one fare structure, the former fare
     # scenario 10 (docs/progress.md, "Only fare scenario 10").
     #########################################
-    if rq_time <= config.AM_END:
-        time_period = "AM"
-    elif rq_time <= config.MD_END:
-        time_period = "MD"
-    elif rq_time <= config.PM_END:
-        time_period = "PM"
-    else:
-        time_period = "EV"
-    if time_period in ["AM","PM"]:
+    # the study area's periods (config.period_of; until 2026-11-24 AM / MD / PM / EV and the peak periods ["AM","PM"]
+    # were written here)
+    time_period = config.period_of(rq_time)
+    if time_period in config.PEAK_PERIODS:
         peak_factor = PkFareFactor
     else:
         peak_factor = OffPkFareFactor

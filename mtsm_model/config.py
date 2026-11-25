@@ -88,6 +88,11 @@ def str2bool(string_, default='raise'):
                          .format(string_))
 
 
+def whole_as_int(x):
+    """15.0 -> 15, 15.5 -> 15.5: hours appear in file names (op_hr_15)"""
+    return int(x) if float(x).is_integer() else x
+
+
 def convert_parameter(value, value_type):
     """Convert a parameter_value string to value_type (one of the types in mtsm_global_parameters.py)."""
     if value_type == gp.INT:
@@ -106,6 +111,10 @@ def convert_parameter(value, value_type):
         return value.split(";")
     if value_type == gp.STR_LIST_LIST:
         return [v.split(";") for v in value.split("|")]
+    if value_type == gp.NUMBER:
+        return whole_as_int(float(value))
+    if value_type == gp.NUMBER_LIST:
+        return [whole_as_int(float(v)) for v in value.split(";")]
     raise ValueError(f"unknown parameter type {value_type}")
 
 
@@ -182,16 +191,53 @@ MODE_CHANGE_THRESHOLD = PARAMETERS[gp.G_MODE_CHANGE_THRESHOLD]
 # "whole_region" = one average per time period; "census_track" = per census tract, with a rejection penalty.
 AGGREGATION = PARAMETERS[gp.G_AGGREGATION]
 
-# ---- time periods: a trip departing at t (s) is AM if t <= AM_END, MD if t <= MD_END, PM if t <= PM_END, else EV ----
-AM_END = PARAMETERS[gp.G_AM_END_H] * 3600
-MD_END = PARAMETERS[gp.G_MD_END_H] * 3600
-PM_END = PARAMETERS[gp.G_PM_END_H] * 3600
+# ---- time periods of the study area (area file; since 2026-11-24, docs/period_networks_and_car_availability_plan.md,
+# step 3). A trip departing at t (s) belongs to the first period whose end is at or after t; before the start: the
+# first period, after the last end: the last (as before: AM if t <= AM_END, MD if t <= MD_END, PM if t <= PM_END,
+# else EV, with AM_END = am_end_h x 3600 ...) ----
+TIME_PERIODS = PARAMETERS[gp.G_TIME_PERIODS]  # Lemon Grove: ["AM", "MD", "PM", "EV"]
+PEAK_PERIODS = PARAMETERS[gp.G_PEAK_PERIODS]  # the peak fare factor and the peak parking rate: Lemon Grove AM, PM
+_START_H, _END_H = PARAMETERS[gp.G_PERIOD_START_H], PARAMETERS[gp.G_PERIOD_END_H]
+
+
+def _check_time_periods():
+    problems = []
+    if len(set(TIME_PERIODS)) != len(TIME_PERIODS) or "" in TIME_PERIODS:
+        problems.append(f"time_periods must be distinct names: {TIME_PERIODS}")
+    if len(_END_H) != len(TIME_PERIODS):
+        problems.append(f"period_end_h needs one end per period ({len(TIME_PERIODS)}): {_END_H}")
+    if any(b <= a for a, b in zip([_START_H] + list(_END_H), _END_H)):
+        problems.append(f"period_start_h and period_end_h must increase: {_START_H}, {_END_H}")
+    if not set(PEAK_PERIODS) <= set(TIME_PERIODS):
+        problems.append(f"peak_periods must be time periods: {PEAK_PERIODS}")
+    unknown = {p for periods in PARAMETERS[gp.G_OPERATING_PERIODS_SCENARIOS] for p in periods} - set(TIME_PERIODS)
+    if unknown:
+        problems.append(f"operating_periods_scenarios (model file) names periods the study area does not have: "
+                        f"{sorted(unknown)} (time_periods: {TIME_PERIODS})")
+    if problems:
+        sys.exit("ERROR: time periods (area file area_parameters.csv):\n  " + "\n  ".join(problems))
+
+
+_check_time_periods()
+PERIOD_ENDS = [(period, end_h * 3600) for period, end_h in zip(TIME_PERIODS, _END_H)]  # (period, end in s)
+# a period without microtransit service gets this period's average FleetPy waiting time (update_network_files):
+# the first peak period (until 2026-11-24 "AM", written in the code)
+WAIT_TIME_FALLBACK_PERIOD = PEAK_PERIODS[0] if PEAK_PERIODS else TIME_PERIODS[0]
+
+
+def period_of(t):
+    """The time period of a time of day t (s): the first whose end is at or after t, else the last."""
+    for period, end in PERIOD_ENDS[:-1]:
+        if t <= end:
+            return period
+    return PERIOD_ENDS[-1][0]
+
 
 # ---- parking: the charge per started interval ($); the car's parking cost rate x started intervals is in its
 # generalized cost (x bt_c_gas) and its out-of-pocket cost (choice.py). Until 2026-11-19 PARKING_FACTOR_PEAK (1) and
 # PARKING_FACTOR_OFFPEAK (0.5), in the generalized cost only ----
-PARKING_RATE_PEAK = PARAMETERS[gp.G_PARKING_RATE_PEAK]  # AM and PM, $ per started interval
-PARKING_RATE_OFFPEAK = PARAMETERS[gp.G_PARKING_RATE_OFFPEAK]  # MD and EV, $ per started interval
+PARKING_RATE_PEAK = PARAMETERS[gp.G_PARKING_RATE_PEAK]  # the peak periods (Lemon Grove AM and PM), $ per interval
+PARKING_RATE_OFFPEAK = PARAMETERS[gp.G_PARKING_RATE_OFFPEAK]  # the other periods (MD and EV), $ per interval
 
 # ---- node numbering of the study area's super-networks (docs/study_area_inputs.md, "Node numbering"): walk node i
 # (0..NUM_WALK_NODES-1) is FleetPy node i and microtransit node MICROTRANSIT_NODE_OFFSET + i. Derived from the files
@@ -278,17 +324,17 @@ LAST_WALK_NODE = NUM_WALK_NODES - 1
 FIRST_FRT_STOP = NUM_WALK_NODES
 LAST_FRT_STOP = MICROTRANSIT_NODE_OFFSET - 1
 LAST_MICROTRANSIT_NODE = MICROTRANSIT_NODE_OFFSET + NUM_WALK_NODES - 1
-# length of each time period (h)
-PERIOD_HOURS = {"AM": PARAMETERS[gp.G_AM_END_H] - PARAMETERS[gp.G_DAY_START_H],
-                "MD": PARAMETERS[gp.G_MD_END_H] - PARAMETERS[gp.G_AM_END_H],
-                "PM": PARAMETERS[gp.G_PM_END_H] - PARAMETERS[gp.G_MD_END_H],
-                "EV": PARAMETERS[gp.G_DAY_END_H] - PARAMETERS[gp.G_PM_END_H]}
+# length of each time period (h), from the period start and ends (since 2026-11-24; before from day_start_h,
+# am_end_h, md_end_h, pm_end_h, day_end_h): Lemon Grove AM 5, MD 5, PM 5, EV 4
+PERIOD_HOURS = {period: whole_as_int(end - start)
+                for period, start, end in zip(TIME_PERIODS, [_START_H] + list(_END_H), _END_H)}
 
 
 def microtransit_operating_hours(operating_periods):
-    """hours of microtransit service in the operating periods: ["AM", "PM"] -> 10, ["AM", "MD", "PM"] -> 15,
-    ["AM", "MD", "PM", "EV"] -> 19 (until 2026-11-10 these three values were written into the code)"""
-    return sum(PERIOD_HOURS[period] for period in operating_periods)
+    """hours of microtransit service in the operating periods: Lemon Grove ["AM", "PM"] -> 10, ["AM", "MD", "PM"] -> 15,
+    ["AM", "MD", "PM", "EV"] -> 19 (until 2026-11-10 these three values were written into the code); an int when
+    whole, as it appears in file names (op_hr_15)"""
+    return whole_as_int(sum(PERIOD_HOURS[period] for period in operating_periods))
 
 
 def read_run_config():

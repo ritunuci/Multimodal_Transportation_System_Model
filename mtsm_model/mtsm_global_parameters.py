@@ -24,6 +24,9 @@ INT_LIST = "int_list"
 BOOL_LIST = "bool_list"
 STR_LIST = "str_list"
 STR_LIST_LIST = "str_list_list"
+# a number written as an int when it is whole (15 -> 15, 15.5 -> 15.5): hours appear in file names (op_hr_15)
+NUMBER = "number"
+NUMBER_LIST = "number_list"
 
 # ---- run parameters (until 2026-11-10 the columns of input_parameter.csv; the optimizer sets seven of them) ----
 G_STUDY_AREA = "study_area"  # test_area (key "test_area" and constant G_TEST_AREA until 2026-11-24): the folder mtsm_data/<area>/
@@ -52,12 +55,15 @@ G_MODE_CHANGE_THRESHOLD = "mode_change_threshold"  # MODE_CHANGE_THRESHOLD
 G_AGGREGATION = "aggregation"  # AGGREGATION
 G_REJECTION_RATE_WINDOW = "rejection_rate_window"  # model.py: average of the last 3 iterations from iteration 3
 
-# ---- time periods (h): AM = day start - AM end, MD = AM end - MD end, PM = MD end - PM end, EV = PM end - day end ----
-G_DAY_START_H = "day_start_h"
-G_AM_END_H = "am_end_h"  # AM_END = 10 * 3600
-G_MD_END_H = "md_end_h"  # MD_END = 15 * 3600
-G_PM_END_H = "pm_end_h"  # PM_END = 20 * 3600
-G_DAY_END_H = "day_end_h"
+# ---- time periods of the study area (area file, since 2026-11-24; docs/period_networks_and_car_availability_plan.md,
+# step 3): the names in order, the start of the first (h) and the end of each (h), and the peak periods (peak fare
+# factor and peak parking rate). Lemon Grove: AM;MD;PM;EV, 5, 10;15;20;24, AM;PM. Until 2026-11-24 the model file had
+# day_start_h (5), am_end_h (10), md_end_h (15), pm_end_h (20), day_end_h (24), and the four names and the peak
+# periods were written in the code ----
+G_TIME_PERIODS = "time_periods"
+G_PERIOD_START_H = "period_start_h"
+G_PERIOD_END_H = "period_end_h"
+G_PEAK_PERIODS = "peak_periods"
 G_FRT_OPERATING_HOURS = "frt_operating_hours"  # F_operating_hrs = 19
 
 # ---- parking ----
@@ -124,11 +130,10 @@ PARAMETER_TYPES = {
     G_MODE_CHANGE_THRESHOLD: FLOAT,
     G_AGGREGATION: STR,
     G_REJECTION_RATE_WINDOW: INT,
-    G_DAY_START_H: INT,
-    G_AM_END_H: INT,
-    G_MD_END_H: INT,
-    G_PM_END_H: INT,
-    G_DAY_END_H: INT,
+    G_TIME_PERIODS: STR_LIST,
+    G_PERIOD_START_H: NUMBER,
+    G_PERIOD_END_H: NUMBER_LIST,
+    G_PEAK_PERIODS: STR_LIST,
     G_FRT_OPERATING_HOURS: INT,
     G_PARKING_CHARGE_INTERVAL_MIN: INT,
     G_PARKING_RATE_PEAK: FLOAT,
@@ -169,5 +174,9 @@ AREA_PARAMETERS = (
     G_PARKING_CHARGE_INTERVAL_MIN,
     G_PARKING_RATE_PEAK,
     G_PARKING_RATE_OFFPEAK,
+    G_TIME_PERIODS,  # the time periods: since 2026-11-24 (before: in the model file, as day_start_h ... day_end_h)
+    G_PERIOD_START_H,
+    G_PERIOD_END_H,
+    G_PEAK_PERIODS,
 )
 MODEL_PARAMETERS = tuple(key for key in PARAMETER_TYPES if key not in AREA_PARAMETERS)
