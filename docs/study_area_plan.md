@@ -205,7 +205,8 @@ it, how to run it, and where the outputs are. Lemon Grove is the worked example.
    the reference before 2026-11-24, were computed on the wrong node set.
 7. **(a) A small synthetic test area.**
 8. **(b) Later.** One network for the whole day for now, as today; the period networks are designed later (I-35 stays
-   open).
+   open). 2026-11-24: done later the same day, `docs/period_networks_and_car_availability_plan.md` (period networks
+   when given, whole-day otherwise; I-35 in progress).
 
 The plan file itself: saved as this file (user: OK).
 

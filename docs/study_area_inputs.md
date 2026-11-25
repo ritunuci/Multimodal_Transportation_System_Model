@@ -8,7 +8,10 @@ This file is the contract between a user and the model: the files a study area s
 the rules that tie them together. It follows the user's decisions of 2026-11-24 (`docs/study_area_plan.md`): the user
 supplies **finished super-networks** (decision 1), the node counts are **derived from the files** (decision 3), the
 files have **generic names inside the area folder** (decision 4), and there is **one network for the whole day**
-(decision 8; per-period networks come with I-35).
+(decision 8; per-period networks come with I-35). Since 2026-11-24 the time periods are area parameters (section 1),
+and the microtransit super-network, the car network and FleetPy's travel times can be given per period (sections 3,
+5, 8; `docs/period_networks_and_car_availability_plan.md`); without period files one network for the whole day, as
+before. The demand may say which travelers have no car (`auto_available`, section 2).
 
 Lemon Grove is the worked example throughout.
 

@@ -1585,6 +1585,19 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Full run (C, whole day): **`REPRODUCED`** (26 files, 3:58). B was repeated afterwards to look at FleetPy's files; a
   last whole-day run cleared its staged folders again (FleetPy's copy: `base/` only): **`REPRODUCED`** (3:57).
 
+## Period networks and car availability, step 6: docs (2026-11-24)
+
+- Each step updated the docs it changed (`study_area_inputs.md`, `README.md`, `fleetpy/LOCAL_CHANGES.md`,
+  `open_issues.md`); this step read them for statements made out of date by steps 1-5:
+  - `study_area_inputs.md`, introduction: the period networks, the area's time periods and `auto_available` (it said
+    one network for the whole day, per-period networks with I-35);
+  - `study_area_plan.md`, decision 8: a dated note that the period networks were done the same day;
+  - `open_issues.md`, I-35: In progress (was Open), with what is done and what is still open (a run on period data
+    and its reference, the detour-ratio question, I-43).
+- `docs/period_networks_and_car_availability_plan.md`: step 6 done, the plan complete on `main`, and the next steps
+  (fast-forward `TRA_resubmission`; the held data decisions there).
+- Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

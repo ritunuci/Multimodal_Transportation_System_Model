@@ -59,3 +59,13 @@ Step 2 done 2026-11-24 (`docs/progress.md`, "Period networks and car availabilit
 Step 3 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 3").
 Step 4 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 4").
 Step 5 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 5").
+Step 6 done 2026-11-24 (`docs/progress.md`, "Period networks and car availability, step 6"). The plan is complete
+on `main`.
+
+### Next (as of 2026-11-24)
+
+- Bring the branch up to date: `git switch TRA_resubmission`, `git merge --ff-only main`.
+- On the branch: the held decisions on moving TRA's new Lemon Grove inputs (`new_LG_data/`) into `mtsm_data/`
+  (decision 4 there, which period's network for the whole day, is replaced by the period networks); the area's
+  periods set to ABM3's (`EA;AM;MD;PM;EV`, 3, `6;9;15.5;19;27`); the first run on period data and its reference.
+- Open items from this plan: I-35 (in progress), I-42, I-43.

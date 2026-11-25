@@ -56,7 +56,7 @@ Paths are relative to the codebase root.
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Open | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Open | 2026-11-23 |
-| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | Open | 2026-11-23 |
+| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Decision needed | 2026-11-24 |
@@ -517,7 +517,8 @@ Paths are relative to the codebase root.
     (one super-network per time period).
 
 ### I-35: One super-network for the whole day; MTSM is to use one per time period
-- **Status:** Open. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
+- **Status:** In progress (since 2026-11-24: the model reads period networks; not yet run on period data). Open
+  until 2026-11-24. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
   the input-preparation repository `TRA_input_data_prep`).
 - **Plan (user, 2026-11-23):** MTSM is to use one super-network per time period. `TRA_input_data_prep` builds them,
   per area and per period, with the modified `build_super_network.py` (I-33):
@@ -581,6 +582,18 @@ Paths are relative to the codebase root.
   - the headway update in every period file;
   - a new reference.
   - See also I-33 and I-34.
+- **Done 2026-11-24 on `main`** (`docs/period_networks_and_car_availability_plan.md`, steps 3-5; each step
+  `REPRODUCED` for Lemon Grove's whole-day inputs): the to-do list above except the new reference.
+  - Periods: the area file defines them (`time_periods`, `period_start_h`, `period_end_h`, `peak_periods`), so ABM3's
+    five can be set; the four names left the code (item 1).
+  - The microtransit super-network (file 3) and the car network (file 5) per period, `..._<P>.csv`, with whole-day
+    files as the fallback; the FRT-only networks stay whole-day (user's decision). Scenario networks and the headway
+    update per period file, each period's final network from its own scenario network, the car path on the
+    traveler's period (items 2-5). The file names put the period last, as proposed (`..._virstop_75_AM.csv`,
+    `car_network_AM.csv`).
+  - FleetPy: `network_dynamics.csv` and its folders staged, `nw_dynamic_f` set, the pandas fix (item 6).
+- **Still open:** a run on period data (TRA's new Lemon Grove inputs, branch `TRA_resubmission`) and its reference;
+  the detour-ratio question of item 4; FleetPy's operator does not replan at a travel-time switch (I-43).
 
 ### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
