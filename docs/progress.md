@@ -1672,6 +1672,18 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `open_issues.md` (I-19 closed; I-14: `pre_process/` to be removed on the branch, user's decision),
   `README.md` (fares).
 
+## The exact mile, 1609.344 m; reference updated (I-21 update, 2026-11-25)
+
+- User's decision: on `main`, before the branch `TRA_resubmission` fast-forwards (I-21 had kept 1609.34 on
+  2026-11-23).
+- Change: `meters_per_mile` 1609.34 -> 1609.344 in `mtsm_data/input_parameter/mtsm_constant_configurations.csv` (one
+  byte; CRLF kept), `mtsm_data/MANIFEST.csv` rewritten (`tools/check_inputs.py --write lemon_grove`; the area manifest
+  did not change). No code change.
+- Checks: full run against the reference: 3 files differ (evaluation file, 55 values; both individual results files);
+  no mode change, FleetPy unchanged, values moved by at most about 0.0003 % (`tot_sub` 7,796.0346 -> 7,796.0333, logsum
+  913.2664 -> 913.2677). The 3 files replaced; second full run: **`REPRODUCED`** (26 files).
+- Docs: `open_issues.md` (I-21, update), `reference_results/README.md`.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

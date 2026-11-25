@@ -171,3 +171,11 @@ case (lines 2 and 4; the base row twice).
   (`debug_False_F_transit_demand_2_op_hr_15_hw_10_virstop_75.csv`): one row more, `63287,1107,1101,11650`, the first
   of the two FRT legs of traveler 11650 (25 legs, as `F_trips`). No reported value and no FleetPy input or result
   changed. The file was replaced by the run's; a second full run printed `REPRODUCED`.
+- **2026-11-25, the exact mile** (`docs/open_issues.md` I-21, update; user's decision): `meters_per_mile` 1609.34 ->
+  1609.344 in `mtsm_data/input_parameter/mtsm_constant_configurations.csv` (all mile conversions, FleetPy's km per mile
+  = this / 1000). A full run differed from the reference in 3 files: `output/lemon_grove_evaluation_zonal_partition_False.csv`
+  (55 values, both columns) and both `individual_results_*` files (distances in miles in every row; in the scenario
+  also costs, logsum and probabilities in the last digits). Nobody changed mode;
+  FleetPy's inputs and results did not change; distances, fares, costs and the values built on them moved by at most about 0.0003 % (1609.344 / 1609.34 = 1.0000025). `tot_sub ($)` 7,796.0346 -> 7,796.0333,
+  `tt_mob_lgsm_inc_with_micro` 913.2664 -> 913.2677. The 3 files were replaced by the run's; a second full run printed
+  `REPRODUCED`.

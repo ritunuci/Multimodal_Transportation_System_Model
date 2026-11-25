@@ -981,6 +981,15 @@ Paths are relative to the codebase root.
 - **Not fixed here (see I-31):** the FRT link distances may be miles x 1000, not metres (their sums are about 1.6 x
   shorter than the straight lines between the end stops). The FRT line length is computed from them, so it may be off
   by that factor, whichever meters-per-mile value is used.
+- **Update 2026-11-25 (user's decision):** `meters_per_mile` set to the exact 1609.344 (the international mile) on
+  `main`, with a reference update. A full run differed from the reference in 3 files: the evaluation file (55 values,
+  both columns) and the two individual results files (every row: distances in miles; in the scenario also out-of-pocket
+  costs, generalized cost saved, logsum increase and choice probabilities in the last digits). Nobody changed mode;
+  FleetPy's inputs and results did not change; distances, fares, costs and the values built on them moved by at most about 0.0003 % (1609.344 / 1609.34 = 1.0000025):
+  `tot_sub ($)` 7,796.0346 -> 7,796.0333, `tt_mob_lgsm_inc_with_micro` 913.2664 -> 913.2677, `M_revenue ($)`
+  863.8903 -> 863.8888, `F_VMT (mi)` 2,354.0317 -> 2,354.0259. The 3 files were replaced by the run's; a second full
+  run printed `REPRODUCED`. `mtsm_data/MANIFEST.csv` rewritten. Optimizer sessions before this change differ in the
+  last digits.
 
 ### I-16: The aggregate convergence test is unfinished
 - **Status:** Closed (2026-11-23). **Severity:** Low. **Found:** 2026-11-09 (restructuring the entry script, step 1).
