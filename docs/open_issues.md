@@ -421,6 +421,15 @@ Paths are relative to the codebase root.
   checker also requires the vehicle start nodes to have a road edge. Tested on TRA's new Lemon Grove network (the
   user's untracked `new_LG_data/`: N = 1,067, M = 1,189) and on four broken copies (all stopped); Lemon Grove's
   numbering unchanged (1,099, 1,171). The README's `--no-freeways` advice is replaced.
+- **2026-11-24 (user's request): the new builder is in MTSM's `pre_process/`.** `pre_process/build_super_network.py`
+  is `TRA_input_data_prep`'s copy at its commit `b68886b` (2026-11-24, "Super-networks per ABM3 period; freeways car
+  only ..."), content identical, line endings CRLF as in this repository. The only change against the old copy is the
+  option `--local-edges` (walk and microtransit links only on the local edges; virtual stops and FRT stop joins only
+  at their nodes; the car network keeps every edge). Checked on a small made-up network (3 x 3 street grid, a
+  freeway node, 4 stops, 2 routes): without the option all three variants and the car network come out byte for
+  byte as the old script writes them; with it the freeway edges have no walk or microtransit link, the freeway node
+  no link at all, the car network is unchanged, and the stop nearest the freeway node is joined to a street node.
+  The user's decision: I-33 closes on the branch `TRA_resubmission`, once TRA's networks built with it are in use.
 - **Closes when** the new builder is in MTSM's `pre_process/` and the networks built with it are in use (a new
   reference; see I-34 and I-35).
 

@@ -178,7 +178,7 @@ outputs and the files of this model:
 | `mtsm_model/` | The model (see [Code map](#code-map)) |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
 | `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
-| `pre_process/` | Preprocessing of networks and demand; `build_super_network.py` builds the super-networks (`micro`, `non_micro`, `micro_only`) and the car network from a road and an FRT network (not used by a run yet) |
+| `pre_process/` | Preprocessing of networks and demand; `build_super_network.py` builds the super-networks (`micro`, `non_micro`, `micro_only`) and the car network from a road and an FRT network (not used by a run; identical to `TRA_input_data_prep`'s copy, with `--local-edges` for car-only roads since 2026-11-24) |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`); a study area's folders from `area_paths(area)` |
 | `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`, one per study area) and the outputs of a run |
 | `fleetpy/` | FleetPy, upstream version `7019960` with a few local changes listed in [`fleetpy/LOCAL_CHANGES.md`](fleetpy/LOCAL_CHANGES.md) |

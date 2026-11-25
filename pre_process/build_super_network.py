@@ -42,6 +42,17 @@ microtransit link, followed by the waiting links of a virtual stop that appears 
 With --auto-out the car network is written too (the model reads it separately, as auto_edges.csv): every road edge
 with its distance and car travel time, link type 7, in road-edge order.
 
+Car-only roads (--local-edges; added 2026-11-23 for I-33, in TRA_input_data_prep): a road network can hold edges
+that only cars may use (freeways, freeway connectors and ramps). The option names the other edges, the "local"
+edges (CSV with from_node,to_node; every one must be a road edge). Then:
+    - walk links (type 0) and microtransit links (type 4) are written only for local edges, in road-edge order;
+    - virtual stops are drawn only from the nodes on a local edge (a virtual-stop file naming another node stops the
+      run), and each FRT stop is joined to the nearest node on a local edge;
+    - the car network (--auto-out) still has every road edge;
+    - nodes without a local edge (freeway nodes) keep their numbers in every layer but get no link there.
+Without the option the script behaves as before (every road edge is local), so the frozen networks still come out
+the same.
+
 Checked against the old code (2026-11-13): the notebook's own functions and this script, run on the same small
 network (walk speed 1.6, the notebook's virtual stops), give the same links in the same order for all 15 files. What
 is different here, on purpose:
@@ -67,6 +78,7 @@ Inputs (CSV; other columns are ignored):
     FRT stops    stop_id,pos_x,pos_y
     FRT edges    from_stop,to_stop,distance,travel_time,route m, s, route number
     virtual stops (optional) node_index                       walk nodes with microtransit boarding
+    local edges (optional)   from_node,to_node                the road edges walkers and microtransit may use
 pos_x/pos_y of both networks must be in the same projected coordinates (distance = straight line), or longitude /
 latitude with --latlon (distance on the sphere).
 
@@ -142,42 +154,63 @@ def distance(p, q, latlon):
     return 2 * 6371000.0 * math.asin(math.sqrt(h))  # m
 
 
-def nearest_walk_nodes(stops, nodes, latlon):
-    """{stop_id: (walk node, distance)}; on a tie the smaller node number"""
+def read_local_edges(path, road_edges):
+    """the set of (from, to) road edges that walkers and microtransit may use"""
+    local = {(int(r["from_node"]), int(r["to_node"])) for r in read_rows(path, ["from_node", "to_node"])}
+    unknown = sorted(local - {(a, b) for a, b, *_ in road_edges})
+    if unknown:
+        sys.exit("%s: not road edges: %s" % (path, unknown[:10]))
+    return local
+
+
+def nodes_of(edges):
+    return {a for a, b in edges} | {b for a, b in edges}
+
+
+def nearest_walk_nodes(stops, nodes, latlon, allowed=None):
+    """{stop_id: (walk node, distance)}; on a tie the smaller node number; only nodes in allowed, if given"""
+    candidates = nodes if allowed is None else [n for n in nodes if n in allowed]
     result = {}
     for s, p in stops.items():
-        best = min(nodes, key=lambda n: (distance(p, nodes[n], latlon), n))
+        best = min(candidates, key=lambda n: (distance(p, nodes[n], latlon), n))
         result[s] = (best, distance(p, nodes[best], latlon))
     return result
 
 
-def virtual_stops(nodes, file, share, seed):
-    """the walk nodes with microtransit boarding: from a file, or each node with probability share / 100"""
+def virtual_stops(nodes, file, share, seed, allowed=None):
+    """the walk nodes with microtransit boarding: from a file, or each node with probability share / 100; only nodes
+    in allowed, if given (the draw then runs over the allowed nodes in ascending order)"""
     if file:
         chosen = {int(r["node_index"]) for r in read_rows(file, ["node_index"])}
         unknown = sorted(chosen - set(nodes))
         if unknown:
             sys.exit("%s: not road nodes: %s" % (file, unknown[:10]))
+        if allowed is not None and chosen - allowed:
+            sys.exit("%s: nodes without a local edge (car-only roads): %s" % (file, sorted(chosen - allowed)[:10]))
         return chosen
     rng = random.Random(seed)
-    return {n for n in sorted(nodes) if rng.random() < share / 100}
+    pool = sorted(nodes) if allowed is None else sorted(n for n in nodes if n in allowed)
+    return {n for n in pool if rng.random() < share / 100}
 
 
 def build(nodes, road_edges, stops, frt_edges, variant, headway_min, virtual, walk_speed, micro_time_factor,
-          micro_wait_s, latlon):
-    """returns the links (dicts in FIELDS order), the numbering and a summary"""
+          micro_wait_s, latlon, local=None):
+    """returns the links (dicts in FIELDS order), the numbering and a summary. local: the set of (from, to) road
+    edges that get walk and microtransit links (None = every road edge)"""
     n_walk = len(nodes)
     used = sorted({a for a, *_ in frt_edges} | {b for _, b, *_ in frt_edges})
     stop_node = {s: n_walk + i for i, s in enumerate(used)}  # stops without FRT links get no number
     offset = n_walk + len(used)  # first microtransit node
-    stop_walk = nearest_walk_nodes({s: stops[s] for s in used}, nodes, latlon)
+    local_edges = road_edges if local is None else [e for e in road_edges if (e[0], e[1]) in local]
+    stop_walk = nearest_walk_nodes({s: stops[s] for s in used}, nodes, latlon,
+                                   None if local is None else nodes_of(local))
     links = []
 
     def add(a, b, dist, tt, link_type, route=NO_ROUTE):
         links.append({"from_node": a, "to_node": b, "distance": float(dist), "travel_time": float(tt),
                       "link_type": link_type, "route": route})
 
-    for a, b, dist, tt in road_edges:
+    for a, b, dist, tt in local_edges:
         add(a, b, dist, dist / walk_speed, WALK)
     if variant in ("micro", "non_micro"):
         frt_wait = headway_min * 60 / 2
@@ -191,7 +224,7 @@ def build(nodes, road_edges, stops, frt_edges, variant, headway_min, virtual, wa
                     add(stop_node[s], stop_walk[s][0], 0, 0, FRT_WAIT)  # alighting
     if variant in ("micro", "micro_only"):
         boarded = set()
-        for a, b, dist, tt in road_edges:
+        for a, b, dist, tt in local_edges:
             add(offset + a, offset + b, dist, tt * micro_time_factor, MICRO)
             for n in (a, b):
                 if n in virtual and n not in boarded:
@@ -200,6 +233,7 @@ def build(nodes, road_edges, stops, frt_edges, variant, headway_min, virtual, wa
                     add(offset + n, n, 0, 0, MICRO_WAIT)  # alighting
     summary = {
         "num_walk_nodes": n_walk,
+        "road edges / with walk and microtransit links": "%d / %d" % (len(road_edges), len(local_edges)),
         "microtransit_node_offset": offset,
         "FRT stops with links": len(used),
         "FRT stops without links (not numbered)": sorted(set(stops) - set(used)),
@@ -240,6 +274,8 @@ def main(argv=None):
     p.add_argument("--micro-time-factor", type=float, default=1.4, help="microtransit time = car time x this")
     p.add_argument("--micro-wait", type=float, default=180, help="microtransit waiting time at boarding (s)")
     p.add_argument("--latlon", action="store_true", help="pos_x / pos_y are longitude / latitude")
+    p.add_argument("--local-edges", help="CSV with from_node,to_node: the road edges walkers and microtransit may use "
+                                         "(default: all); the others are car only (freeways, ramps)")
     p.add_argument("--out", required=True)
     p.add_argument("--auto-out", help="also write the car network (auto_edges.csv) to this file")
     args = p.parse_args(argv)
@@ -248,11 +284,13 @@ def main(argv=None):
 
     nodes, road_edges = read_road(args.road_nodes, args.road_edges)
     stops, frt_edges = read_frt(args.frt_stops, args.frt_edges)
+    local = read_local_edges(args.local_edges, road_edges) if args.local_edges else None
     virtual = set()
     if args.variant != "non_micro":
-        virtual = virtual_stops(nodes, args.virtual_stops, args.virtual_stop_share, args.seed)
+        virtual = virtual_stops(nodes, args.virtual_stops, args.virtual_stop_share, args.seed,
+                                None if local is None else nodes_of(local))
     links, stop_node, summary = build(nodes, road_edges, stops, frt_edges, args.variant, args.headway, virtual,
-                                      args.walk_speed, args.micro_time_factor, args.micro_wait, args.latlon)
+                                      args.walk_speed, args.micro_time_factor, args.micro_wait, args.latlon, local)
     write_links(args.out, links)
     if args.auto_out:
         write_links(args.auto_out, car_links(road_edges))

@@ -1617,6 +1617,20 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Reference: the 4 files replaced by the run's (`docs/reference_results/README.md`); a second full run: **`REPRODUCED`**
   (26 files, 4:01). I-38 closed; `study_area_inputs.md` (file 4).
 
+## The builder with car-only roads from `TRA_input_data_prep` (I-33, 2026-11-24)
+
+- User's request: copy `TRA_input_data_prep`'s `build_super_network.py` into `pre_process/` on `main` (the two copies
+  are kept identical; they had drifted by the option `--local-edges`, 64 diff lines). Installed from its commit
+  `b68886b` (2026-11-24; the file's last change there), content identical, CRLF line endings as in this repository.
+- Check (a scratch script): on a small made-up network (3 x 3 street grid, a freeway node joined to two street nodes,
+  4 stops, 2 routes) the new script without `--local-edges` writes `micro` (hw 10, 75 %), `non_micro` (hw 20),
+  `micro_only` (100 %) and the car network byte for byte as the old script; with `--local-edges` the freeway edges
+  get no walk or microtransit link, the freeway node no link, the car network is unchanged, and the stop nearest the
+  freeway node is joined to a street node.
+- The model does not import `pre_process/`, so no run is needed. I-33 stays In progress on `main`; it closes on the
+  branch `TRA_resubmission` when TRA's networks built with this builder are in use (user's decision). Docs: `README.md`
+  (repository layout), `open_issues.md` (I-33).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
