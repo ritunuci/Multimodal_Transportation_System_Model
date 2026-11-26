@@ -345,6 +345,8 @@ DEMAND_SAMPLE_SHARE = PARAMETERS[gp.G_DEMAND_SAMPLE_SHARE]
 if DEMAND_UPSCALING and not 0 < DEMAND_SAMPLE_SHARE < 1:
     sys.exit(f"ERROR: {CONSTANT_CONFIG_FILE}: demand_upscaling is True, so demand_sample_share must be the sample's "
              f"share of all travelers, between 0 and 1 (e.g. 0.25), not {DEMAND_SAMPLE_SHARE}")
+if DEMAND_UPSCALING and (PARAMETERS[gp.G_SYNTHETIC_TIME_SHIFT_MIN] < 0 or PARAMETERS[gp.G_SYNTHETIC_STOP_RADIUS_M] < 0):
+    sys.exit(f"ERROR: {CONSTANT_CONFIG_FILE}: synthetic_time_shift_min and synthetic_stop_radius_m must be >= 0")
 DEMAND_SCALE = 1 / DEMAND_SAMPLE_SHARE if DEMAND_UPSCALING else 1  # from the sample to all travelers
 
 

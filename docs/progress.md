@@ -1726,6 +1726,18 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `demand_sample_share` 0.25. A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`**.
 - Docs: `README.md` (running on a sample; code map), `study_area_inputs.md` (file 2), `open_issues.md` (I-32, I-45).
 
+## Synthetic requests as copies with a time shift and nearby stops (I-45, 2026-11-25)
+
+- User's decisions (the recommendation for all points): each synthetic request is a copy of a request of the sample,
+  shifted in time by up to +-15 min within its time period, from and to random virtual stops within 400 m walking
+  distance of the request's; two model parameters (`synthetic_time_shift_min`, `synthetic_stop_radius_m`); a
+  comparison run of the methods.
+- Code: `synthetic_demand.py` rewritten; `microtransit.py`, `config.py` (check of the two parameters),
+  `mtsm_global_parameters.py`, the model file (`mtsm_data/MANIFEST.csv` rewritten).
+- Checks and the comparison: `open_issues.md`, I-45 (resolution). A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`** (26 files).
+- New item I-46 (found on the way): a microtransit leg's FleetPy request starts one link past the boarding stop.
+- Docs: `README.md`, `open_issues.md` (I-32 update, I-45 closed, I-46).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

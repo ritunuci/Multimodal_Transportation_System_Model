@@ -83,6 +83,11 @@ G_ENABLE_NUM_TRANSFER_PENALTY = "enable_num_transfer_penalty"  # new 2026-11-11;
 G_DEMAND_UPSCALING = "demand_upscaling"
 G_DEMAND_SAMPLE_SHARE = "demand_sample_share"
 G_SAMPLE_DEMAND_FILE = "sample_demand_file"
+# how the synthetic requests are made (2026-11-25, I-45): each is a copy of a request of the sample, shifted in time by
+# up to +- synthetic_time_shift_min within its time period, with a virtual stop within synthetic_stop_radius_m walking
+# distance as origin and as destination; used only when demand_upscaling is True
+G_SYNTHETIC_TIME_SHIFT_MIN = "synthetic_time_shift_min"
+G_SYNTHETIC_STOP_RADIUS_M = "synthetic_stop_radius_m"
 
 # ---- node numbering: num_walk_nodes and microtransit_node_offset are derived from the network files since 2026-11-24
 # (config.derive_node_numbering); micro_only_max_walk_node (731) is the area's last walk node since then (I-13) ----
@@ -164,6 +169,8 @@ PARAMETER_TYPES = {
     G_DEMAND_UPSCALING: BOOL,
     G_DEMAND_SAMPLE_SHARE: FLOAT,
     G_SAMPLE_DEMAND_FILE: STR,
+    G_SYNTHETIC_TIME_SHIFT_MIN: INT,
+    G_SYNTHETIC_STOP_RADIUS_M: INT,
 }
 
 # the keys of the study area's file area_parameters.csv (user's decision A, docs/study_area_inputs.md): the area's

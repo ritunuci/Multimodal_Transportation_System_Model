@@ -2,7 +2,7 @@
 (restructuring step 6, docs/entry_script_refactor_plan.md).
 
 Moved unchanged from run_examples_new_parking.py. With demand_upscaling on (since 2026-11-25, docs/open_issues.md
-I-32), synthetic microtransit requests are added to FleetPy's demand file before FleetPy runs
+I-32, I-45), synthetic microtransit requests are added to FleetPy's demand file before FleetPy runs
 (synthetic_demand.add_synthetic_requests). Until then this was a commented-out "Ritun added" block (3 synthetic
 requests per request, for a 25 % sample of the travelers).
 
@@ -16,6 +16,7 @@ from mtsm_model.helpers import fleetpy_runner as fleetpy
 import mtsm_paths as mtsm
 from mtsm_model.helpers import update_network_files as update
 from mtsm_model import config
+from mtsm_model import mtsm_global_parameters as gp
 from mtsm_model.helpers import synthetic_demand
 
 
@@ -30,14 +31,20 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
     print("running FleetPy....according to demand component result")
     print(f"{Fore.RED}Running Fleetpy from position 2 {Style.RESET_ALL}")
     if config.DEMAND_UPSCALING:
-        # The demand file is a sample of the travelers: FleetPy also serves (1 / share - 1) synthetic requests per
-        # request of the sample, so the fleet is as busy as with all travelers (docs/open_issues.md I-32). They are not
+        # The demand file is a sample of the travelers: FleetPy also serves 1 / share - 1 copies of each request of the
+        # sample, so the fleet is as busy as with all travelers (docs/open_issues.md I-32, I-45). A copy is shifted in
+        # time by up to +- synthetic_time_shift_min within the request's time period, and has a virtual stop within
+        # synthetic_stop_radius_m walking distance of the request's as origin and as destination. The copies are not
         # MTSM travelers: the trips, fares and logsums come from the sample alone, while FleetPy's waiting times,
-        # rejection rate and fleet results include them. Their times lie in the operating periods. (Until 2026-11-25 a
-        # commented-out "Ritun added" block: 3 per request, ids from 60005, times 5:00-20:00, seed 42, not sorted.)
-        windows = [(int(config.PERIOD_BOUNDS[p][0]) + 1, int(config.PERIOD_BOUNDS[p][1])) for p in scen.operating_periods]
-        n_real, n_new = synthetic_demand.add_synthetic_requests(new_fleetpy_demand, config.DEMAND_SAMPLE_SHARE,
-                                                                area.synthetic_id_start, windows, cfg.random_seed)
+        # rejection rate and fleet results include them. (Until 2026-11-25 a commented-out "Ritun added" block: 3 per
+        # request drawn from the time-of-day profile, ids from 60005, times 5:00-20:00, seed 42, not sorted.)
+        network_files = mtsm.area_paths(study_area).micro_network_files(scen.virstop, config.TIME_PERIODS)
+        radius = config.PARAMETERS[gp.G_SYNTHETIC_STOP_RADIUS_M]
+        nearby = {p: synthetic_demand.nearby_stops(f, config.NUM_WALK_NODES, radius) for p, f in network_files.items()}
+        n_real, n_new = synthetic_demand.add_synthetic_requests(
+            new_fleetpy_demand, config.DEMAND_SAMPLE_SHARE, area.synthetic_id_start,
+            [config.PERIOD_BOUNDS[p] for p in config.TIME_PERIODS], nearby, config.TIME_PERIODS,
+            config.PARAMETERS[gp.G_SYNTHETIC_TIME_SHIFT_MIN] * 60, cfg.random_seed)
         print(f"{Fore.RED}FleetPy demand: {n_real} requests of the sample + {n_new} synthetic (ids from "
               f"{area.synthetic_id_start}) = {n_real + n_new}{Style.RESET_ALL}")
     # FleetPy runs on copies of the inputs in mtsm_data/<area>/fleetpy/ placed inside fleetpy/

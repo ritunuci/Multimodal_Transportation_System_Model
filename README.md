@@ -70,7 +70,10 @@ for vehicle repositioning).
    `demand_sample_share` to the sample's share of all travelers (e.g. `0.25`) and `sample_demand_file` to the file, a
    path relative to `mtsm_data/<area>/`. FleetPy then also serves synthetic microtransit requests for the travelers
    outside the sample, so the fleet is as busy as with all of them, and the evaluation file reports all travelers
-   (its last line gives the share). With `False` (the frozen value), `demand/demand.csv` is taken as all travelers.
+   (its last line gives the share). Each synthetic request is a copy of a request of the sample, shifted in time by up
+   to `synthetic_time_shift_min` (15) within its time period, between virtual stops within `synthetic_stop_radius_m`
+   (400 m walking) of the request's (I-45). With `False` (the frozen value), `demand/demand.csv` is taken as all
+   travelers.
    For the optimizer, set the switch in the frozen model file itself (the candidates are copies of it).
 4. **Run** from the repository root, with `PYTHONHASHSEED=0` and without `PYTHONPATH`:
 

@@ -66,7 +66,8 @@ Paths are relative to the codebase root.
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
-| I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Decision needed | 2026-11-25 |
+| I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
+| I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Decision needed | 2026-11-25 |
 
 ---
 
@@ -330,6 +331,10 @@ Paths are relative to the codebase root.
     = costs - revenues in both columns (scenario 6,029.86, base 2,190.37); `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`,
     `sub_per_M_trip` and `M_avg_wait_time` consistent; ridership files in multiples of 4; last line
     `demand_sample_share` 0.25. A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`**.
+- **Update 2026-11-25, later (I-45, user's decision):** the drawing from the time-of-day profile was replaced by
+  copies of the sample's requests (time shifted by up to +-15 min within the period, origin and destination each a
+  virtual stop within 400 m walking distance; parameters `synthetic_time_shift_min`, `synthetic_stop_radius_m`).
+  The time windows of the operating periods above are no longer used: a copy stays in its request's period.
 
 ### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
 - **Status:** In progress (since 2026-11-23: decided; the builder change and the networks built with it are not in
@@ -659,9 +664,32 @@ Paths are relative to the codebase root.
 
 ---
 
+### I-46: A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node
+- **Status:** Decision needed. **Severity:** High (FleetPy is given other requests than the travelers' paths).
+  **Found:** 2026-11-25 (I-45: 21 of the 68 requests of the reference's last FleetPy file start at a node that has no
+  microtransit boarding link; all 68 end at one).
+- **What:** the transit paths are lists of (node reached, time at it, link type of the link into it, route), in
+  `network_algorithms.transit_label_search` and before it in `getTrajectory_O_to_D`. `trip_legs.split_time_path`
+  takes a microtransit leg's origin from the first element with link type 4: the node reached by the first
+  microtransit link, one link past the boarding node (the microtransit node reached by the type-5 boarding link). Its
+  request time is the time at that node: departure + walking + the modelled wait (type-5 link: 180 s in the initial
+  networks, FleetPy's average after) + the first ride link (median 101 m, 16 s). The leg's destination is right (the
+  node reached by its last type-4 link). FRT legs are built the same way (origin the next FRT stop, time after the
+  FRT wait and the first link), but the FRT demand file (`debug_False_F_transit_demand_*.csv`) is only written, not
+  read.
+- **Impact:** FleetPy picks the rider up one link downstream, and the request enters FleetPy later than the rider
+  reaches the stop, by about the modelled wait; FleetPy's own wait then counts from that time. A leg with a single
+  ride link would start where it ends (none in the reference's last iteration). Long-standing (the old trajectory
+  function had the same format), so in the reference.
+- **To do:** the user decides the request time (the rider's arrival at the stop, or as now after the modelled wait)
+  and the origin (the boarding stop); a fix changes FleetPy's inputs, so it goes with a new reference (the branch
+  `TRA_resubmission`).
+
+## Closed
+
 ### I-45: How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs
-- **Status:** Decision needed (user, 2026-11-25: leaning towards option (b), wants more information first).
-  **Severity:** Medium. **Found:** 2026-11-25 (review of I-32).
+- **Status:** Closed (2026-11-25); Decision needed until then (user, 2026-11-25: leaning towards option (b), wants
+  more information first). **Severity:** Medium. **Found:** 2026-11-25 (review of I-32).
 - **What:** `synthetic_demand.synthesize_requests` (the user's method, unchanged by I-32) draws each synthetic request
   from the sample's microtransit requests of the iteration:
   1. **The time profile is mostly flat.** The time comes from 5-minute bins with a smoothing of 0.5 per bin. With
@@ -681,8 +709,48 @@ Paths are relative to the codebase root.
     to nearby nodes as well (point 3).
 - **To do:** the user decides; then a test run on `main` with the switch on (no reference change: the switch is off
   there).
+- **Measured 2026-11-25** (the 68 requests of the reference's last FleetPy file, 204 synthetic; real: AM 13, MD 35,
+  PM 20, 68 different stop pairs, none shared by two requests): the current method gave AM 50 / MD 79 / PM 75
+  (3 x real would be 39 / 105 / 60), an hourly profile 40 % off the real one, 54 % of the synthetic requests reversed,
+  18 % with the pair, direction and period of a real request. Plain copies (b) fix all of this (exactly 3 x per period;
+  100 % same pair and direction), but 87-100 % of them then have a request on the same stop pair within 10 min
+  (current method: 5 %), which FleetPy can pool for free. Moving the copies' stops removes that: with a random virtual
+  stop within 400 m walking distance (a median of 14 stops, at least 3, around a real origin) 1 % remain.
+- **Resolution (2026-11-25, user's decisions: the recommendation for all points):** option (b) with nearby stops.
+  `synthetic_demand.py` rewritten (`synthesize_requests`, `NearbyStops`; the old samplers are in the git history):
+  each request of the sample gets 1 / share - 1 copies (a factor that is not whole: random rounding per request); a
+  copy's time is the request's time + a random shift of up to +- `synthetic_time_shift_min` (15) minutes, reflected
+  into the request's time period; its origin and its destination are each a random virtual stop within
+  `synthetic_stop_radius_m` (400) m walking distance on the walk links of the scenario's super-network (the request's
+  own stop included; drawn again if both are the same node; the request's stops if there is none). Each request's
+  copies have their own generator, seeded with (`random_seed`, request id): they change only when that request
+  changes. Both parameters are in the model file (`mtsm_data/MANIFEST.csv` rewritten). Walking distance, not straight
+  line, because the coordinates of Lemon Grove's FleetPy nodes are in feet (I-39). Checks on the 68 requests: 204
+  copies, 39 / 105 / 60 per period, no copy with a real request's exact pair, 1 % with a same-pair request within
+  10 min, shifts within 15 min, reproducible, dropping one request leaves the other copies unchanged, share 0.3 gives
+  159 copies (158.7 expected).
+- **Comparison runs (2026-11-25; switch on, share 0.25, `demand/demand.csv` as the sample; FleetPy values of the
+  last FleetPy run of each):**
 
-## Closed
+  | | current method | (b) plain copies (R = 0) | (b) with nearby stops (R = 400 m) |
+  |---|---|---|---|
+  | iterations; FleetPy requests at the end | 8; 49 + 147 | 7; 62 + 186 | 8; 50 + 150 |
+  | shared rides | 6.7 % | 65.4 % | 39.4 % |
+  | occupancy | 0.42 | 0.77 | 0.65 |
+  | FleetPy waiting time, mean / median (s) | 349 / 265 | 296 / 201 | 370 / 256 |
+  | rejection rate | 0.5 % | 0.8 % | 3.5 % |
+  | fleet miles `M_VMT` | 380.3 | 295.6 | 279.3 |
+  | `M_trips` (all travelers) | 196 | 248 | 200 |
+  | `tot_sub ($)` | 6,029.86 | 5,337.77 | 6,036.92 |
+  | `tt_mob_lgsm_inc_with_micro` | 2,790.30 | 3,013.12 | 2,600.24 |
+
+  Plain copies pool most riders with their own copies: waits fall, microtransit looks better, 27 % more microtransit
+  trips and a lower subsidy. With nearby stops the sharing is between the two, and the waits and the rejection rate
+  are the highest: a busier fleet, as intended. The current method's scattered times and pairs give little sharing
+  but more fleet miles. Which comes closest to all travelers is not known: a run on all travelers against a run on a
+  sample with the switch would tell (possible on the branch, whose demand has 42,698 travelers).
+  A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`** (26 files).
+- **Found on the way:** 21 of the 68 real requests start at a node without a microtransit boarding link: I-46.
 
 ### I-34: Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove
 - **Status:** Closed (2026-11-25); Open until then. **Severity:** High (blocked a planned run: downtown San
