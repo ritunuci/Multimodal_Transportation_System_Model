@@ -46,7 +46,7 @@ Paths are relative to the codebase root.
 | I-22 | The path search can miss the least-cost path when a transfer discount applies | Medium | Closed (2026-11-25) | 2026-11-11 |
 | I-23 | After a microtransit leg, the discounted FRT fare was also charged on alighting | Medium | Closed (2026-11-11) | 2026-11-11 |
 | I-24 | Transfer fare rules: the discount lasts for the whole trip; re-boarding after microtransit is charged | Low | Closed (2026-11-25) | 2026-11-11 |
-| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | Open (to turn on on the branch `TRA_resubmission`) | 2026-11-11 |
+| I-25 | Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference | Medium | In progress (on since 2026-11-26 on the branch `TRA_resubmission`; closes with its new reference) | 2026-11-11 |
 | I-26 | A run with `--config` failed at once: the command line was handed to FleetPy | High | Closed (2026-11-11) | 2026-11-11 |
 | I-27 | The optimizer crashed at its first optimization iteration (numpy/MKL in the `fleetpy` env) | High | Closed (2026-11-12) | 2026-11-12 |
 | I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
@@ -110,7 +110,9 @@ Paths are relative to the codebase root.
   the folder stays as the record of how the old Lemon Grove inputs were made.
 
 ### I-25: Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference
-- **Status:** Open (reminder: turn the switch on later; user's decision 2026-11-11). **Severity:** Medium.
+- **Status:** In progress (turned on on the branch `TRA_resubmission` on 2026-11-26; closes with the branch's new
+  reference; Open until then: reminder to turn the switch on later, user's decision 2026-11-11). **Severity:**
+  Medium.
   **Found:** 2026-11-11 (checking the FRT <-> microtransit transfers).
 - **What:** nothing charged a transfer: the coefficient `bt_f_trfer` of the demand file was used only on transfer
   links (type 3), which no network had. Since 2026-11-11 the path search
@@ -168,6 +170,19 @@ Paths are relative to the codebase root.
   one stop node per stop, route and direction (every route change a real transfer; I-31 does not arise there). The
   user asked to be reminded to turn it on there. It is a parameter of the model file, so both branches keep the same
   code.
+- **Turned on on the branch `TRA_resubmission` (2026-11-26, user's request):** `enable_num_transfer_penalty,True` in
+  `mtsm_data/input_parameter/mtsm_constant_configurations.csv` (description: False on `main`, True on the branch
+  since 2026-11-26); `mtsm_data/MANIFEST.csv` rewritten (`check_inputs.py --write lemon_grove`; the area manifest
+  unchanged). `main` keeps `False`.
+  - A full run on the old Lemon Grove inputs (the new data is not moved in yet; 7:44): `compare_reference.py` 7
+    identical, 19 differing -> `NOT REPRODUCED`, as expected. From here on `main`'s reference no longer reproduces on
+    the branch; the branch gets its own reference with the new data.
+  - Evaluation file against the reference (base case | scenario): F_trips 19 -> 14 | 25 -> 12; M_trips 68 -> 66;
+    M+F users 6 -> 0; pure FRT users 19 -> 14 | 18 -> 12; transit users 249 -> 245 | 301 -> 293; car users
+    3493 -> 3497 | 3441 -> 3449; tot_sub 2332.87 -> 2345.37 | 7796.03 -> 7768.25; `tt_mob_lgsm_inc_with_micro`
+    913.27 -> 936.27; microtransit wait 209.39 -> 195.82 s; mode switches 52 -> 48. The same direction and size as
+    the comparisons of 2026-11-13 and 2026-11-24 above (since then I-22, I-24, I-17, I-19 and the exact mile changed
+    the reference).
 
 ### I-30: The evaluation file holds one scenario; its base column is empty for runs without a base case
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-12 (I-29).

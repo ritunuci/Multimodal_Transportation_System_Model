@@ -1827,6 +1827,34 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   (`trip_legs.split_time_path`), that a single-link leg would be declined by FleetPy, the possible link to I-44's
   very short rides, and the options for the branch. Docs only; no run.
 
+## Branch `TRA_resubmission` fast-forwarded to `main`; baseline `REPRODUCED` (2026-11-26)
+
+- The walk-through of the open items on `main` is finished (2026-11-26): I-30 and I-41 stay open on `main`; every
+  other open item is to be done on the branch `TRA_resubmission` (its status says so).
+- `git switch TRA_resubmission`, `git merge --ff-only main`: `8367cc9` -> `8c6b34f` (27 commits, a fast-forward; the
+  branch had no commits of its own). Pushed by the user. From here on the work is on the branch; `main` keeps the
+  old Lemon Grove inputs and their reference.
+- Baseline on the branch, before any branch change: `tools/check_inputs.py` (all frozen inputs match their
+  manifests), a full run (6:31) and `tools/compare_reference.py`: **`REPRODUCED`** (26 identical,
+  `lemon_grove_seed0`). It also replaced the leftover outputs of the stopped optimizer test (I-42) in
+  `mtsm_data/lemon_grove/output/`.
+
+## Transfer penalty on, on the branch (I-25, 2026-11-26)
+
+- User's request: `enable_num_transfer_penalty` = `True` on the branch `TRA_resubmission`
+  (`mtsm_constant_configurations.csv`; description updated; `mtsm_data/MANIFEST.csv` rewritten with
+  `check_inputs.py --write lemon_grove`, which then passed). `main` keeps `False`.
+- Full run on the old Lemon Grove inputs (7:44): `NOT REPRODUCED` (7 identical, 19 differing), as expected; the
+  numbers are in `open_issues.md` I-25 (e.g. scenario F_trips 25 -> 12, M+F users 6 -> 0, tot_sub 7796.03 ->
+  7768.25, logsum 913.27 -> 936.27). From here on `main`'s reference does not reproduce on the branch; the branch's
+  own reference comes with the new data.
+- Also checked (read-only): `new_LG_data/lemon_grove/` against `docs/study_area_inputs.md`. It has files 2, 3 (per
+  period), 4, 5 (per period), 8 (FleetPy network, period times, start file), 9 and 10, some under other names;
+  not in it: file 1 (`area_parameters.csv`, keep `main`'s with the ABM3 periods), file 6 (`frt_links.csv`, to be
+  made from the type-1 links of file 3), FleetPy's vehicle type and constant configs (keep `main`'s; their
+  `end_time` 86400 is before the last departures, 97,043 s). The mapping is for the held data decisions.
+- Docs: `open_issues.md` (I-25: In progress, closes with the branch's new reference).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

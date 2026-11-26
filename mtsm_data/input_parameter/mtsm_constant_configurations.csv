@@ -17,7 +17,7 @@ convergence_gap,0.01,convergence threshold
 mode_change_threshold,0.05,keep the previous mode if the transit probability changes by at most this
 aggregation,whole_region,how FleetPy's waiting times update the network: whole_region or census_track
 rejection_rate_window,3,from this iteration on the rejection rate is the average of this many previous iterations
-enable_num_transfer_penalty,False,True = the path search adds bt_f_trfer per transfer (each transit boarding after the first; a route change at a shared stop); False until a new reference (I-25)
+enable_num_transfer_penalty,True,True = the path search adds bt_f_trfer per transfer (each transit boarding after the first; a route change at a shared stop); False on main; True on the branch TRA_resubmission since 2026-11-26 (I-25)
 default_micro_wait_time,180,microtransit waiting time of a period without served requests (s)
 meters_per_mile,1609.344,meters per mile (all mile conversions; FleetPy's km per mile = this / 1000)
 operating_periods_scenarios,AM;MD;PM,microtransit operating periods; scenarios separated by |
