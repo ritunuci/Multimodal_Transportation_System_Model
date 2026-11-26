@@ -56,7 +56,7 @@ Paths are relative to the codebase root.
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Closed (2026-11-25) | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress (to close on the branch `TRA_resubmission`: TRA's networks) | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
-| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
+| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress (to close on the branch `TRA_resubmission`: first run on period data) | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
@@ -345,8 +345,9 @@ Paths are relative to the codebase root.
   2,601 edges) has all 27.
 
 ### I-35: One super-network for the whole day; MTSM is to use one per time period
-- **Status:** In progress (since 2026-11-24: the model reads period networks; not yet run on period data). Open
-  until 2026-11-24. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
+- **Status:** In progress (to close on the branch `TRA_resubmission` with the first run on period data and its
+  reference; status written so on 2026-11-26; since 2026-11-24: the model reads period networks; not yet run on
+  period data). Open until 2026-11-24. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
   the input-preparation repository `TRA_input_data_prep`).
 - **Plan (user, 2026-11-23):** MTSM is to use one super-network per time period. `TRA_input_data_prep` builds them,
   per area and per period, with the modified `build_super_network.py` (I-33):
@@ -423,6 +424,27 @@ Paths are relative to the codebase root.
 - **Still open:** a run on period data (TRA's new Lemon Grove inputs, branch `TRA_resubmission`) and its reference;
   the detour-ratio question of item 4; FleetPy's operator does not replan at a travel-time switch (I-43, accepted
   and closed 2026-11-26).
+- **The detour-ratio question of item 4, answered for period times (2026-11-26, code read):** the ratio is FleetPy's
+  drive time of the served requests over their direct-route time, per period
+  (`update_network_files.update_network_files`: `time_detour_ratio[P] = time_tt_drive_time[P] /
+  time_tt_direct_time[P]`); with `network_dynamics.csv` both come from the same period's FleetPy times, so period
+  times are not counted twice by it.
+- **To decide on the branch (found 2026-11-26; user's decision to record it here): the microtransit link times are
+  car time x 1.4 x the detour ratio in the final networks.**
+  - In the super-networks, a microtransit in-vehicle link (type 4) has 1.4 x FleetPy's time of the same edge:
+    `mtsm_data/lemon_grove/networks/super_network_micro_virstop_75.csv` against FleetPy's `base/edges.csv`
+    (2,816 links), and TRA's new Lemon Grove networks per period against FleetPy's period times
+    (`initial_super_network_micro_hw_10_virstop_75_AM.csv` against `21600/edges_td_att.csv`, `_MD` against
+    `32400`; 2,574 links each); the 5th, 50th and 95th percentiles of the ratio are all 1.400.
+  - Each final network starts from its period's initial network and multiplies its type-4 times by the period's
+    detour ratio (`update_network_files.update_network_files`: `travel_time = travel_time *
+    time_detour_ratio[time_period]` for `link_type == 4`), so from iteration 1 on a microtransit link costs car time
+    x 1.4 x the detour ratio. In iteration 0 it is car time x 1.4.
+  - If the 1.4 is a first guess of the detour, the detour is counted twice from iteration 1 on; if it stands for
+    something else (e.g. microtransit slower than a car), it is not. Long-standing, so in `main`'s reference.
+  - To decide: what the 1.4 stands for, and whether the final networks apply the ratio to the car time (car time x
+    ratio) or, as now, to the initial microtransit time (car time x 1.4 x ratio). A change alters results, so it
+    goes with the branch's new reference.
 
 ### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).

@@ -1801,6 +1801,16 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   or FRT stop join at a freeway node, in all 115 super-networks; the car network has the car-only edges. Record in
   `open_issues.md` I-33. Docs only; no run.
 
+## I-35's status names the branch; the detour ratio and the factor 1.4 (2026-11-26)
+
+- User's decisions: I-35's status (index and entry) now reads "In progress (to close on the branch
+  `TRA_resubmission`: first run on period data)"; record the detour-ratio finding.
+- Code read: the detour ratio is FleetPy's drive time over its direct-route time per period, both from the same
+  period's FleetPy times, so period times are not counted twice. Read-only check: the microtransit links (type 4)
+  are 1.4 x FleetPy's edge time in `main`'s network and in TRA's new period networks, and the final networks
+  multiply them by the ratio (car time x 1.4 x ratio from iteration 1 on). Recorded in `open_issues.md` I-35 as a
+  decision for the branch's new reference. Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
