@@ -53,7 +53,7 @@ Paths are relative to the codebase root.
 | I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
-| I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | In progress (switch `demand_upscaling` on `main`, off; the user tests it) | 2026-11-16 |
+| I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Closed (2026-11-25) | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
@@ -68,6 +68,7 @@ Paths are relative to the codebase root.
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
 | I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Decision needed | 2026-11-25 |
+| I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | Open (with the new reference on the branch `TRA_resubmission`) | 2026-11-25 |
 
 ---
 
@@ -217,124 +218,6 @@ Paths are relative to the codebase root.
   route 856: 1,836 against about 2,875 m; route 4: 1,205 against about 1,995 m); multiplied by 1.609 they fit. They
   may be miles x 1,000, not metres. How the model uses this column (FRT passenger miles, the per-mile subsidy
   values) was not checked. See also I-21.
-
-### I-32: Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute
-- **Status:** In progress since 2026-11-25 (the switch `demand_upscaling` on `main`, off by default; the user
-  tests it on `main`); Open until then. **Severity:** Medium. **Found:** 2026-11-16 (user's question).
-- **What:** `synthesize_requests_with_trend_time` (`pre_process/generate_demand_files.py`; since 2026-11-23 in
-  `mtsm_model/helpers/synthetic_demand.py`, unchanged, I-14) writes the new requests
-  after the old ones (`pd.concat([df, new_df])`), not merged in time order. The new block is not in time order
-  either: the times come from the random sampler in the order they are drawn. The only caller is the commented-out
-  "Ritun added" block in `mtsm_model/microtransit.py`. That block adds 3 x the microtransit users of the iteration as
-  synthetic local requests to FleetPy's demand file before FleetPy runs.
-- **How FleetPy reads the file** (`fleetpy/src/demand/demand.py`, `load_demand_file` and `get_new_travelers`): it
-  rounds `rq_time` down to the time step (60 s in the Lemon Grove config) and groups the rows by it; the groups are
-  sorted by time. So every request enters the simulation at its own minute, wherever its row is. Within one minute
-  the requests keep the file order, and `ImmediateDecisionsSimulation.step` handles them one after the other (each
-  is inserted into the vehicle plans before the next one is looked at). So only the order within a minute matters.
-- **Checked 2026-11-16** (scripts in the session scratchpad; nothing in the repo changed; FleetPy demand files and
-  result folders made for the check under their own names and removed afterwards):
-  - The FleetPy demand file of the last iteration of the reference run (68 requests) is not in time order itself
-    (35 rows step back in time; MTSM writes it in the order of the agent list). FleetPy handles this already.
-  - The commented-out call, repeated on a copy of that file: 204 new rows, 272 in all. A second file held the same
-    rows sorted by `rq_time` (stable sort). Loaded with FleetPy's own `Demand.load_demand_file`, every request enters
-    at the same minute in both files; the order differs in 29 of the 49 minutes that hold more than one request
-    (23 minutes hold an old and a new request).
-  - FleetPy runs with the reference's config (repositioning, fleet 2, seed 0). The 68-request file gives the
-    reference's `standard_eval.csv` byte-identical (check of the method). Appended against sorted:
-
-    | | appended | sorted |
-    |---|---|---|
-    | users served (of 272) | 234 | 238 |
-    | waiting time, mean / median (s) | 498.2 / 526.1 | 490.1 / 490.0 |
-    | waiting time, 90 % quantile (s) | 858.3 | 846.4 |
-    | the 68 MTSM users: served / mean wait (s) | 61 / 564.7 | 58 / 516.7 |
-    | shared rides | 17.5 % | 15.1 % |
-    | total vkm | 735.0 | 738.9 |
-
-    The first difference is at 07:02: two new requests in the same minute, the later one (by second) first in the
-    appended file. From there the two runs go apart.
-- **Impact:** none on the reference (the call is commented out). If the block is switched on, the share served and
-  the waiting times that MTSM reads back from FleetPy (`modal split rq` for the rejection rate, the waiting times in
-  the final networks) depend on the row order within a minute. This is not a wrong entry time; it is FleetPy's
-  sensitivity to the order of requests in the same minute, and any change of that order moves the results like this
-  (one different insertion changes the vehicle plans for all later requests).
-- **To do (when the block is switched on):** sort the combined rows by `rq_time` (stable) before writing, so the
-  order is the order of the request times and does not depend on how the rows were made. Sorting MTSM's own FleetPy
-  demand file the same way would also remove the order of the agent list as a factor, but it can change FleetPy's
-  results, so it belongs to a new reference (not tested).
-- **Also noticed, not changed:** the time sampler of the function is built from the requests of the input file only,
-  i.e. the microtransit users of the iteration (68 in the reference). With 180 five-minute bins and a smoothing of
-  0.5 per bin (90 in all) against 68 observed requests, 57 % of the new times are drawn uniformly over 5:00-20:00;
-  the "trend" is mostly flat. The new request ids start at 60005; the largest id in the demand data is 15047, so
-  they do not clash. Whether `update_network_files` mixes the synthetic requests into the waiting times it writes
-  to the final networks was not checked.
-- **Update 2026-11-25 (user's decisions): the block is now the switch `demand_upscaling`, on `main`, off by default.**
-  - **Why the block exists (user):** a run on all travelers takes too long, so the model runs on a sample (`main`'s
-    `demand/demand.csv` is a 25 % sample of about 15,000 travelers: 3,742 rows, ids up to 15,047; drawn with
-    `sample_20_percent` in `pre_process/generate_demand_files.py`, `frac=0.25`). With only the sample's requests the
-    microtransit fleet is less busy than with all travelers and the system looks better than it is. The synthetic
-    requests make FleetPy serve as many requests as all travelers would; the results are then scaled to all travelers
-    (until now by the optimizer's commented-out block "USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING": 4 x the
-    FRT and microtransit revenues, 4 x the logsum delta). Car times do not depend on the number of travelers (fixed
-    period networks; the `flow` field of `network_algorithms.Link` is never used) and the FRT has no capacity, so only
-    FleetPy needs the extra requests.
-  - **Parameters** (model file): `demand_upscaling` (False), `demand_sample_share` (1; between 0 and 1 when on),
-    `sample_demand_file` (`none`; a path relative to `mtsm_data/<area>/` when on). Off: the run reads
-    `demand/demand.csv` as all travelers, nothing is added or scaled, and the reference is unchanged. On: the run reads
-    the sample file, which the user provides (MTSM does not draw the sample); `tools/check_study_area.py` checks it as
-    file 2. Code: `config.DEMAND_UPSCALING`, `DEMAND_SCALE` (1 / share), `scale_up`; `mtsm_paths.run_demand_file`.
-  - **FleetPy** (`microtransit.py`, `synthetic_demand.add_synthetic_requests`, each iteration before FleetPy):
-    round(n x (1 / share - 1)) synthetic requests for the n requests of the sample (3 n for 0.25). Request ids from
-    `synthetic_id_start`: the smallest power of ten >= 10 x max(largest traveler id + 1, travelers / share), so clear
-    of every traveler's id, also of the travelers outside the sample if the full demand numbers them alike (Lemon Grove:
-    1,000,000; was 60,005); the run stops if an MTSM request id (including the next free ids of a traveler's later
-    microtransit legs) reaches it. Times only in the scenario's microtransit operating periods (was 5:00-20:00 for
-    every scenario: a scenario with fewer periods would have got requests while no service runs, raising the
-    rejection rate). The whole file is written sorted by `rq_time` (stable sort): **the fix of this item** for the
-    synthetic rows. Seed: the run's `random_seed`, the same in every iteration (was 42). The way times and pairs are
-    drawn is unchanged; its review is I-45. `synthesize_requests_with_trend_time` was split into `make_time_sampler`
-    (now with windows), `make_od_sampler` (unchanged) and `synthesize_requests`; its file handling and the "+ 5" of the
-    ids are gone.
-  - **What MTSM reads back from FleetPy includes the synthetic requests, on purpose:** the waiting time per period and
-    the detour ratios (`update_network_files`, all rows of `1_user-stats.csv`), the rejection rate and waiting time
-    (`standard_eval.csv`), and the fleet's miles, utilization, occupancy and speed. They stand for the travelers outside
-    the sample. (A first proposal on 2026-11-25 to use only the sample's rows was withdrawn.)
-  - **Evaluation file** (`results.py`; both columns): the sums over the sample's travelers are multiplied by 1 / share:
-    traveler and trip counts, revenues, out-of-pocket, gas and parking costs, generalized cost, the logsum increase,
-    mode switches, car, walk and passenger miles, walk and waiting times. The values built from them then describe all
-    travelers: `tot_sub` and the twelve `sub_per_*` lines, `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`. Not scaled: the FRT
-    schedule's cost and miles and FleetPy's values (already for all travelers), and shares and averages (a ratio of
-    two scaled sums). A last line `demand_sample_share` is added only when the switch is on. The FRT link ridership
-    files (`debug_False_..._transit_edges_rders_scen_10.csv`) are scaled too; the individual results stay one row per
-    traveler of the sample, unscaled.
-  - **Found on the way: `main`'s results mix scales today** (switch off, 25 % sample): `tot_sub` and the `sub_per_*`
-    lines set the full FRT and fleet costs against a quarter of the revenues and riders, `M_PMT/M_VMT` and
-    `F_PMT/F_VMT` are a quarter of their value, `tt_VMT` adds the sample's car miles to the full transit miles, and the
-    optimizer's active objectives (`-(x1 - x2)`, `y1 - y2`) inherit this. User's decision: the reference is not
-    updated; the switch is tested on `main`.
-  - **Optimizer:** the commented-out block was removed (comment at its place). With the switch on, the evaluation
-    file gives the values the block computed: `tot_sub` (scenario) - `tot_sub` (base) = its subsidy delta, and the
-    logsum line is 4 x the sample's. Notes: candidate copies are made from the frozen model file, so an optimizer run
-    with the switch on needs it set in the frozen file (then `python tools/check_inputs.py --write <area>`); the
-    hypervolume `ref_point` (-18000, 0) is in the evaluation file's scale and may need a new value for all travelers
-    (not changed).
-  - **Not done:** sorting MTSM's own FleetPy demand file when the switch is off (it would change FleetPy's results:
-    a new reference, the branch `TRA_resubmission`).
-  - **Checks (2026-11-25):** the new functions on a copy of the reference's last FleetPy demand file (68 requests):
-    204 added, ids 1,000,000-1,000,203, times 5:03-19:56, file sorted, the same file from a second call, and a stop
-    when an id reaches the start. A full run with the switch on (a copy of the model file with `demand_upscaling`
-    True, `demand_sample_share` 0.25, `sample_demand_file` `demand/demand.csv`; 8 min 54 s, 8 iterations): FleetPy got
-    68 + 204 requests in iteration 0, then 49 + 147; the evaluation file against the individual results (script in
-    the session scratchpad): `tt_agents` 14,968 = 4 x 3,742 in both columns; car and transit users, out-of-pocket
-    cost, logsum increase (2,790.30), microtransit, FRT and car miles = 4 x the sums of the individual rows; `tot_sub`
-    = costs - revenues in both columns (scenario 6,029.86, base 2,190.37); `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`,
-    `sub_per_M_trip` and `M_avg_wait_time` consistent; ridership files in multiples of 4; last line
-    `demand_sample_share` 0.25. A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`**.
-- **Update 2026-11-25, later (I-45, user's decision):** the drawing from the time-of-day profile was replaced by
-  copies of the sample's requests (time shifted by up to +-15 min within the period, origin and destination each a
-  virtual stop within 400 m walking distance; parameters `synthetic_time_shift_min`, `synthetic_stop_radius_m`).
-  The time windows of the operating periods above are no longer used: a copy stays in its request's period.
 
 ### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
 - **Status:** In progress (since 2026-11-23: decided; the builder change and the networks built with it are not in
@@ -685,7 +568,143 @@ Paths are relative to the codebase root.
   and the origin (the boarding stop); a fix changes FleetPy's inputs, so it goes with a new reference (the branch
   `TRA_resubmission`).
 
+### I-47: MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step
+- **Status:** Open (to do with the new reference on the branch `TRA_resubmission`; user's decision 2026-11-25).
+  **Severity:** Medium. **Found:** 2026-11-16 (as part of I-32; its own item since 2026-11-25).
+- **What:** `iteration.run_iteration` writes FleetPy's demand file in the order of the traveler list, not of the
+  request times (the reference's last iteration: 35 of 68 rows step back in time). FleetPy rounds `rq_time` down to
+  its time step (60 s) and handles the requests of one step in the order of the file (I-32), so the order of the
+  traveler list decides the order within a minute, and FleetPy's results depend on it (I-32's test: a different order
+  within a minute moved the share served, the waits and the vehicle miles).
+- **To do:** write the file sorted by `rq_time` (a stable sort) also when `demand_upscaling` is off, as it is when on
+  (`synthetic_demand.add_synthetic_requests`). It changes FleetPy's results, so it goes into the branch's new
+  reference.
+
 ## Closed
+
+### I-32: Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute
+- **Status:** Closed (2026-11-25); In progress and Open until then. **Severity:** Medium. **Found:** 2026-11-16 (user's question).
+- **What:** `synthesize_requests_with_trend_time` (`pre_process/generate_demand_files.py`; since 2026-11-23 in
+  `mtsm_model/helpers/synthetic_demand.py`, unchanged, I-14) writes the new requests
+  after the old ones (`pd.concat([df, new_df])`), not merged in time order. The new block is not in time order
+  either: the times come from the random sampler in the order they are drawn. The only caller is the commented-out
+  "Ritun added" block in `mtsm_model/microtransit.py`. That block adds 3 x the microtransit users of the iteration as
+  synthetic local requests to FleetPy's demand file before FleetPy runs.
+- **How FleetPy reads the file** (`fleetpy/src/demand/demand.py`, `load_demand_file` and `get_new_travelers`): it
+  rounds `rq_time` down to the time step (60 s in the Lemon Grove config) and groups the rows by it; the groups are
+  sorted by time. So every request enters the simulation at its own minute, wherever its row is. Within one minute
+  the requests keep the file order, and `ImmediateDecisionsSimulation.step` handles them one after the other (each
+  is inserted into the vehicle plans before the next one is looked at). So only the order within a minute matters.
+- **Checked 2026-11-16** (scripts in the session scratchpad; nothing in the repo changed; FleetPy demand files and
+  result folders made for the check under their own names and removed afterwards):
+  - The FleetPy demand file of the last iteration of the reference run (68 requests) is not in time order itself
+    (35 rows step back in time; MTSM writes it in the order of the agent list). FleetPy handles this already.
+  - The commented-out call, repeated on a copy of that file: 204 new rows, 272 in all. A second file held the same
+    rows sorted by `rq_time` (stable sort). Loaded with FleetPy's own `Demand.load_demand_file`, every request enters
+    at the same minute in both files; the order differs in 29 of the 49 minutes that hold more than one request
+    (23 minutes hold an old and a new request).
+  - FleetPy runs with the reference's config (repositioning, fleet 2, seed 0). The 68-request file gives the
+    reference's `standard_eval.csv` byte-identical (check of the method). Appended against sorted:
+
+    | | appended | sorted |
+    |---|---|---|
+    | users served (of 272) | 234 | 238 |
+    | waiting time, mean / median (s) | 498.2 / 526.1 | 490.1 / 490.0 |
+    | waiting time, 90 % quantile (s) | 858.3 | 846.4 |
+    | the 68 MTSM users: served / mean wait (s) | 61 / 564.7 | 58 / 516.7 |
+    | shared rides | 17.5 % | 15.1 % |
+    | total vkm | 735.0 | 738.9 |
+
+    The first difference is at 07:02: two new requests in the same minute, the later one (by second) first in the
+    appended file. From there the two runs go apart.
+- **Impact:** none on the reference (the call is commented out). If the block is switched on, the share served and
+  the waiting times that MTSM reads back from FleetPy (`modal split rq` for the rejection rate, the waiting times in
+  the final networks) depend on the row order within a minute. This is not a wrong entry time; it is FleetPy's
+  sensitivity to the order of requests in the same minute, and any change of that order moves the results like this
+  (one different insertion changes the vehicle plans for all later requests).
+- **To do (when the block is switched on):** sort the combined rows by `rq_time` (stable) before writing, so the
+  order is the order of the request times and does not depend on how the rows were made. Sorting MTSM's own FleetPy
+  demand file the same way would also remove the order of the agent list as a factor, but it can change FleetPy's
+  results, so it belongs to a new reference (not tested).
+- **Also noticed, not changed:** the time sampler of the function is built from the requests of the input file only,
+  i.e. the microtransit users of the iteration (68 in the reference). With 180 five-minute bins and a smoothing of
+  0.5 per bin (90 in all) against 68 observed requests, 57 % of the new times are drawn uniformly over 5:00-20:00;
+  the "trend" is mostly flat. The new request ids start at 60005; the largest id in the demand data is 15047, so
+  they do not clash. Whether `update_network_files` mixes the synthetic requests into the waiting times it writes
+  to the final networks was not checked.
+- **Update 2026-11-25 (user's decisions): the block is now the switch `demand_upscaling`, on `main`, off by default.**
+  - **Why the block exists (user):** a run on all travelers takes too long, so the model runs on a sample (`main`'s
+    `demand/demand.csv` is a 25 % sample of about 15,000 travelers: 3,742 rows, ids up to 15,047; drawn with
+    `sample_20_percent` in `pre_process/generate_demand_files.py`, `frac=0.25`). With only the sample's requests the
+    microtransit fleet is less busy than with all travelers and the system looks better than it is. The synthetic
+    requests make FleetPy serve as many requests as all travelers would; the results are then scaled to all travelers
+    (until now by the optimizer's commented-out block "USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING": 4 x the
+    FRT and microtransit revenues, 4 x the logsum delta). Car times do not depend on the number of travelers (fixed
+    period networks; the `flow` field of `network_algorithms.Link` is never used) and the FRT has no capacity, so only
+    FleetPy needs the extra requests.
+  - **Parameters** (model file): `demand_upscaling` (False), `demand_sample_share` (1; between 0 and 1 when on),
+    `sample_demand_file` (`none`; a path relative to `mtsm_data/<area>/` when on). Off: the run reads
+    `demand/demand.csv` as all travelers, nothing is added or scaled, and the reference is unchanged. On: the run reads
+    the sample file, which the user provides (MTSM does not draw the sample); `tools/check_study_area.py` checks it as
+    file 2. Code: `config.DEMAND_UPSCALING`, `DEMAND_SCALE` (1 / share), `scale_up`; `mtsm_paths.run_demand_file`.
+  - **FleetPy** (`microtransit.py`, `synthetic_demand.add_synthetic_requests`, each iteration before FleetPy):
+    round(n x (1 / share - 1)) synthetic requests for the n requests of the sample (3 n for 0.25). Request ids from
+    `synthetic_id_start`: the smallest power of ten >= 10 x max(largest traveler id + 1, travelers / share), so clear
+    of every traveler's id, also of the travelers outside the sample if the full demand numbers them alike (Lemon Grove:
+    1,000,000; was 60,005); the run stops if an MTSM request id (including the next free ids of a traveler's later
+    microtransit legs) reaches it. Times only in the scenario's microtransit operating periods (was 5:00-20:00 for
+    every scenario: a scenario with fewer periods would have got requests while no service runs, raising the
+    rejection rate). The whole file is written sorted by `rq_time` (stable sort): **the fix of this item** for the
+    synthetic rows. Seed: the run's `random_seed`, the same in every iteration (was 42). The way times and pairs are
+    drawn is unchanged; its review is I-45. `synthesize_requests_with_trend_time` was split into `make_time_sampler`
+    (now with windows), `make_od_sampler` (unchanged) and `synthesize_requests`; its file handling and the "+ 5" of the
+    ids are gone.
+  - **What MTSM reads back from FleetPy includes the synthetic requests, on purpose:** the waiting time per period and
+    the detour ratios (`update_network_files`, all rows of `1_user-stats.csv`), the rejection rate and waiting time
+    (`standard_eval.csv`), and the fleet's miles, utilization, occupancy and speed. They stand for the travelers outside
+    the sample. (A first proposal on 2026-11-25 to use only the sample's rows was withdrawn.)
+  - **Evaluation file** (`results.py`; both columns): the sums over the sample's travelers are multiplied by 1 / share:
+    traveler and trip counts, revenues, out-of-pocket, gas and parking costs, generalized cost, the logsum increase,
+    mode switches, car, walk and passenger miles, walk and waiting times. The values built from them then describe all
+    travelers: `tot_sub` and the twelve `sub_per_*` lines, `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`. Not scaled: the FRT
+    schedule's cost and miles and FleetPy's values (already for all travelers), and shares and averages (a ratio of
+    two scaled sums). A last line `demand_sample_share` is added only when the switch is on. The FRT link ridership
+    files (`debug_False_..._transit_edges_rders_scen_10.csv`) are scaled too; the individual results stay one row per
+    traveler of the sample, unscaled.
+  - **Found on the way: `main`'s results mix scales today** (switch off, 25 % sample): `tot_sub` and the `sub_per_*`
+    lines set the full FRT and fleet costs against a quarter of the revenues and riders, `M_PMT/M_VMT` and
+    `F_PMT/F_VMT` are a quarter of their value, `tt_VMT` adds the sample's car miles to the full transit miles, and the
+    optimizer's active objectives (`-(x1 - x2)`, `y1 - y2`) inherit this. User's decision: the reference is not
+    updated; the switch is tested on `main`.
+  - **Optimizer:** the commented-out block was removed (comment at its place). With the switch on, the evaluation
+    file gives the values the block computed: `tot_sub` (scenario) - `tot_sub` (base) = its subsidy delta, and the
+    logsum line is 4 x the sample's. Notes: candidate copies are made from the frozen model file, so an optimizer run
+    with the switch on needs it set in the frozen file (then `python tools/check_inputs.py --write <area>`); the
+    hypervolume `ref_point` (-18000, 0) is in the evaluation file's scale and may need a new value for all travelers
+    (not changed).
+  - **Not done:** sorting MTSM's own FleetPy demand file when the switch is off (it would change FleetPy's results:
+    a new reference, the branch `TRA_resubmission`).
+  - **Checks (2026-11-25):** the new functions on a copy of the reference's last FleetPy demand file (68 requests):
+    204 added, ids 1,000,000-1,000,203, times 5:03-19:56, file sorted, the same file from a second call, and a stop
+    when an id reaches the start. A full run with the switch on (a copy of the model file with `demand_upscaling`
+    True, `demand_sample_share` 0.25, `sample_demand_file` `demand/demand.csv`; 8 min 54 s, 8 iterations): FleetPy got
+    68 + 204 requests in iteration 0, then 49 + 147; the evaluation file against the individual results (script in
+    the session scratchpad): `tt_agents` 14,968 = 4 x 3,742 in both columns; car and transit users, out-of-pocket
+    cost, logsum increase (2,790.30), microtransit, FRT and car miles = 4 x the sums of the individual rows; `tot_sub`
+    = costs - revenues in both columns (scenario 6,029.86, base 2,190.37); `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`,
+    `sub_per_M_trip` and `M_avg_wait_time` consistent; ridership files in multiples of 4; last line
+    `demand_sample_share` 0.25. A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`**.
+- **Update 2026-11-25, later (I-45, user's decision):** the drawing from the time-of-day profile was replaced by
+  copies of the sample's requests (time shifted by up to +-15 min within the period, origin and destination each a
+  virtual stop within 400 m walking distance; parameters `synthetic_time_shift_min`, `synthetic_stop_radius_m`).
+  The time windows of the operating periods above are no longer used: a copy stays in its request's period.
+- **Resolution (2026-11-25, user's decision):** closed. The synthetic requests are now the switch
+  `demand_upscaling` (update 2026-11-25 above; how they are made: I-45, closed), and with the switch on the whole
+  FleetPy demand file is written sorted by `rq_time`, so the order within a time step follows the request times.
+  With the switch off nothing changes: every scaling step is behind the switch (`config.scale_up` returns its
+  argument), the evaluation file has no extra line, no request is added and no file is sorted; two full runs with
+  the switch off printed `REPRODUCED` (26 files). The user tests the switch on `main`. The remaining point, sorting
+  MTSM's own FleetPy demand file when the switch is off, moves to I-47 (with the new reference on the branch).
 
 ### I-45: How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs
 - **Status:** Closed (2026-11-25); Decision needed until then (user, 2026-11-25: leaning towards option (b), wants

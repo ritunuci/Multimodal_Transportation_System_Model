@@ -1738,6 +1738,13 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - New item I-46 (found on the way): a microtransit leg's FleetPy request starts one link past the boarding stop.
 - Docs: `README.md`, `open_issues.md` (I-32 update, I-45 closed, I-46).
 
+## I-32 closed; I-47 for MTSM's own FleetPy demand file (2026-11-25)
+
+- User's decision: I-32 closed (the switch `demand_upscaling`, the file sorted when it is on). Confirmed for the
+  record: with the switch off the evaluation file and every other output are as before (`REPRODUCED` twice). The
+  remaining point, sorting MTSM's own FleetPy demand file when the switch is off, is the new I-47, to do with the
+  new reference on the branch `TRA_resubmission`. Record in `open_issues.md`.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
