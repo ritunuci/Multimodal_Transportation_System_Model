@@ -13,6 +13,8 @@ MTSM_DIR = os.path.join(CODE_ROOT, "mtsm_data")
 
 # inputs shared by all study areas
 INPUT_PARAMETER_DIR = os.path.join(MTSM_DIR, "input_parameter")             # Bayesian_Optimization/Input_parameter
+# the optimizer's results, one folder per study area (optimization_results_dir; since 2026-11-26, I-42)
+OPTIMIZATION_OUTPUT_DIR = os.path.join(MTSM_DIR, "Bayesian_optimization_output")
 # (REGION_DIR, region/, and ACTIVITYSIM_DIR, region/activitysim_output/, held the accessibility inputs: removed
 # 2026-11-24)
 
@@ -49,7 +51,8 @@ class AreaPaths:
     final_network_dir: str  # LG_FINAL_NETWORK_DIR; Bayesian_Optimization/lemon_grove/final_network_folder
     indiv_output_dir: str  # LG_INDIV_OUTPUT_DIR; Data/0719_input/indiv_output_folder
     output_dir: str  # LG_OUTPUT_DIR; Bayesian_Optimization/lemon_grove/output_folder
-    optimization_output_dir: str  # LG_OPTIMIZATION_OUTPUT_DIR; Bayesian_Optimization/optimization_output (optimizer)
+    # (optimization_output_dir, mtsm_data/<area>/optimization_output, the optimizer's: removed 2026-11-26, I-42; see
+    # optimization_results_dir)
     fleetpy_demand_dir: str  # LG_FLEETPY_DEMAND_DIR: inside fleetpy/; the run writes FleetPy's demand there
     # (LG_TRANSIT_DIR and LG_TRANSIT_NETWORK_DIR: their files are in networks/ since 2026-11-24;
     # LG_INITIAL_NETWORK_0719_DIR and LG_MGRA_NODE_MAPPING_DIR, accessibility only, removed 2026-11-24)
@@ -150,7 +153,6 @@ def area_paths(area):
         final_network_dir=os.path.join(area_dir, "final_network"),
         indiv_output_dir=os.path.join(area_dir, "indiv_output"),
         output_dir=os.path.join(area_dir, "output"),
-        optimization_output_dir=os.path.join(area_dir, "optimization_output"),
         fleetpy_demand_dir=os.path.join(FLEETPY_DIR, "data", "demand", "%s_example_demand" % area, "matched",
                                         "%s_example_network" % area),
     )
@@ -169,6 +171,12 @@ def run_demand_file(area, params):
         raise ValueError("demand_upscaling is True, so sample_demand_file must name the sample demand file, a path "
                          "relative to mtsm_data/%s/ (e.g. demand/demand_sample.csv), not %r" % (area, name))
     return os.path.join(paths.dir, *parts)
+
+
+def optimization_results_dir(area):
+    """The optimizer's results for a study area: mtsm_data/Bayesian_optimization_output/BO_results_<area>/ (since
+    2026-11-26, docs/open_issues.md I-42; until then mtsm_data/<area>/optimization_output/LG_submission_results_R2)."""
+    return os.path.join(OPTIMIZATION_OUTPUT_DIR, "BO_results_%s" % area)
 
 
 # ---- names of the files a run writes (since 2026-11-25, docs/open_issues.md I-40; before, each was written where it is

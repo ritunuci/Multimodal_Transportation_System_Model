@@ -1756,6 +1756,18 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   **`REPRODUCED`** (26 files). Old-named outputs of earlier runs were left on disk.
 - Docs: `README.md`, `open_issues.md` (I-40 closed), `reference_results/README.md`.
 
+## The optimizer adapts to the study area; results in `BO_results_<area>` (I-42, 2026-11-26)
+
+- User's decisions: results in `Bayesian_optimization_output/BO_results_<area>` (placed in `mtsm_data/`); the
+  optimizer takes the study area from the file it runs on; an earlier run's results are never overwritten (it stops
+  and says to move or rename the folder); on main.
+- `Bayesian_optimization_script.py --config <file>`: the candidates' base file (default: the frozen model file); the
+  candidates are copies of it; `base_config.csv` in the results folder. `mtsm_paths.optimization_results_dir`;
+  `mtsm_data/lemon_grove/optimization_output/` and `AreaPaths.optimization_output_dir` removed; `.gitignore`.
+- Checks: full run **`REPRODUCED`** (26 files), `check_inputs.py` passed, the stops for a missing area and a missing
+  file, a short optimizer run (details in `open_issues.md` I-42). Reference unchanged.
+- Docs: `README.md` (Bayesian optimization, Add your own study area, layout), `open_issues.md` (I-42 closed).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

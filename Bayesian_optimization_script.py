@@ -11,6 +11,23 @@ import logging
 # below inherit it; their results do not change. A value already set in the environment is kept.
 os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
 
+# The base parameter file (since 2026-11-26, docs/open_issues.md I-42): --config <file>, else the frozen model file.
+# config.py reads the parameter file when it is imported (below), so the file goes into MTSM_CONFIG_FILE first, as in
+# run_examples_new_parking.py. The study area, its area file, the operating periods and the virtual-stop share are
+# the base file's; each candidate's parameter file is a copy of it with the candidate's seven values.
+import argparse
+import shutil
+_parser = argparse.ArgumentParser(description="Bayesian optimization of the MTSM design parameters.")
+_parser.add_argument("--config", help="base parameter file of the candidates, a copy of the model file "
+                                      "(default: the frozen mtsm_constant_configurations.csv)")
+_args = _parser.parse_args()
+if _args.config:
+    if not os.path.isfile(_args.config):
+        sys.exit(f"ERROR: --config: no such file: {_args.config}")
+    os.environ["MTSM_CONFIG_FILE"] = os.path.abspath(_args.config)
+else:
+    os.environ.pop("MTSM_CONFIG_FILE", None)
+
 import numpy
 import pandas as pd
 import torch
@@ -76,21 +93,29 @@ from mtsm_model import mtsm_global_parameters as gp
 # from matplotlib import pyplot as plt
 # from matplotlib.cm import ScalarMappable
 # ----------------------------------------------------------------------------------------------------------------------
-# the study area of the frozen parameter file; its folders (until 2026-11-24 the Lemon Grove constants LG_*)
+# the base parameter file and its study area (until 2026-11-26 always the frozen file's; until 2026-11-24 the Lemon
+# Grove constants LG_*). Results: mtsm_data/Bayesian_optimization_output/BO_results_<area>/ (until 2026-11-26
+# mtsm_data/<area>/optimization_output/LG_submission_results_R2, a fixed name).
+BASE_CONFIG_FILE = config.CONSTANT_CONFIG_FILE
 STUDY_AREA = config.PARAMETERS[gp.G_STUDY_AREA]
-AREA_PATHS = mtsm.area_paths(STUDY_AREA)
-folder_name = str("LG_submission_results_R2")
-optimization_folder_path = os.path.join(AREA_PATHS.optimization_output_dir, folder_name)
-indv_res_folder_path = os.path.join(AREA_PATHS.optimization_output_dir, folder_name, "indv_res")
+optimization_folder_path = mtsm.optimization_results_dir(STUDY_AREA)
+# An earlier run's results are never overwritten (user's decision 2026-11-26): the run stops if the folder has any file.
+if any(files for _, _, files in os.walk(optimization_folder_path)):
+    _folder = os.path.basename(optimization_folder_path)
+    sys.exit(f"ERROR: {optimization_folder_path} already has the results of an earlier run. Move or rename it first, "
+             f"e.g. {_folder} -> {_folder}_{time.strftime('%Y-%m-%d')}; this run then writes a new {_folder}.")
+indv_res_folder_path = os.path.join(optimization_folder_path, "indv_res")
 agg_sim_output_folder_path = os.path.join(optimization_folder_path, "per_itr_agg_sim_output")
 os.makedirs(optimization_folder_path, exist_ok=True)
 os.makedirs(indv_res_folder_path, exist_ok=True)
 os.makedirs(agg_sim_output_folder_path, exist_ok=True)
 RESULTS_CSV_PATH = os.path.join(optimization_folder_path, "per_call_results.csv")
-# each candidate's parameter file (config_call_0001.csv, ...): a copy of the frozen file with the candidate's values
+# each candidate's parameter file (config_call_0001.csv, ...): a copy of the base file with the candidate's values
 CANDIDATE_CONFIG_DIR = os.path.join(optimization_folder_path, "candidate_configs")
 os.makedirs(CANDIDATE_CONFIG_DIR, exist_ok=True)
 candidate_count = 0
+# the base file as it was at the start, next to the results (since 2026-11-26)
+shutil.copyfile(BASE_CONFIG_FILE, os.path.join(optimization_folder_path, "base_config.csv"))
 
 log_file_path = os.path.join(optimization_folder_path, "run_log.txt")
 
@@ -104,6 +129,8 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+logger.info(f"Base parameter file: {BASE_CONFIG_FILE} (copy: base_config.csv); study area: {STUDY_AREA}; "
+            f"results: {optimization_folder_path}")
 
 PARAM_COLS = [
     "Transit Fare ($)",
@@ -119,7 +146,7 @@ OBJECTIVE_COLS = [
     "Total subsidy ($)",
     "Total mob. Logsum increase with micro"
 ]
-# For Lemon Grove
+# lines of the evaluation file kept per candidate (any study area; the comment said "For Lemon Grove" until 2026-11-26)
 METRIC_COLS = ['car_users',
                'car_mode_share (%)',
                'trsit_mode_users (W_M_F)',
@@ -251,7 +278,7 @@ def model_output_files(values):
     """the two model output files collect_output() reads for this candidate: (evaluation csv, individual results csv).
     The names come from mtsm_paths, as in the model (since 2026-11-25, I-40; until then written here, with
     zonal_partition_False and scen_10, and with op_hr_15 and virstop_75 fixed). The candidate's copy of the model file
-    has the frozen file's operating periods and the area file's virtual-stop share, one value each."""
+    has the base file's operating periods and the area file's virtual-stop share, one value each."""
     a, b, c, d, e, h, f = values
     if len(config.OPERATING_PERIODS_SCENARIOS) != 1 or len(config.VIRTUAL_STOP_SCENARIOS) != 1:
         raise RuntimeError("the optimizer reads one scenario: operating_periods_scenarios and virtual_stop_scenarios "
@@ -295,10 +322,10 @@ def run_script(values, config_file):
 
 
 def write_candidate_config(values):
-    """Write the candidate's parameter file and return its path: a copy of the frozen
-    mtsm_constant_configurations.csv with the candidate's values, set by parameter name, in CANDIDATE_CONFIG_DIR.
-    The frozen file is never changed (until 2026-11-10 the values went into input_parameter.csv by column position,
-    docs/open_issues.md I-02 and I-15)."""
+    """Write the candidate's parameter file and return its path: a copy of the base parameter file (--config, else the
+    frozen mtsm_constant_configurations.csv; until 2026-11-26 always the frozen file, I-42) with the candidate's
+    values, set by parameter name, in CANDIDATE_CONFIG_DIR. Neither file is changed (until 2026-11-10 the values went
+    into input_parameter.csv by column position, docs/open_issues.md I-02 and I-15)."""
     global candidate_count
     candidate_count += 1
     a, b, c, d, e, h, f = values
@@ -311,13 +338,13 @@ def write_candidate_config(values):
         gp.G_MICRO2FIXED_FACTOR: float(h),  # Micro to fixed factor
         gp.G_FRT_HEADWAY: int(f),  # FRT headway
     }
-    with open(config.FROZEN_CONSTANT_CONFIG_FILE, mode='r', newline='') as csvfile:
+    with open(BASE_CONFIG_FILE, mode='r', newline='') as csvfile:
         rows = list(csv.reader(csvfile))
     for row in rows[1:]:  # row: parameter_name, parameter_value, description
         if row[0] in candidate_values:
             row[1] = str(candidate_values.pop(row[0]))
     if candidate_values:
-        raise RuntimeError(f"not in {config.FROZEN_CONSTANT_CONFIG_FILE}: {sorted(candidate_values)}")
+        raise RuntimeError(f"not in {BASE_CONFIG_FILE}: {sorted(candidate_values)}")
 
     config_file = os.path.join(CANDIDATE_CONFIG_DIR, f"config_call_{candidate_count:04d}.csv")
     with open(config_file, mode='w', newline='') as csvfile:
@@ -345,7 +372,7 @@ def collect_output(iteration_type: str, values):
     # For FRT only
     x2 = evaluation_value(evaluation, EVAL_BASE_COL, SUBSIDY_METRIC)
     y2 = evaluation_value(evaluation, EVAL_BASE_COL, LOGSUM_METRIC)
-    a1 = [evaluation_value(evaluation, EVAL_MICRO_COL, metric) for metric in METRIC_COLS]  # For Lemon Grove
+    a1 = [evaluation_value(evaluation, EVAL_MICRO_COL, metric) for metric in METRIC_COLS]
 
     # The evaluation file reports all travelers also when the demand file is a sample (demand_upscaling, since
     # 2026-11-25, docs/open_issues.md I-32): results.py scales the sample's totals, so no factor is applied here. Until

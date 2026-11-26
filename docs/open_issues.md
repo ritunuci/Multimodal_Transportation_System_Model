@@ -63,7 +63,7 @@ Paths are relative to the codebase root.
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Closed (2026-11-25) | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
-| I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
+| I-42 | The optimizer works only on the study area of the frozen model file | Low | Closed (2026-11-26) | 2026-11-24 |
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
@@ -464,21 +464,6 @@ Paths are relative to the codebase root.
 - **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
   from one place.
 
-### I-42: The optimizer works only on the study area of the frozen model file
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 7 of `docs/study_area_plan.md`, writing the README
-  section "Add your own study area"). Recorded on the user's decision (Phase 7 decision 6): documented now, fixed later.
-- **What:** `Bayesian_optimization_script.py` takes the study area from the frozen model file
-  (`STUDY_AREA = config.PARAMETERS[gp.G_STUDY_AREA]`) and writes each candidate's parameter file as a copy of the
-  frozen file (`config.FROZEN_CONSTANT_CONFIG_FILE`), so a candidate's `study_area` is always the frozen file's
-  (`lemon_grove`). Its output folder name is fixed: `folder_name = "LG_submission_results_R2"`, inside
-  `mtsm_data/<area>/optimization_output/`.
-- **Impact:** none on results. To optimize another area, a user sets `study_area` in the frozen model file and rewrites
-  the manifests (README, "Add your own study area"); Lemon Grove then no longer reproduces the reference until the
-  value is set back. Another area's results go to a folder named `LG_submission_results_R2`.
-- **Fix (later):** an optimizer option `--config <file>`: the base file of the candidates' copies (and so the study
-  area); the output folder named after the area or by an option. A code change: full run `REPRODUCED` and a short
-  optimizer run.
-
 ### I-43: With FleetPy travel times per period, the operator does not replan at a switch
 - **Status:** Open. **Severity:** Medium (affects runs with `network_dynamics.csv`, e.g. the new Lemon Grove data on
   the branch `TRA_resubmission`; not the reference). **Found:** 2026-11-24
@@ -562,6 +547,45 @@ Paths are relative to the codebase root.
   reference.
 
 ## Closed
+
+### I-42: The optimizer works only on the study area of the frozen model file
+- **Status:** Closed (2026-11-26); Open until then. **Severity:** Low. **Found:** 2026-11-24 (Phase 7 of `docs/study_area_plan.md`, writing the README
+  section "Add your own study area"). Recorded on the user's decision (Phase 7 decision 6): documented now, fixed later.
+- **What:** `Bayesian_optimization_script.py` takes the study area from the frozen model file
+  (`STUDY_AREA = config.PARAMETERS[gp.G_STUDY_AREA]`) and writes each candidate's parameter file as a copy of the
+  frozen file (`config.FROZEN_CONSTANT_CONFIG_FILE`), so a candidate's `study_area` is always the frozen file's
+  (`lemon_grove`). Its output folder name is fixed: `folder_name = "LG_submission_results_R2"`, inside
+  `mtsm_data/<area>/optimization_output/`.
+- **Impact:** none on results. To optimize another area, a user sets `study_area` in the frozen model file and rewrites
+  the manifests (README, "Add your own study area"); Lemon Grove then no longer reproduces the reference until the
+  value is set back. Another area's results go to a folder named `LG_submission_results_R2`.
+- **Fix (later):** an optimizer option `--config <file>`: the base file of the candidates' copies (and so the study
+  area); the output folder named after the area or by an option. A code change: full run `REPRODUCED` and a short
+  optimizer run.
+- **Resolution (2026-11-26, user's decisions: the folder `Bayesian_optimization_output/BO_results_<area>`, its place
+  left to me; the optimizer adapts to the area it runs on; an earlier run's results are never overwritten; on main):**
+  - `python Bayesian_optimization_script.py [--config <file>]`: the base file of the candidates, as for the model
+    (without it, the frozen model file). The script puts it into `MTSM_CONFIG_FILE` before `config` is imported, so
+    `study_area`, the area file, the operating periods and the virtual-stop share are the base file's; each
+    candidate's file is a copy of the base file with its seven values (`write_candidate_config`). Neither file is
+    changed. A missing `--config` file or area file stops it at once.
+  - Results: `mtsm_data/Bayesian_optimization_output/BO_results_<area>/` (`mtsm_paths.optimization_results_dir`;
+    `mtsm_data/` holds everything a run writes, and the name carries the area, so the folder is outside the area's).
+    Same contents as before, plus `base_config.csv` (the base file at the start); `run_log.txt` starts with the base
+    file, the area and the folder. If the folder has any file, the optimizer stops at once and says to move or rename
+    it (e.g. `BO_results_lemon_grove_<date>`); the next run writes a new one.
+  - Removed: `AreaPaths.optimization_output_dir` and `mtsm_data/lemon_grove/optimization_output/` (empty but for
+    `.gitkeep`); `.gitignore` ignores `mtsm_data/Bayesian_optimization_output/` instead. The search space, `N_BATCH`,
+    the objectives and the rest of the optimizer are unchanged.
+  - Checked: a full run printed **`REPRODUCED`** (26 files) and `check_inputs.py` passed; a base copy with
+    `study_area` `no_such_area` stopped with "the study area's parameter file is missing" and a missing `--config`
+    file with "no such file", neither writing anything; a short optimizer run without `--config`
+    (stopped by hand during the 7th candidate; 6 candidates of about 6.5 min each): `run_log.txt` names the frozen file
+    and `lemon_grove`, `base_config.csv` equals the frozen file, each candidate copy differs from it only in the seven
+    values (candidate 4 in six: its fleet size 2 is the frozen value), `per_call_results.csv` has the 6 rows; a second
+    start then stopped at once with the move-or-rename message, the folder untouched. The `[WinError 32]` lines about
+    FleetPy's `00_simulation.log` in the model's output are not new (4 in the reproduced full run too). The test
+    folder was moved out of the repository.
 
 ### I-40: Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`)
 - **Status:** Closed (2026-11-25); Open until then. **Severity:** Low. **Found:** 2026-11-24 (Phase 1 of `docs/study_area_plan.md`). Kept on the

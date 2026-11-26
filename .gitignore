@@ -26,7 +26,8 @@ fleetpy/data/vehicles/*_vehtype.csv
 mtsm_data/*/output/*
 mtsm_data/*/final_network/*
 mtsm_data/*/indiv_output/*
-mtsm_data/*/optimization_output/*
+# the optimizer's results, BO_results_<area>/ (until 2026-11-26 mtsm_data/<area>/optimization_output/, I-42)
+mtsm_data/Bayesian_optimization_output/
 # initial_network/ holds only what the run writes since 2026-11-24 (its inputs moved to networks/)
 mtsm_data/*/initial_network/*
 !mtsm_data/*/*/.gitkeep

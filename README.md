@@ -74,7 +74,8 @@ for vehicle repositioning).
    to `synthetic_time_shift_min` (15) within its time period, between virtual stops within `synthetic_stop_radius_m`
    (400 m walking) of the request's (I-45). With `False` (the frozen value), `demand/demand.csv` is taken as all
    travelers.
-   For the optimizer, set the switch in the frozen model file itself (the candidates are copies of it).
+   For the optimizer, set the switch in its base file (`--config`, see [Bayesian optimization](#bayesian-optimization);
+   the candidates are copies of it).
 4. **Run** from the repository root, with `PYTHONHASHSEED=0` and without `PYTHONPATH`:
 
        python run_examples_new_parking.py                    # the frozen parameter file
@@ -94,12 +95,19 @@ for vehicle repositioning).
 `python Bayesian_optimization_script.py` runs a multi-objective Bayesian optimization (Ax/BoTorch) over fleet size,
 FRT headway, FRT fare, microtransit fares, peak fare factor and transfer discount. The two objectives are total subsidy
 and the increase in travelers' mobility logsum due to microtransit, both relative to the base case: FRT only, at
-`base_frt_headway` and `base_frt_fare` (so a candidate's shorter FRT headway adds to its subsidy). For each candidate it writes a copy of the frozen
-parameter file with the candidate's values (`<folder_name>/candidate_configs/config_call_NNNN.csv`), runs the model
-with `--config <copy>` and reads the evaluation file by metric name; results go to
-`mtsm_data/<area>/optimization_output/LG_submission_results_R2/` (`<area>`: the frozen file's `study_area`; the
-folder name is fixed in the script, I-42).
-The frozen parameter file is never changed. The script sets `MKL_THREADING_LAYER=SEQUENTIAL` for itself and the model
+`base_frt_headway` and `base_frt_fare` (so a candidate's shorter FRT headway adds to its subsidy).
+
+    python Bayesian_optimization_script.py                   base file: the frozen model file
+    python Bayesian_optimization_script.py --config <file>   base file: <file>, a copy of the model file
+
+For each candidate it writes a copy of the base file with the candidate's seven values
+(`candidate_configs/config_call_NNNN.csv`; every other parameter is the base file's), runs the model with
+`--config <copy>` and reads the evaluation file by metric name. The study area is the base file's `study_area`, so
+another area, or other settings (e.g. the transfer penalty), need only a base copy. Results go to
+`mtsm_data/Bayesian_optimization_output/BO_results_<area>/`, with a copy of the base file (`base_config.csv`); if that
+folder already holds an earlier run's results, the optimizer stops at once: move or rename the folder first (e.g. to
+`BO_results_<area>_<date>`), and the next run writes a new one.
+Neither the frozen nor the base file is changed. The script sets `MKL_THREADING_LAYER=SEQUENTIAL` for itself and the model
 runs it starts: without it, numpy's linear algebra crashes in the `fleetpy` env (`docs/open_issues.md`, I-27); the
 model's results do not depend on it.
 
@@ -147,10 +155,8 @@ been tested with Lemon Grove only; no second study area has been run yet.
 7. **Results:** `mtsm_data/<area>/output/<area>_evaluation.csv`, the individual results and the
    FRT ridership files in the same folder.
 
-The optimizer works on the study area of the frozen model file. To optimize another area, set `study_area` in
-`mtsm_data/input_parameter/mtsm_constant_configurations.csv` itself and rewrite the manifests with
-`python tools/check_inputs.py --write <area>`; Lemon Grove then no longer reproduces the reference until the value is
-set back. Not supported yet for any area: `micro_only` (microtransit without FRT) and networks per time period
+To optimize the area, give the optimizer the same copy: `python Bayesian_optimization_script.py --config <copy>`
+(results in `mtsm_data/Bayesian_optimization_output/BO_results_<area>/`). Not supported yet for any area: `micro_only` (microtransit without FRT) and networks per time period
 ([`docs/study_area_inputs.md`](docs/study_area_inputs.md#not-supported-for-a-new-study-area-for-now)).
 
 ### Building the inputs with TRA_input_data_prep
@@ -192,7 +198,7 @@ outputs and the files of this model:
 |---|---|
 | `run_examples_new_parking.py` | Entry script: `--config <file>` (optional), fixes the hash seed, reads the parameters, sets the random seeds, and calls `mtsm_model.model.run_model()` |
 | `mtsm_model/` | The model (see [Code map](#code-map)) |
-| `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters |
+| `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters: `--config <file>` (optional) is the candidates' base file and sets the study area; results in `mtsm_data/Bayesian_optimization_output/BO_results_<area>/` |
 | `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
 | `pre_process/` | Preprocessing of networks and demand; `build_super_network.py` builds the super-networks (`micro`, `non_micro`, `micro_only`) and the car network from a road and an FRT network (not used by a run; identical to `TRA_input_data_prep`'s copy, with `--local-edges` for car-only roads since 2026-11-24) |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`); a study area's folders from `area_paths(area)` |
