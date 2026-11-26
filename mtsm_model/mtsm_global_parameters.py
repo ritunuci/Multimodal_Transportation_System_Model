@@ -76,6 +76,14 @@ G_PARKING_RATE_OFFPEAK = "parking_rate_offpeak"  # PARKING_RATE_OFFPEAK
 # ---- path search ----
 G_ENABLE_NUM_TRANSFER_PENALTY = "enable_num_transfer_penalty"  # new 2026-11-11; to be turned on with a new reference (I-25)
 
+# ---- demand sample and upscaling (new 2026-11-25, docs/open_issues.md I-32): with demand_upscaling True the run reads
+# the sample file sample_demand_file (a path relative to mtsm_data/<area>/) holding a share demand_sample_share of all
+# travelers; FleetPy gets synthetic requests for the others, and the evaluation file reports all travelers. With False
+# the run reads demand/demand.csv as all travelers, and the other two are not used ----
+G_DEMAND_UPSCALING = "demand_upscaling"
+G_DEMAND_SAMPLE_SHARE = "demand_sample_share"
+G_SAMPLE_DEMAND_FILE = "sample_demand_file"
+
 # ---- node numbering: num_walk_nodes and microtransit_node_offset are derived from the network files since 2026-11-24
 # (config.derive_node_numbering); micro_only_max_walk_node (731) is the area's last walk node since then (I-13) ----
 
@@ -153,6 +161,9 @@ PARAMETER_TYPES = {
     G_VIRTUAL_STOP_SCENARIOS: INT_LIST,
     G_MICROTRANSIT_RUNNING_SCENARIOS: STR_LIST,
     G_REPOSITIONING_LIST: BOOL_LIST,
+    G_DEMAND_UPSCALING: BOOL,
+    G_DEMAND_SAMPLE_SHARE: FLOAT,
+    G_SAMPLE_DEMAND_FILE: STR,
 }
 
 # the keys of the study area's file area_parameters.csv (user's decision A, docs/study_area_inputs.md): the area's

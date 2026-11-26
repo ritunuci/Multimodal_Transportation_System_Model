@@ -314,8 +314,13 @@ def check_study_area(area, params, n, m):
                 report.error(f"{label}: {sum(missing.values())} of FleetPy's road edges are missing from the car network: "
                              f"{_examples(sorted(missing))}")
 
-    # ---- demand (file 2) ----
-    rows = _read_csv(paths.demand_file, DEMAND_COLUMNS, report, "file 2")
+    # ---- demand (file 2): demand/demand.csv, or the sample file when demand_upscaling is on (I-32, 2026-11-25) ----
+    try:
+        demand_file = mtsm.run_demand_file(area, params)
+    except ValueError as e:
+        report.error(f"file 2: {e}")
+        demand_file = None
+    rows = _read_csv(demand_file, DEMAND_COLUMNS, report, "file 2") if demand_file else None
     trips = None
     if rows is not None:
         kind = {c: float for c in DEMAND_COLUMNS}

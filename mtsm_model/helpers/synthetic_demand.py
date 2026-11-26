@@ -1,65 +1,71 @@
-"""Synthetic microtransit requests that follow the observed time-of-day trend and OD structure: added to
-FleetPy's demand file by the commented-out "Ritun added" block in mtsm_model/microtransit.py (imported there as
-syn_rq; not called by the run; see docs/open_issues.md, I-32).
+"""Synthetic microtransit requests for a run on a sample of the travelers (demand_upscaling; docs/open_issues.md I-32).
 
-Moved unchanged from pre_process/generate_demand_files.py on 2026-11-23 (I-14), so that the run imports nothing
-from pre_process/."""
+When the demand file is a sample, a share s of all travelers, FleetPy would serve only the sample's microtransit
+requests, and the fleet would be less busy than with all travelers. add_synthetic_requests() therefore adds
+(1 / s - 1) synthetic requests per request of the sample to FleetPy's demand file before FleetPy runs (3 for s = 0.25,
+9 for s = 0.1). They are drawn from the sample's requests of the iteration: the time follows their time-of-day profile
+within the microtransit operating periods, the origin-destination pair is one of theirs (in either direction). Their
+only purpose is to make the fleet as busy as with all travelers: they are not travelers of MTSM (no trips, fares or
+logsums), but FleetPy's waiting times, rejection rate and fleet results include them, as they should.
+
+History: written by the user as synthesize_requests_with_trend_time (pre_process/generate_demand_files.py; moved here
+unchanged on 2026-11-23, I-14), called by a commented-out "Ritun added" block in mtsm_model/microtransit.py: 3
+synthetic requests per request (for a 25 % sample), ids from 60005, times 5:00-20:00, seed 42, appended after the
+sample's rows. Since 2026-11-25 (I-32) it is the switch demand_upscaling of the run: the number comes from
+demand_sample_share, the ids start above every traveler's (synthetic_id_start), the times lie in the scenario's
+microtransit operating periods, the whole file is sorted by rq_time, and the seed is the run's random_seed. How the
+times and pairs are drawn is unchanged (5-minute bins with a smoothing of 0.5 per bin; ordered pairs, reversed with
+probability 0.5); reviewing it is I-45.
+"""
+import math
+import sys
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-from colorama import Fore, Style
+
+FLEETPY_DEMAND_COLUMNS = ["rq_time", "start", "end", "request_id"]
 
 
-############################################# Ritun added (for FleetPy deamnd upscaling) #############################################
-def make_time_sampler(df: pd.DataFrame,
-                      rq_min: int = 18000,
-                      rq_max: int = 72000,
-                      bin_width: int = 300,
-                      alpha: float = 0.5,
-                      rng: Optional[np.random.Generator] = None
-    ):
-    """
-    Build a sampler that follows the observed intraday distribution of rq_time
-    within [rq_min, rq_max] using a histogram.
+def synthetic_id_start(traveler_ids, share):
+    """The first request id of the synthetic requests: the smallest power of ten that is at least ten times the larger
+    of (the largest traveler id + 1) and (the number of travelers / share, the size of the full demand). So the
+    synthetic ids stay clear of every traveler's id, also of the travelers left out of the sample (as long as the full
+    demand's ids stay below ten times that), and of the ids just above a traveler's own that MTSM gives to a second
+    microtransit leg (trip_legs.free_request_id; add_synthetic_requests checks this in every iteration). Lemon Grove
+    (3,742 travelers, ids up to 15,047, share 0.25): 1,000,000."""
+    ids = list(traveler_ids)
+    bound = max(max(ids) + 1, math.ceil(len(ids) / share))
+    start = 1
+    while start < 10 * bound:
+        start *= 10
+    return start
 
-    Parameters
-    ----------
-    rq_min, rq_max : int
-        Bounds in seconds since midnight (inclusive).
-    bin_width : int
-        Bin width in seconds (e.g., 300 = 5 min).
-    alpha : float
-        Laplace smoothing per bin to avoid zero-probability bins.
-    rng : np.random.Generator | None
-        RNG to use. If None, a new Generator is created.
 
-    Returns
-    -------
-    sample_rq(n: int) -> np.ndarray[int]
-        Function that samples n integer rq_time values following the observed trend.
-    """
+def make_time_sampler(rq_times, windows, bin_width: int = 300, alpha: float = 0.5,
+                      rng: Optional[np.random.Generator] = None):
+    """A sampler of request times (integer s) that follows the time-of-day profile of rq_times within the windows
+    [(first, last)] (s, both included): each window is cut into bins of bin_width s (the last one may be shorter), a
+    bin is drawn with probability (requests in it + alpha) / sum, and a time uniformly within it. Requests outside the
+    windows are not counted. Returns sample_rq(n) -> np.ndarray of n times.
+    (Until 2026-11-25 one window rq_min..rq_max, 18000..72000, with bins from rq_min.)"""
     if rng is None:
         rng = np.random.default_rng()
+    lefts, rights = [], []
+    for first, last in windows:
+        for left in range(first, last + 1, bin_width):
+            lefts.append(left)
+            rights.append(min(left + bin_width - 1, last))
+    if not lefts:
+        raise ValueError("no time window for the synthetic requests")
+    lefts = np.array(lefts, dtype=np.int64)
+    rights = np.array(rights, dtype=np.int64)
 
-    rq_vals = df.loc[
-        (df["rq_time"] >= rq_min) & (df["rq_time"] <= rq_max),
-        "rq_time"
-    ].to_numpy()
-
-    if rq_vals.size == 0:
-        # Fallback: uniform if no data in window
-        def sample_rq(n):
-            return rng.integers(rq_min, rq_max + 1, size=n, dtype=np.int64)
-
-        return sample_rq
-
-    # Histogram edges and counts
-    edges = np.arange(rq_min, rq_max + bin_width, bin_width, dtype=int)
-    hist, edges = np.histogram(rq_vals, bins=edges)
-
+    t = np.asarray(rq_times, dtype=float)
+    counts = np.array([np.count_nonzero((t >= left) & (t < right + 1)) for left, right in zip(lefts, rights)],
+                      dtype=float)
     # Laplace smoothing
-    weights = hist.astype(float) + float(alpha)
+    weights = counts + float(alpha)
     if weights.sum() <= 0:
         weights[:] = 1.0
     p = weights / weights.sum()
@@ -67,73 +73,23 @@ def make_time_sampler(df: pd.DataFrame,
     def sample_rq(n):
         # choose bins according to observed frequencies, then sample uniformly within bin
         bin_idx = rng.choice(len(p), size=n, p=p)
-        left = edges[bin_idx]
-        right = np.minimum(edges[bin_idx + 1] - 1, rq_max)  # inclusive
-        # uniform integer within [left, right]
-        return left + rng.integers(0, (right - left + 1), size=n, dtype=np.int64)
+        left = lefts[bin_idx]
+        return left + rng.integers(0, rights[bin_idx] - left + 1, size=n, dtype=np.int64)
 
     return sample_rq
 
-def synthesize_requests_with_trend_time(
-    input_csv: str,
-    output_csv: str,
-    n_new: int,
-    count: int,
-    seed: Optional[int] = None,
-    preserve_od: bool = True,
-    od_mode: str = "undirected",   # "undirected" (pair strength, random direction) or "ordered"
-    swap_prob: float = 0.5,         # chance to flip direction when preserve_od=True
-    rq_min: int = 18000,           # 5:00 AM
-    rq_max: int = 72000,           # 8:00 PM
-    bin_width: int = 300,           # 5-minute bins for trend
-    alpha: float = 0.5              # Laplace smoothing per time bin
-):
-    """
-        Generate n_new synthetic requests:
-          • rq_time: integers sampled to match the observed intraday trend (peaks/off-peaks) within [rq_min, rq_max]
-          • start/end: sampled from observed OD structure (with optional direction swapping), or independent marginals
-          • request_id: starts at (count + 5) and increments by 1
 
-        Parameters
-        ----------
-        input_csv : str
-            Path to existing CSV with columns: rq_time, start, end, request_id (others ignored).
-        output_csv : str
-            Path to write the augmented CSV (original + new).
-        n_new : int
-            Number of new rows to generate.
-        count : int
-            First new request_id will be (count + 5).
-        seed : int | None
-            RNG seed for reproducibility.
-        preserve_od : bool
-            If True, sample start/end from observed OD structure.
-        od_mode : {"undirected","ordered"}
-            - "undirected": collapse OD pairs into unordered (min,max) with weights; assign direction randomly (swap_prob).
-            - "ordered": use observed ordered (start,end) weights; allow swapping with swap_prob to create reverse flows.
-        swap_prob : float
-            Probability to flip direction of sampled pair when preserve_od=True.
-        rq_min, rq_max : int
-            Time window in seconds since midnight (inclusive).
-        bin_width : int
-            Histogram bin width for time-of-day trend.
-        alpha : float
-            Laplace smoothing per time bin.
-        """
-    rng = np.random.default_rng(seed)
-
-    df = pd.read_csv(input_csv, dtype={"rq_time": int, "start": int, "end": int, "request_id": int})
-    if not {"rq_time", "start", "end"}.issubset(df.columns):
-        raise ValueError("input_csv must contain columns: rq_time, start, end")
-
-    # ---- rq_time sampler that follows observed trend ----
-    sample_rq = make_time_sampler(
-        df, rq_min=rq_min, rq_max=rq_max, bin_width=bin_width, alpha=alpha, rng=rng
-    )
-
-    # ----------------- OD samplers -----------------
-    starts = df["start"].to_numpy()
-    ends = df["end"].to_numpy()
+def make_od_sampler(starts, ends, preserve_od: bool = True, od_mode: str = "ordered", swap_prob: float = 0.5,
+                    rng: Optional[np.random.Generator] = None):
+    """A sampler of (start, end) node pairs from the observed pairs (starts[i], ends[i]). preserve_od True: draw an
+    observed pair by its frequency and flip its direction with probability swap_prob; od_mode "ordered" counts (a, b)
+    and (b, a) apart, "undirected" together (the direction then comes from swap_prob only). preserve_od False: start and
+    end drawn independently from their own frequencies. Returns sample_od(n) -> (starts, ends).
+    (Unchanged from synthesize_requests_with_trend_time, 2026-11-25.)"""
+    if rng is None:
+        rng = np.random.default_rng()
+    starts = np.asarray(starts)
+    ends = np.asarray(ends)
 
     if preserve_od:
         if od_mode not in ("undirected", "ordered"):
@@ -157,7 +113,7 @@ def synthesize_requests_with_trend_time(
                 return start_out, end_out
 
         else:  # ordered
-            od_df = df.groupby(["start", "end"]).size().reset_index(name="w")
+            od_df = pd.DataFrame({"start": starts, "end": ends}).groupby(["start", "end"]).size().reset_index(name="w")
             od_pairs = od_df[["start", "end"]].to_numpy()
             od_weights = (od_df["w"] / od_df["w"].sum()).to_numpy()
 
@@ -181,21 +137,48 @@ def synthesize_requests_with_trend_time(
             end_out = rng.choice(unique_e, size=n, p=p_e).astype(int)
             return start_out, end_out
 
-    # ----------------- Generate new rows -----------------
+    return sample_od
+
+
+def synthesize_requests(df, n_new, first_id, windows, seed=None, preserve_od=True, od_mode="ordered", swap_prob=0.5,
+                        bin_width=300, alpha=0.5):
+    """n_new synthetic requests drawn from the requests df (columns rq_time, start, end): a DataFrame with the columns
+    rq_time, start, end, request_id (first_id, first_id + 1, ...). Times: make_time_sampler within the windows; pairs:
+    make_od_sampler. One generator, seeded with seed, draws first the times, then the pairs."""
+    rng = np.random.default_rng(seed)
+    sample_rq = make_time_sampler(df["rq_time"].to_numpy(), windows, bin_width=bin_width, alpha=alpha, rng=rng)
+    sample_od = make_od_sampler(df["start"].to_numpy(), df["end"].to_numpy(), preserve_od=preserve_od,
+                                od_mode=od_mode, swap_prob=swap_prob, rng=rng)
     new_rq = sample_rq(n_new)
     new_start, new_end = sample_od(n_new)
-    new_request_ids = np.arange(count + 5, count + 5 + n_new, dtype=int)
-
-    new_df = pd.DataFrame({
+    return pd.DataFrame({
         "rq_time": new_rq,
         "start": new_start,
         "end": new_end,
-        "request_id": new_request_ids,
+        "request_id": np.arange(first_id, first_id + n_new, dtype=np.int64),
     })
 
-    # Concatenate and write
-    out = pd.concat([df, new_df], ignore_index=True)
-    out.to_csv(output_csv, index=False)
-    print(f"{Fore.RED}Total demand in FleetPy (from demand generator): {len(out)}{Style.RESET_ALL}")
-    return new_df  # return only the newly created block for quick inspection
-#######################################################################################################
+
+def add_synthetic_requests(fleetpy_demand_file, share, id_start, windows, seed):
+    """Add the synthetic requests of one iteration to FleetPy's demand file (written by iteration.run_iteration with
+    the sample's microtransit legs): round(n x (1 / share - 1)) requests for its n requests, ids from id_start, times in
+    the windows [(first, last)] (s; the microtransit operating periods). All rows are written sorted by rq_time (a
+    stable sort): FleetPy takes the requests of one time step in the order of the file (I-32). Stops if a request id
+    of the file reaches id_start. Returns (n, the number added)."""
+    df = pd.read_csv(fleetpy_demand_file)
+    if list(df.columns) != FLEETPY_DEMAND_COLUMNS:
+        sys.exit(f"ERROR: {fleetpy_demand_file}: the columns must be {FLEETPY_DEMAND_COLUMNS}, not {list(df.columns)}")
+    n_real = len(df)
+    if n_real == 0:
+        return 0, 0  # no microtransit request in the sample: nothing to draw from
+    if int(df["request_id"].max()) >= id_start:
+        sys.exit(f"ERROR: {fleetpy_demand_file}: request id {int(df['request_id'].max())} reaches the first id of the "
+                 f"synthetic requests ({id_start}); synthetic_demand.synthetic_id_start must give a larger one")
+    n_new = int(math.floor(n_real * (1 / share - 1) + 0.5))
+    out = df
+    if n_new > 0:
+        new_df = synthesize_requests(df, n_new, id_start, windows, seed=seed)
+        out = pd.concat([df, new_df], ignore_index=True)
+    out = out.sort_values("rq_time", kind="mergesort")
+    out.to_csv(fleetpy_demand_file, index=False)
+    return n_real, n_new

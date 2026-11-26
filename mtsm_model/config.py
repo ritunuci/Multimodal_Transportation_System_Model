@@ -220,6 +220,10 @@ def _check_time_periods():
 
 _check_time_periods()
 PERIOD_ENDS = [(period, end_h * 3600) for period, end_h in zip(TIME_PERIODS, _END_H)]  # (period, end in s)
+# {period: (start, end) in s}: a trip at t belongs to the period when start < t <= end (period_of; before the first
+# start: the first period). Since 2026-11-25, for the times of the synthetic requests (I-32)
+PERIOD_BOUNDS = {period: (start_h * 3600, end_h * 3600)
+                 for period, start_h, end_h in zip(TIME_PERIODS, [_START_H] + list(_END_H), _END_H)}
 # a period without microtransit service gets this period's average FleetPy waiting time (update_network_files):
 # the first peak period (until 2026-11-24 "AM", written in the code)
 WAIT_TIME_FALLBACK_PERIOD = PEAK_PERIODS[0] if PEAK_PERIODS else TIME_PERIODS[0]
@@ -329,6 +333,28 @@ VIRTUAL_STOP_SCENARIOS = PARAMETERS[gp.G_VIRTUAL_STOP_SCENARIOS]  # % of the nod
 # "micro" (microtransit + FRT) or "micro_only" (no FRT)
 MICROTRANSIT_RUNNING_SCENARIOS = PARAMETERS[gp.G_MICROTRANSIT_RUNNING_SCENARIOS]
 REPOSITIONING_LIST = PARAMETERS[gp.G_REPOSITIONING_LIST]  # FleetPy vehicle repositioning
+
+# ---- demand sample and upscaling (2026-11-25, docs/open_issues.md I-32). True: the demand file of the run is a sample
+# of the travelers (sample_demand_file, mtsm_paths.run_demand_file), a share DEMAND_SAMPLE_SHARE of all of them.
+# FleetPy then also gets synthetic requests for the travelers not in the sample (microtransit.py,
+# synthetic_demand.add_synthetic_requests), and the evaluation file and the FRT link ridership files report all
+# travelers: the sample's totals x DEMAND_SCALE (results.py). False: demand/demand.csv holds all travelers; nothing is
+# added or scaled. ----
+DEMAND_UPSCALING = PARAMETERS[gp.G_DEMAND_UPSCALING]
+DEMAND_SAMPLE_SHARE = PARAMETERS[gp.G_DEMAND_SAMPLE_SHARE]
+if DEMAND_UPSCALING and not 0 < DEMAND_SAMPLE_SHARE < 1:
+    sys.exit(f"ERROR: {CONSTANT_CONFIG_FILE}: demand_upscaling is True, so demand_sample_share must be the sample's "
+             f"share of all travelers, between 0 and 1 (e.g. 0.25), not {DEMAND_SAMPLE_SHARE}")
+DEMAND_SCALE = 1 / DEMAND_SAMPLE_SHARE if DEMAND_UPSCALING else 1  # from the sample to all travelers
+
+
+def scale_up(x):
+    """A total over the sample's travelers -> the total over all travelers (x DEMAND_SCALE), when demand_upscaling is
+    on; else x itself, unchanged. An int stays an int when the result is whole (a count x 4)."""
+    if not DEMAND_UPSCALING:
+        return x
+    y = x * DEMAND_SCALE
+    return int(y) if isinstance(x, int) and float(y).is_integer() else y
 
 # ---- derived from the parameters ----
 # Lemon Grove node ranges: walk nodes 0..LAST_WALK_NODE, FRT stops FIRST_FRT_STOP..LAST_FRT_STOP (1099-1170),

@@ -1702,6 +1702,30 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Docs: `README.md` (layout table), `fleetpy/LOCAL_CHANGES.md`, `open_issues.md` (I-14 note). Dated records that name
   the folder are kept; so is the comment in `pre_process/build_super_network.py` (identical to TRA's copy).
 
+## Running on a sample of the travelers: the switch `demand_upscaling` (I-32, 2026-11-25)
+
+- User's decisions: the commented-out synthetic-request block becomes a switch, off by default, so a run on all
+  travelers needs nothing; on, the user gives the sample file and its share, and every evaluated metric reports all
+  travelers, so the optimizer applies no factor. No reference update; the user tests the switch on `main`. How the
+  synthetic requests are drawn goes to a new item, I-45 (decision needed).
+- Code: three model parameters (`demand_upscaling`, `demand_sample_share`, `sample_demand_file`) in
+  `mtsm_global_parameters.py` and the model file (`mtsm_data/MANIFEST.csv` rewritten); `config.py` (switch, scale,
+  `scale_up`, `PERIOD_BOUNDS`); `mtsm_paths.run_demand_file` (used by `scenarios.py` and
+  `tools/check_study_area.py`); `synthetic_demand.py` (`add_synthetic_requests`, `synthetic_id_start`, time windows);
+  `microtransit.py` (the block replaced by the switch); `results.py` and `output_performance_metrics.py` (scaling);
+  the optimizer's commented-out upscaling block removed. Details in `open_issues.md`, I-32 (update 2026-11-25).
+- **Checks (2026-11-25):** the new functions on a copy of the reference's last FleetPy demand file (68 requests):
+  204 added, ids 1,000,000-1,000,203, times 5:03-19:56, file sorted, the same file from a second call, and a stop
+  when an id reaches the start. A full run with the switch on (a copy of the model file with `demand_upscaling`
+  True, `demand_sample_share` 0.25, `sample_demand_file` `demand/demand.csv`; 8 min 54 s, 8 iterations): FleetPy got
+  68 + 204 requests in iteration 0, then 49 + 147; the evaluation file against the individual results (script in
+  the session scratchpad): `tt_agents` 14,968 = 4 x 3,742 in both columns; car and transit users, out-of-pocket
+  cost, logsum increase (2,790.30), microtransit, FRT and car miles = 4 x the sums of the individual rows; `tot_sub`
+  = costs - revenues in both columns (scenario 6,029.86, base 2,190.37); `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`,
+  `sub_per_M_trip` and `M_avg_wait_time` consistent; ridership files in multiples of 4; last line
+  `demand_sample_share` 0.25. A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`**.
+- Docs: `README.md` (running on a sample; code map), `study_area_inputs.md` (file 2), `open_issues.md` (I-32, I-45).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -340,21 +340,11 @@ def collect_output(iteration_type: str, values):
     y2 = evaluation_value(evaluation, EVAL_BASE_COL, LOGSUM_METRIC)
     a1 = [evaluation_value(evaluation, EVAL_MICRO_COL, metric) for metric in METRIC_COLS]  # For Lemon Grove
 
-    # USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING
-    # F_oper_cost_base = evaluation_value(evaluation, EVAL_BASE_COL, "F_oper_cost ($)")
-    # F_revenue_base = evaluation_value(evaluation, EVAL_BASE_COL, "F_revenue ($)")
-    # subsidy_base = F_oper_cost_base - 4 * F_revenue_base
-    #
-    # F_oper_cost = evaluation_value(evaluation, EVAL_MICRO_COL, "F_oper_cost ($)")
-    # M_oper_cost = evaluation_value(evaluation, EVAL_MICRO_COL, "M_oper_cost ($)")
-    # F_revenue = evaluation_value(evaluation, EVAL_MICRO_COL, "F_revenue ($)")
-    # M_revenue = evaluation_value(evaluation, EVAL_MICRO_COL, "M_revenue ($)")
-    # subsidy_FRT_micro = F_oper_cost + M_oper_cost - 4 * F_revenue - 4 * M_revenue
-    #
-    # value_11 = -(subsidy_FRT_micro - subsidy_base)      # Subsidy delta
-    # value_21 = 4 * (y1 - y2)    # mobility logsum delta
-
-    # USE THIS PART WHEN THERE IS NO MICRO UPSCALING HAPPENING
+    # The evaluation file reports all travelers also when the demand file is a sample (demand_upscaling, since
+    # 2026-11-25, docs/open_issues.md I-32): results.py scales the sample's totals, so no factor is applied here. Until
+    # then a commented-out block here, "USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING", computed the subsidies
+    # with 4 x the FRT and microtransit revenues and the logsum delta as 4 x (y1 - y2), for a 25 % sample; with the
+    # switch on, the values below are the same.
     value_11 = -(x1 - x2)        # Subsidy delta
     value_21 = (y1 - y2)      # mobility logsum delta
 

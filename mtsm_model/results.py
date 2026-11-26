@@ -6,6 +6,7 @@ fixed-route-only base case and the scenario; EvaluationTable). Moved from run_ex
 are the values the code read from the surrounding loops.
 """
 import csv
+import dataclasses
 import os
 
 import numpy as np
@@ -30,6 +31,22 @@ EVALUATION_FIELDNAMES = ["study_area","repositioning","microtransit",'hdwy (min)
                          "tt_walk_dist (mi)",  # until 2026-11-24 followed by wghted_acc_emp_5/10/15_min (accessibility, removed)
                          "M_util_rate (%)","M_veh_occ","M_avg_speed (mph)","cnvrg (iter, sm_sq_per_diff)", "fleetpy_wait", "rejection_rate"]
 
+# only with demand_upscaling (since 2026-11-25, I-32): the share of the travelers the run simulated; the other values
+# of the file are then scaled to all travelers
+DEMAND_SAMPLE_METRIC = "demand_sample_share"
+
+
+def evaluation_fieldnames():
+    """The metrics of the evaluation file: EVALUATION_FIELDNAMES, and with demand_upscaling on also
+    DEMAND_SAMPLE_METRIC (the last line)."""
+    return EVALUATION_FIELDNAMES + ([DEMAND_SAMPLE_METRIC] if config.DEMAND_UPSCALING else [])
+
+
+# the totals of the base case that are sums over the sample's travelers (scaled with demand_upscaling)
+BASE_CASE_TOTALS = ("off_micro_T_trips", "off_micro_W_trips", "off_micro_F_trips", "off_micro_auto_trips",
+                    "off_micro_VMT_F", "off_micro_VMT_W", "off_micro_VMT_auto")
+
+
 EVALUATION_METRIC_HEADER = "metric_name"
 EVALUATION_BASE_COLUMN = "FRT_only"  # the base case: FRT only, at the base headway and base fare
 EVALUATION_SCENARIO_COLUMN = "FRT_and_micro"  # the scenario of the run
@@ -37,7 +54,7 @@ EVALUATION_COLUMNS = [EVALUATION_BASE_COLUMN, EVALUATION_SCENARIO_COLUMN]
 
 
 class EvaluationTable:
-    """The evaluation file of a study area: one line per metric (EVALUATION_FIELDNAMES), one column for the base case
+    """The evaluation file of a study area: one line per metric (evaluation_fieldnames()), one column for the base case
     and one for the scenario. The file is written when the table is created (metric names only) and again each time a
     column is set. A column that was never set stays empty: the base case is computed only for a "micro" scenario
     with repositioning. The table holds one scenario; a later scenario replaces the column of an earlier one
@@ -45,16 +62,17 @@ class EvaluationTable:
 
     def __init__(self, path):
         self.path = path
+        self.fieldnames = evaluation_fieldnames()
         self.columns = {name: {} for name in EVALUATION_COLUMNS}
         self.write()
 
     def set_column(self, name, values):
-        """values: {metric: value} with exactly the metrics of EVALUATION_FIELDNAMES."""
+        """values: {metric: value} with exactly the metrics of self.fieldnames."""
         if name not in self.columns:
             raise ValueError("unknown column of the evaluation file: %s" % name)
-        if set(values) != set(EVALUATION_FIELDNAMES):
+        if set(values) != set(self.fieldnames):
             raise ValueError("evaluation column %s: missing or unknown metrics: %s" % (
-                name, sorted(set(values) ^ set(EVALUATION_FIELDNAMES))))
+                name, sorted(set(values) ^ set(self.fieldnames))))
         self.columns[name] = values
         self.write()
 
@@ -62,7 +80,7 @@ class EvaluationTable:
         with open(self.path, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow([EVALUATION_METRIC_HEADER] + EVALUATION_COLUMNS)
-            for metric in EVALUATION_FIELDNAMES:
+            for metric in self.fieldnames:
                 writer.writerow([metric] + [self.columns[name].get(metric, "") for name in EVALUATION_COLUMNS])
 
 
@@ -222,6 +240,26 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
 
 
     csvfile_indiv.close()
+
+    # demand_upscaling (since 2026-11-25, docs/open_issues.md I-32): the demand file is a sample of the travelers, so
+    # the sums over its travelers are scaled to all travelers (x config.DEMAND_SCALE): counts, revenues, out-of-pocket
+    # and generalized costs, the logsum increase, passenger and car miles, walk and waiting times. Every value below that
+    # is built from them then describes all travelers, also the subsidies and the ratios to the fleet's miles. Not
+    # scaled: the individual results above (one row per traveler of the sample); the FRT schedule's cost and miles and
+    # FleetPy's values (fleet miles, utilization, occupancy, speed, waiting time, rejection rate), which already
+    # describe all travelers, FleetPy having served the synthetic requests too. Nothing changes when the switch is off.
+    sample_line = {DEMAND_SAMPLE_METRIC: config.DEMAND_SAMPLE_SHARE} if config.DEMAND_UPSCALING else {}
+    if config.DEMAND_UPSCALING:
+        (total_op_cost, total_parking_cost, total_T_revenue, total_F_revenue, total_M_revenue, total_mob_increase,
+         total_switch_mode, total_M_wait_time, total_F_wait_time, total_walk_time, tt_gen_cost, num_M, num_F,
+         num_W) = [config.scale_up(x) for x in (
+            total_op_cost, total_parking_cost, total_T_revenue, total_F_revenue, total_M_revenue, total_mob_increase,
+            total_switch_mode, total_M_wait_time, total_F_wait_time, total_walk_time, tt_gen_cost, num_M, num_F, num_W)]
+        tt_num_agents = config.scale_up(tt_num_agents)
+        totals = dataclasses.replace(totals, **{f.name: config.scale_up(getattr(totals, f.name))
+                                                for f in dataclasses.fields(totals)})
+        base = dataclasses.replace(base, **{name: config.scale_up(getattr(base, name)) for name in BASE_CASE_TOTALS})
+
     if num_M!=0:
         avg_M_wait_time = total_M_wait_time /totals.num_M_trips #total microtransit waiting time/microtransit trips
     else:
@@ -285,6 +323,11 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                 off_micro_F_trip_legs+=1
                 off_micro_tot_F_wait_time+=base.off_micro_agent_F_tot_wait_time[rq_id]
 
+        if config.DEMAND_UPSCALING:  # the sample's sums -> all travelers (I-32), as above
+            (off_micro_total_op_cost, off_micro_total_parking_cost, off_micro_tt_gen_cost, off_micro_w_trip_legs,
+             off_micro_tot_walk_time, off_micro_F_trip_legs, off_micro_tot_F_wait_time) = [config.scale_up(x) for x in (
+                off_micro_total_op_cost, off_micro_total_parking_cost, off_micro_tt_gen_cost, off_micro_w_trip_legs,
+                off_micro_tot_walk_time, off_micro_F_trip_legs, off_micro_tot_F_wait_time)]
 
 
         if microtransit_run =="micro_only":
@@ -436,7 +479,8 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
                          "M_PMT (mi)": 0,"M_PMT/M_VMT": 0,"F_VMT (mi)": transit_tt_VMT_base,"F_PMT (mi)": base.off_micro_VMT_F,"F_PMT/F_VMT": base.off_micro_VMT_F / transit_tt_VMT_base,
                          "tt_VMT (mi)": off_micro_tt_VMT,"tt_walk_dist (mi)": base.off_micro_VMT_W,
                          "M_util_rate (%)": 0,
-                         "M_veh_occ": 0,"M_avg_speed (mph)": 0,"cnvrg (iter, sm_sq_per_diff)": 0, "fleetpy_wait": 0, "rejection_rate": 0})
+                         "M_veh_occ": 0,"M_avg_speed (mph)": 0,"cnvrg (iter, sm_sq_per_diff)": 0, "fleetpy_wait": 0, "rejection_rate": 0,
+                         **sample_line})
 
     #calculate the turn-on micro transit scenario
 
@@ -507,7 +551,8 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
           "tt_mode_switch": total_switch_mode, "M_avg_wait_time (s)": avg_M_wait_time,
           "F_avg_wait_time (s)": avg_F_wait_time, "avg_walk_time (s)":avg_walk_time,"tt_walk_time (h)":total_walk_time/3600,
           "car_VMT (mi)":totals.VMT_auto,"M_VMT (mi)":total_vmt,"M_PMT (mi)":totals.VMT_M,"M_PMT/M_VMT":totals.VMT_M/total_vmt,"F_VMT (mi)":transit_tt_VMT,"F_PMT (mi)":totals.VMT_F,"F_PMT/F_VMT":PMT_VMT_ratio_F,"tt_VMT (mi)":tt_VMT,"tt_walk_dist (mi)":totals.VMT_W,
-            "M_util_rate (%)":util_rate,"M_veh_occ":veh_occ,"M_avg_speed (mph)":avg_speed_mph,"cnvrg (iter, sm_sq_per_diff)":iter_sum_sq_per_diff, "fleetpy_wait": last_fleetpy_wait_time, "rejection_rate": last_rejection_rate})
+            "M_util_rate (%)":util_rate,"M_veh_occ":veh_occ,"M_avg_speed (mph)":avg_speed_mph,"cnvrg (iter, sm_sq_per_diff)":iter_sum_sq_per_diff, "fleetpy_wait": last_fleetpy_wait_time, "rejection_rate": last_rejection_rate,
+            **sample_line})
 
 
     if microtransit_run == "micro_only":

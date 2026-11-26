@@ -153,6 +153,10 @@ then): `num_walk_nodes`, `microtransit_node_offset` (derived from the files, dec
 
 One row per traveler (Lemon Grove: 3,742). The rows need not be sorted.
 
+With `demand_upscaling` on (model file, since 2026-11-25; I-32) the run reads instead the sample file named by
+`sample_demand_file` (a path relative to `mtsm_data/<area>/`), with the same columns: a sample of the travelers, a
+share `demand_sample_share` of all of them. The checks below apply to it.
+
 | Column | Type | Meaning |
 |---|---|---|
 | `rq_time` | integer | departure time, seconds after midnight (Lemon Grove: 18,157-86,276) |

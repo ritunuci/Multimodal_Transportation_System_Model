@@ -53,7 +53,7 @@ Paths are relative to the codebase root.
 | I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
-| I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Open | 2026-11-16 |
+| I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | In progress (switch `demand_upscaling` on `main`, off; the user tests it) | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
@@ -66,6 +66,7 @@ Paths are relative to the codebase root.
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
+| I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Decision needed | 2026-11-25 |
 
 ---
 
@@ -217,7 +218,8 @@ Paths are relative to the codebase root.
   values) was not checked. See also I-21.
 
 ### I-32: Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-16 (user's question).
+- **Status:** In progress since 2026-11-25 (the switch `demand_upscaling` on `main`, off by default; the user
+  tests it on `main`); Open until then. **Severity:** Medium. **Found:** 2026-11-16 (user's question).
 - **What:** `synthesize_requests_with_trend_time` (`pre_process/generate_demand_files.py`; since 2026-11-23 in
   `mtsm_model/helpers/synthetic_demand.py`, unchanged, I-14) writes the new requests
   after the old ones (`pd.concat([df, new_df])`), not merged in time order. The new block is not in time order
@@ -266,6 +268,68 @@ Paths are relative to the codebase root.
   the "trend" is mostly flat. The new request ids start at 60005; the largest id in the demand data is 15047, so
   they do not clash. Whether `update_network_files` mixes the synthetic requests into the waiting times it writes
   to the final networks was not checked.
+- **Update 2026-11-25 (user's decisions): the block is now the switch `demand_upscaling`, on `main`, off by default.**
+  - **Why the block exists (user):** a run on all travelers takes too long, so the model runs on a sample (`main`'s
+    `demand/demand.csv` is a 25 % sample of about 15,000 travelers: 3,742 rows, ids up to 15,047; drawn with
+    `sample_20_percent` in `pre_process/generate_demand_files.py`, `frac=0.25`). With only the sample's requests the
+    microtransit fleet is less busy than with all travelers and the system looks better than it is. The synthetic
+    requests make FleetPy serve as many requests as all travelers would; the results are then scaled to all travelers
+    (until now by the optimizer's commented-out block "USE THIS PART WHEN THERE IS MICRO UPSCALING HAPPENING": 4 x the
+    FRT and microtransit revenues, 4 x the logsum delta). Car times do not depend on the number of travelers (fixed
+    period networks; the `flow` field of `network_algorithms.Link` is never used) and the FRT has no capacity, so only
+    FleetPy needs the extra requests.
+  - **Parameters** (model file): `demand_upscaling` (False), `demand_sample_share` (1; between 0 and 1 when on),
+    `sample_demand_file` (`none`; a path relative to `mtsm_data/<area>/` when on). Off: the run reads
+    `demand/demand.csv` as all travelers, nothing is added or scaled, and the reference is unchanged. On: the run reads
+    the sample file, which the user provides (MTSM does not draw the sample); `tools/check_study_area.py` checks it as
+    file 2. Code: `config.DEMAND_UPSCALING`, `DEMAND_SCALE` (1 / share), `scale_up`; `mtsm_paths.run_demand_file`.
+  - **FleetPy** (`microtransit.py`, `synthetic_demand.add_synthetic_requests`, each iteration before FleetPy):
+    round(n x (1 / share - 1)) synthetic requests for the n requests of the sample (3 n for 0.25). Request ids from
+    `synthetic_id_start`: the smallest power of ten >= 10 x max(largest traveler id + 1, travelers / share), so clear
+    of every traveler's id, also of the travelers outside the sample if the full demand numbers them alike (Lemon Grove:
+    1,000,000; was 60,005); the run stops if an MTSM request id (including the next free ids of a traveler's later
+    microtransit legs) reaches it. Times only in the scenario's microtransit operating periods (was 5:00-20:00 for
+    every scenario: a scenario with fewer periods would have got requests while no service runs, raising the
+    rejection rate). The whole file is written sorted by `rq_time` (stable sort): **the fix of this item** for the
+    synthetic rows. Seed: the run's `random_seed`, the same in every iteration (was 42). The way times and pairs are
+    drawn is unchanged; its review is I-45. `synthesize_requests_with_trend_time` was split into `make_time_sampler`
+    (now with windows), `make_od_sampler` (unchanged) and `synthesize_requests`; its file handling and the "+ 5" of the
+    ids are gone.
+  - **What MTSM reads back from FleetPy includes the synthetic requests, on purpose:** the waiting time per period and
+    the detour ratios (`update_network_files`, all rows of `1_user-stats.csv`), the rejection rate and waiting time
+    (`standard_eval.csv`), and the fleet's miles, utilization, occupancy and speed. They stand for the travelers outside
+    the sample. (A first proposal on 2026-11-25 to use only the sample's rows was withdrawn.)
+  - **Evaluation file** (`results.py`; both columns): the sums over the sample's travelers are multiplied by 1 / share:
+    traveler and trip counts, revenues, out-of-pocket, gas and parking costs, generalized cost, the logsum increase,
+    mode switches, car, walk and passenger miles, walk and waiting times. The values built from them then describe all
+    travelers: `tot_sub` and the twelve `sub_per_*` lines, `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`. Not scaled: the FRT
+    schedule's cost and miles and FleetPy's values (already for all travelers), and shares and averages (a ratio of
+    two scaled sums). A last line `demand_sample_share` is added only when the switch is on. The FRT link ridership
+    files (`debug_False_..._transit_edges_rders_scen_10.csv`) are scaled too; the individual results stay one row per
+    traveler of the sample, unscaled.
+  - **Found on the way: `main`'s results mix scales today** (switch off, 25 % sample): `tot_sub` and the `sub_per_*`
+    lines set the full FRT and fleet costs against a quarter of the revenues and riders, `M_PMT/M_VMT` and
+    `F_PMT/F_VMT` are a quarter of their value, `tt_VMT` adds the sample's car miles to the full transit miles, and the
+    optimizer's active objectives (`-(x1 - x2)`, `y1 - y2`) inherit this. User's decision: the reference is not
+    updated; the switch is tested on `main`.
+  - **Optimizer:** the commented-out block was removed (comment at its place). With the switch on, the evaluation
+    file gives the values the block computed: `tot_sub` (scenario) - `tot_sub` (base) = its subsidy delta, and the
+    logsum line is 4 x the sample's. Notes: candidate copies are made from the frozen model file, so an optimizer run
+    with the switch on needs it set in the frozen file (then `python tools/check_inputs.py --write <area>`); the
+    hypervolume `ref_point` (-18000, 0) is in the evaluation file's scale and may need a new value for all travelers
+    (not changed).
+  - **Not done:** sorting MTSM's own FleetPy demand file when the switch is off (it would change FleetPy's results:
+    a new reference, the branch `TRA_resubmission`).
+  - **Checks (2026-11-25):** the new functions on a copy of the reference's last FleetPy demand file (68 requests):
+    204 added, ids 1,000,000-1,000,203, times 5:03-19:56, file sorted, the same file from a second call, and a stop
+    when an id reaches the start. A full run with the switch on (a copy of the model file with `demand_upscaling`
+    True, `demand_sample_share` 0.25, `sample_demand_file` `demand/demand.csv`; 8 min 54 s, 8 iterations): FleetPy got
+    68 + 204 requests in iteration 0, then 49 + 147; the evaluation file against the individual results (script in
+    the session scratchpad): `tt_agents` 14,968 = 4 x 3,742 in both columns; car and transit users, out-of-pocket
+    cost, logsum increase (2,790.30), microtransit, FRT and car miles = 4 x the sums of the individual rows; `tot_sub`
+    = costs - revenues in both columns (scenario 6,029.86, base 2,190.37); `M_PMT/M_VMT`, `F_PMT/F_VMT`, `tt_VMT`,
+    `sub_per_M_trip` and `M_avg_wait_time` consistent; ridership files in multiples of 4; last line
+    `demand_sample_share` 0.25. A full run with the switch off: `compare_reference.py` printed **`REPRODUCED`**.
 
 ### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
 - **Status:** In progress (since 2026-11-23: decided; the builder change and the networks built with it are not in
@@ -594,6 +658,29 @@ Paths are relative to the codebase root.
   needs the ride length in its label); neither was tried. A rule change needs its own reference update.
 
 ---
+
+### I-45: How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs
+- **Status:** Decision needed (user, 2026-11-25: leaning towards option (b), wants more information first).
+  **Severity:** Medium. **Found:** 2026-11-25 (review of I-32).
+- **What:** `synthetic_demand.synthesize_requests` (the user's method, unchanged by I-32) draws each synthetic request
+  from the sample's microtransit requests of the iteration:
+  1. **The time profile is mostly flat.** The time comes from 5-minute bins with a smoothing of 0.5 per bin. With
+     180 bins (15 h of service) the smoothing adds 90 made-up requests; against 68 real requests (the reference's last
+     iteration) 57 % of the synthetic times are drawn uniformly over the service hours, and the peaks flatten.
+  2. **Time and origin-destination pair are drawn apart, and half the pairs are reversed** (`od_mode` "ordered",
+     `swap_prob` 0.5): a morning trip's pair can come back at noon, in the other direction; the pattern of the
+     directions over the day (inbound in the morning, outbound in the evening) is lost.
+  3. **The pairs repeat the sample's stop pairs exactly:** the synthetic requests share origins and destinations with
+     the real ones more than the requests of all travelers would, so FleetPy pools them more easily; occupancy and
+     waits may come out somewhat optimistic. Built into any resampling of the sample; at most reduced.
+- **Options:**
+  - (a) keep the method; smaller smoothing (or none), so the profile follows the sample.
+  - (b) copy each real request (1 / share - 1) times, with its time shifted at random by up to +-N minutes (inside
+    its period and the service hours), same pair and direction; with a non-whole factor, the remainder by random
+    rounding. Keeps the time-place-direction pattern and gives exactly the factor. Open: N; whether to move the stops
+    to nearby nodes as well (point 3).
+- **To do:** the user decides; then a test run on `main` with the switch on (no reference change: the switch is off
+  there).
 
 ## Closed
 

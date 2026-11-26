@@ -171,7 +171,8 @@ def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,v
                 link_type = int(1)
                 route = int(data["route"])
                 # (the per-period VMT, vmt_AM ... vmt_EV, was read here but never written)
-                rdrs = {p: float(transit_link_pax[p][(from_node, to_node)]) for p in config.TIME_PERIODS}
+                # all travelers when the demand file is a sample (demand_upscaling, I-32; unchanged when off)
+                rdrs = {p: config.scale_up(float(transit_link_pax[p][(from_node, to_node)])) for p in config.TIME_PERIODS}
                 tt_rdrs = sum(rdrs.values())  # in period order, as rdrs_AM + rdrs_MD + rdrs_PM + rdrs_EV before
 
                 row = {"from_node": from_node, "to_node": to_node, "distance (meters)": distance,"travel_time": travel_time,"link_type": link_type,

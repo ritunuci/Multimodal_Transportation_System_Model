@@ -19,6 +19,7 @@ from mtsm_model.helpers import folder_directory as fld_dir
 import mtsm_paths as mtsm
 from mtsm_model.helpers import network_algorithms as n_a
 from mtsm_model.helpers import output_performance_metrics as output_metrics
+from mtsm_model.helpers import synthetic_demand
 from mtsm_model.helpers import testing_scenario_creation as tst_scen_create
 from mtsm_model.helpers import update_initial_network as init_net
 from mtsm_model import config
@@ -59,6 +60,8 @@ class StudyArea:
     # the demand file has the column auto_available (2026-11-24; docs/period_networks_and_car_availability_plan.md,
     # step 2): the individual results then report it
     has_auto_available: bool = False
+    # demand_upscaling (I-32, 2026-11-25): the first request id of the synthetic FleetPy requests; None when off
+    synthetic_id_start: Any = None
 
 
 @dataclass
@@ -96,7 +99,12 @@ def load_study_area(cfg, study_area):
 
     evaluation_file = os.path.join(output_folder, "%s_evaluation_zonal_partition_False.csv" % str(study_area))
     paths = mtsm.area_paths(study_area)
-    demand_file = paths.demand_file  # demand/demand.csv (until 2026-11-24 demand_data/<area>_trips_nodes_study_area_with_beta.csv)
+    # demand/demand.csv (until 2026-11-24 demand_data/<area>_trips_nodes_study_area_with_beta.csv), or the sample file
+    # when demand_upscaling is on (since 2026-11-25, I-32)
+    try:
+        demand_file = mtsm.run_demand_file(study_area, config.PARAMETERS)
+    except ValueError as e:
+        sys.exit(f"ERROR: {e}")
 
     ##############################################
     #1108: read the initial network information
@@ -132,6 +140,12 @@ def load_study_area(cfg, study_area):
                  f"micro_only offers them no mode outside the microtransit operating periods "
                  f"(docs/period_networks_and_car_availability_plan.md, decision 6)")
     print("study_area:", study_area,"total number of agents:",tt_num_agents,"\n")
+    synthetic_id_start = None
+    if config.DEMAND_UPSCALING:
+        synthetic_id_start = synthetic_demand.synthetic_id_start([agent.rq_id for agent in agent_list_],
+                                                                 config.DEMAND_SAMPLE_SHARE)
+        print(f"demand_upscaling: {demand_file} holds a share {config.DEMAND_SAMPLE_SHARE} of the travelers; the "
+              f"results are scaled by {config.DEMAND_SCALE}; synthetic FleetPy request ids from {synthetic_id_start}\n")
 
     transit_link_list=output_metrics.get_transit_link_info(study_area)
     transit_link_vmt,transit_link_pax,off_micro_transit_link_pax,off_micro_transit_link_vmt=output_metrics.vmt_and_link_dict_creation(time_periods,transit_link_list)
@@ -142,7 +156,7 @@ def load_study_area(cfg, study_area):
                      microtransit_setup_scenarios, time_periods, auto_network, initial_super_network_dir,
                      initial_super_network, final_super_network_dir, final_super_network, agent_list_, tt_num_agents,
                      transit_link_list, transit_link_vmt, transit_link_pax, off_micro_transit_link_pax,
-                     off_micro_transit_link_vmt, has_auto_available)
+                     off_micro_transit_link_vmt, has_auto_available, synthetic_id_start=synthetic_id_start)
 
 
 def scenarios(cfg, area, log_f):

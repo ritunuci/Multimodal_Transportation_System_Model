@@ -63,6 +63,15 @@ for vehicle repositioning).
    The names and types are in `mtsm_model/mtsm_global_parameters.py` (`AREA_PARAMETERS`: the area file's keys);
    lists are written `5;10;15`. Both are frozen inputs: to change model values, copy the model file, edit the copy
    and run with `--config <copy>` (the area file is always the one of the copy's `study_area`).
+
+   **Running on a sample of the travelers** (`demand_upscaling`, since 2026-11-25; `docs/open_issues.md` I-32): to
+   save run time, the model can run on a sample of the travelers that you provide (same columns as
+   `demand/demand.csv`, rows of a random sample with their own `request_id`s). Set `demand_upscaling` to `True`,
+   `demand_sample_share` to the sample's share of all travelers (e.g. `0.25`) and `sample_demand_file` to the file, a
+   path relative to `mtsm_data/<area>/`. FleetPy then also serves synthetic microtransit requests for the travelers
+   outside the sample, so the fleet is as busy as with all of them, and the evaluation file reports all travelers
+   (its last line gives the share). With `False` (the frozen value), `demand/demand.csv` is taken as all travelers.
+   For the optimizer, set the switch in the frozen model file itself (the candidates are copies of it).
 4. **Run** from the repository root, with `PYTHONHASHSEED=0` and without `PYTHONPATH`:
 
        python run_examples_new_parking.py                    # the frozen parameter file
@@ -223,7 +232,7 @@ run_examples_new_parking.py   config.read_run_config(), config.check_run_config(
 | `paths.py` | A traveler's networks and least generalized cost paths (car and FRT paths are reused across iterations) |
 | `choice.py` | Trip costs (incl. parking), logit probabilities, logsum, mode-change threshold |
 | `trip_legs.py` | Splitting a path into walk, microtransit and FRT legs |
-| `microtransit.py` | Running FleetPy (through `helpers/fleetpy_runner.py`) and updating the super-networks with its results |
+| `microtransit.py` | Running FleetPy (through `helpers/fleetpy_runner.py`), with synthetic requests when `demand_upscaling` is on, and updating the super-networks with its results |
 | `results.py` | The results of a converged scenario: costs, subsidies, individual results, evaluation file |
 
 The helpers these modules call are in `mtsm_model/helpers/` (moved from the repository root on 2026-11-10; imported
@@ -236,7 +245,7 @@ as `from mtsm_model.helpers import network_algorithms as n_a`, ...):
 | `fleetpy_runner.py` | The only module that calls FleetPy: copies MTSM's FleetPy inputs into `fleetpy/` and runs it in the same process |
 | `update_network_files.py`, `get_microtransit_skims.py`, `update_initial_network.py` | Updating the super-networks with FleetPy's results; microtransit skims |
 | `output_performance_metrics.py`, `testing_scenario_creation.py`, `folder_directory.py` | Output metrics, scenario and folder setup |
-| `synthetic_demand.py` | Synthetic microtransit requests for FleetPy (`synthesize_requests_with_trend_time`); imported by `microtransit.py`, used only by its commented-out block (I-32) |
+| `synthetic_demand.py` | Synthetic microtransit requests for FleetPy when the run is on a sample of the travelers (`demand_upscaling`, I-32; how they are drawn: I-45) |
 
 `mtsm_paths.py` (all folder locations) stays at the root: it derives them from its own location. How the code got
 this structure, and what was checked to keep the results identical, is in

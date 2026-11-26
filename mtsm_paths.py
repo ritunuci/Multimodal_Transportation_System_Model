@@ -156,6 +156,21 @@ def area_paths(area):
     )
 
 
+def run_demand_file(area, params):
+    """The demand file of a run (docs/study_area_inputs.md, file 2): demand/demand.csv, or, with demand_upscaling True
+    (since 2026-11-25, docs/open_issues.md I-32), the sample file named by sample_demand_file, a path relative to
+    mtsm_data/<area>/. params: the run's parameters (config.PARAMETERS). ValueError if the sample file is not named."""
+    paths = area_paths(area)
+    if not params["demand_upscaling"]:
+        return paths.demand_file
+    name = params["sample_demand_file"].strip()
+    parts = name.replace("\\", "/").split("/")
+    if not name or name.lower() == "none" or os.path.isabs(name) or ".." in parts:
+        raise ValueError("demand_upscaling is True, so sample_demand_file must name the sample demand file, a path "
+                         "relative to mtsm_data/%s/ (e.g. demand/demand_sample.csv), not %r" % (area, name))
+    return os.path.join(paths.dir, *parts)
+
+
 def not_self_contained(what):
     """Stop on a code branch whose folders are still outside the codebase.
 
