@@ -52,7 +52,7 @@ Paths are relative to the codebase root.
 | I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
 | I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
-| I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open | 2026-11-13 |
+| I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open (to close on the branch `TRA_resubmission`: TRA's FRT network) | 2026-11-13 |
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Closed (2026-11-25) | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
@@ -187,7 +187,9 @@ Paths are relative to the codebase root.
   the file should show when there is no base case.
 
 ### I-31: The route labels of the FRT links may not show which routes run on a link
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-13 (before turning on the transfer penalty, I-25).
+- **Status:** Open (to close on the branch `TRA_resubmission`, once TRA's networks are in use: its FRT network has
+  one stop node per stop, route and direction, so every route change is an alighting and a boarding; user's
+  decision 2026-11-25, status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-13 (before turning on the transfer penalty, I-25).
 - **What:** every FRT link (type 1) of the super-networks has one route number. In the raw Lemon Grove transit file
   a link served by several routes had a list (e.g. `[856, 936]`); the old preprocessing kept only the first number
   (`pre_process/process_network.py`, `construct_super_network_transit_links`: `route_id_str_.split(',')[0]`; route
@@ -219,6 +221,13 @@ Paths are relative to the codebase root.
   route 856: 1,836 against about 2,875 m; route 4: 1,205 against about 1,995 m); multiplied by 1.609 they fit. They
   may be miles x 1,000, not metres. How the model uses this column (FRT passenger miles, the per-mile subsidy
   values) was not checked. See also I-21.
+  - **2026-11-26 (read-only check):** in TRA's new Lemon Grove data (`new_LG_data/lemon_grove/frt/frt_edges.csv`,
+    110 FRT edges) `distance` is in metres: it equals the milepost difference x 1609.344 (median ratio 1.0000), and
+    its median ratio to the straight line between the two stops is 1.00. A comparison of the route lengths
+    (`networks/frt_routes.csv` against TRA's `frt_routes.csv`) does not settle the old network: route 4 2,618
+    against 2,669 m, but 856, 916 and 936 are 1.7-1.8 times longer in TRA's data, with other stop counts (856: 19
+    against 14 and 15), so the routes probably do not cover the same stretch. User's decision: the old network's
+    distances stay as they are (main keeps it as the record); the question does not carry over to the branch.
 
 ### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
 - **Status:** In progress (since 2026-11-23: decided; the builder change and the networks built with it are not in

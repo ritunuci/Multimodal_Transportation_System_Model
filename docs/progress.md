@@ -1784,6 +1784,14 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `pre_process/` removed)", as decided on 2026-11-25, like I-25, I-44 and I-47. Nothing else changed. Docs only;
   no run.
 
+## I-31's status names the branch; FRT distances of the new data checked (2026-11-26)
+
+- User's decision: I-31's status (index and entry) now reads "Open (to close on the branch `TRA_resubmission`:
+  TRA's FRT network)", as agreed on 2026-11-25.
+- Read-only check of the entry's side note on FRT link distances: TRA's new data is in metres (matches the
+  mileposts); main's old network stays unresolved and unchanged. Dated note in `open_issues.md` I-31. Docs only;
+  no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
