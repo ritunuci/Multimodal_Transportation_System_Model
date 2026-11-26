@@ -1,13 +1,13 @@
-route,direction,n_stops,length_m
-4,1,16,2617.99268308
-4,2,16,2617.99268308
-856,1,19,3701.9896532000002
-856,2,19,3701.9896532000002
-916,1,10,1843.9948464
-916,2,10,1843.9948464
-917,1,8,1642.9954081
-917,2,8,1642.9954081
-936,1,18,3832.9892873
-936,2,18,3832.9892873
-520,1,4,2975.991683
-520,2,4,2975.991683
+route,direction,route_variant,mode,mode_name,operator,start,end,n_stops,n_links,length_m,route_length_mi,headway_ea,headway_am,headway_md,headway_pm,headway_ev,hours_ea,hours_ev,fare
+4,1,4105,10,Local Bus,1,Skyline-Paradise Hills,Downtown,9,8,2669.3,11.213,30.0,30.0,30.0,30.0,30.0,3.0,4.0,2.5
+4,2,4205,10,Local Bus,1,Downtown,Skyline-Paradise Hills,9,8,2669.3,10.87,30.0,30.0,30.0,30.0,30.0,3.0,4.0,2.5
+520,1,520103,5,Light Rail,5,El Cajon,Downtown,2,1,2400.8,17.622,15.0,15.0,15.0,15.0,15.0,3.0,6.0,2.5
+520,2,520203,5,Light Rail,5,Downtown,El Cajon,2,1,2400.8,17.622,15.0,15.0,15.0,15.0,15.0,3.0,6.0,2.5
+851,1,851103,10,Local Bus,1,Spring Valley,La Mesa,3,2,1147.1,5.148,60.0,60.0,60.0,60.0,60.0,1.0,1.0,2.5
+851,2,851203,10,Local Bus,1,La Mesa,Spring Valley,3,2,1147.1,6.253,60.0,60.0,60.0,60.0,60.0,1.0,1.0,2.5
+856,1,856105,10,Local Bus,1,Valle De Oro,College Area,14,13,6611.6,13.338,60.0,30.0,30.0,30.0,60.0,3.0,6.0,2.5
+856,2,856205,10,Local Bus,1,College Area,Valle De Oro,15,14,6824.6,13.19,60.0,30.0,30.0,30.0,60.0,3.0,6.0,2.5
+916,1,916102,10,Local Bus,1,Southeastern:Encanto Neighborhoods,Southeastern:Encanto Neighborhoods,12,11,3353.7,11.601,60.0,60.0,60.0,60.0,60.0,3.0,4.0,2.5
+917,1,917103,10,Local Bus,1,Southeastern:Encanto Neighborhoods,Southeastern:Encanto Neighborhoods,12,11,3353.7,11.601,60.0,60.0,60.0,60.0,60.0,3.0,4.0,2.5
+936,1,936106,10,Local Bus,1,Spring Valley,College Area,20,19,6501.8,7.885,60.0,30.0,30.0,30.0,60.0,3.0,4.0,2.5
+936,2,936206,10,Local Bus,1,College Area,Spring Valley,21,20,6714.8,7.737,60.0,30.0,30.0,30.0,60.0,3.0,4.0,2.5

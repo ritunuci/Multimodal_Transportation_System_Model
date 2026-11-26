@@ -1855,6 +1855,26 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `end_time` 86400 is before the last departures, 97,043 s). The mapping is for the held data decisions.
 - Docs: `open_issues.md` (I-25: In progress, closes with the branch's new reference).
 
+## TRA's new Lemon Grove inputs moved into `mtsm_data/lemon_grove/` (branch, 2026-11-26)
+
+- User's decisions: replace the old inputs in place (held decision 1 thereby (a)); the lists of files to copy,
+  write, delete and keep as proposed; empty the four run-output folders; move the files only (the ABM3 periods and
+  the other held decisions later). Record: `docs/new_lemon_grove_data_move.md` (every source and destination, the
+  names before and after, how `frt_links.csv` was written).
+- 25 files copied byte for byte from `new_LG_data/lemon_grove/` (all compared identical afterwards): demand, file 3
+  per period (`..._virstop_75_<P>.csv`, from TRA's `hw_10`), files 4 and 9 (TRA's `non_micro` `hw_10` and `hw_20`),
+  file 5 per period (`car_network_<P>.csv`, from `auto_edges_<P>.csv`), the route table, FleetPy's network,
+  `crs.info` (`EPSG:2230`), `network_dynamics.csv` and its six period folders, and the vehicle start file.
+- `networks/frt_links.csv` written from file 3's type-1 lines (110 links, as bytes; `distance` renamed
+  `distance (meters)`); TRA does not write it.
+- Deleted: the whole-day `super_network_micro_virstop_75.csv` and `car_network.csv`, and `networks/nodes.csv`
+  (only for `census_track`; TRA's nodes have no census tract). Kept: `area_parameters.csv`, the vehicle type, the
+  two FleetPy constant configs (their `end_time` 86400 is before the last departures).
+- Run outputs of the old data removed: 318 files in `final_network/`, `initial_network/`, `indiv_output/`,
+  `output/` (the `.gitkeep` files kept).
+- `mtsm_data/lemon_grove/MANIFEST.csv` rewritten (30 inputs, 16 before); `check_inputs.py` passed. Not run:
+  `check_study_area.py` and the model (they need the ABM3 periods).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
