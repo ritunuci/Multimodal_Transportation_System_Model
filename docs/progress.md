@@ -1820,6 +1820,13 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   FleetPy `crs.info` already says `EPSG:2230`. Dated notes in `open_issues.md` (also: the two files' paths since
   `fleetpy_inputs/` became `fleetpy/`). Docs only; no run.
 
+## I-46 to be fixed on the branch (2026-11-26)
+
+- User's decision: I-46 stays open, to revisit and fix on the branch `TRA_resubmission` (status was Decision
+  needed). Dated note in `open_issues.md` I-46: where the code takes the origin and time
+  (`trip_legs.split_time_path`), that a single-link leg would be declined by FleetPy, the possible link to I-44's
+  very short rides, and the options for the branch. Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -67,7 +67,7 @@ Paths are relative to the codebase root.
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Closed (2026-11-26) | 2026-11-24 |
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
-| I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Decision needed | 2026-11-25 |
+| I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Open (to revisit and fix on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | Open (with the new reference on the branch `TRA_resubmission`) | 2026-11-25 |
 
 ---
@@ -563,7 +563,8 @@ Paths are relative to the codebase root.
 ---
 
 ### I-46: A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node
-- **Status:** Decision needed. **Severity:** High (FleetPy is given other requests than the travelers' paths).
+- **Status:** Open (to revisit and fix on the branch `TRA_resubmission`; user's decision 2026-11-26; Decision
+  needed until then). **Severity:** High (FleetPy is given other requests than the travelers' paths).
   **Found:** 2026-11-25 (I-45: 21 of the 68 requests of the reference's last FleetPy file start at a node that has no
   microtransit boarding link; all 68 end at one).
 - **What:** the transit paths are lists of (node reached, time at it, link type of the link into it, route), in
@@ -582,6 +583,22 @@ Paths are relative to the codebase root.
 - **To do:** the user decides the request time (the rider's arrival at the stop, or as now after the modelled wait)
   and the origin (the boarding stop); a fix changes FleetPy's inputs, so it goes with a new reference (the branch
   `TRA_resubmission`).
+- **2026-11-26 (code read; user's decision: keep open, revisit and fix on the branch):**
+  - Where: `trip_legs.split_time_path`, `if (pre_link_type != 4) and (link_type == 4)`: `M_origin_node = node` (the
+    end of the first ride link) and `request_time = rq_time + round(time, 0)` (the time there). The boarding stop is
+    `pre_node` at that element (the microtransit node reached by the waiting link, type 5); the rider's arrival at
+    the stop is the time of the element before the waiting link.
+  - A leg with a single ride link would start where it ends, and FleetPy declines such a request
+    (`PoolingIRSOnly.user_request`: `prq.o_pos == prq.d_pos` -> rejection).
+  - Possibly related, not checked: the very short FleetPy rides of I-44 (11-28 s by FleetPy's times against
+    40-110 s on the super-network) lack the first ride link; the factor 1.4 of the microtransit links (I-35) also
+    makes the super-network's ride longer than FleetPy's.
+  - Options to decide on the branch: request time (a) the rider's arrival at the stop (recommended: FleetPy's wait
+    then means what the waiting link stands for), (b) as now, after the modelled wait, (c) the departure from the
+    trip origin with pickup not before the arrival at the stop (FleetPy would need an earliest pickup time; not
+    checked); origin the boarding stop; FRT legs the same (their file is not read, so no result change); before
+    the branch's reference run, count on `main`'s networks how many requests change origin and time. Goes with
+    I-47 (the same file) in the branch's new reference.
 
 ### I-47: MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step
 - **Status:** Open (to do with the new reference on the branch `TRA_resubmission`; user's decision 2026-11-25).
