@@ -1875,6 +1875,21 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - `mtsm_data/lemon_grove/MANIFEST.csv` rewritten (30 inputs, 16 before); `check_inputs.py` passed. Not run:
   `check_study_area.py` and the model (they need the ABM3 periods).
 
+## Leftovers of the old data removed; `new_LG_data/` ignored locally; README fix (2026-11-26)
+
+- User's decisions. FleetPy's staged copies of the old Lemon Grove inputs and results in `fleetpy/` (ignored by
+  git) deleted: 66 files (`data/demand/lemon_grove_example_demand/`, `data/networks/lemon_grove_example_network/`,
+  `data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/`, `data/vehicles/lemon_grove_vehtype.csv`,
+  `studies/example_study/results/`, the 12 `studies/example_study/scenarios/lemon_grove_*.csv`); FleetPy's own
+  example files kept. The run recreates what it needs (staging, the demand folder at startup, the scenario file,
+  FleetPy's results folder). Left from `main` on purpose: `area_parameters.csv`, the vehicle type and the two
+  FleetPy constant configs (held decisions 4 and 6), and `main`'s reference in `docs/reference_results/`.
+- `new_LG_data/` (never tracked) added to `.git/info/exclude` (this clone only; nothing committed); part of held
+  decision 7.
+- The FleetPy settings files a new area copies from Lemon Grove: kept as they are, taken up with I-41 (note there).
+- `README.md`, "Add your own study area": the last paragraph no longer lists networks per time period as not
+  supported (supported since 2026-11-24; `docs/study_area_inputs.md` already said so). Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

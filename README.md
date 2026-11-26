@@ -156,8 +156,10 @@ been tested with Lemon Grove only; no second study area has been run yet.
    FRT ridership files in the same folder.
 
 To optimize the area, give the optimizer the same copy: `python Bayesian_optimization_script.py --config <copy>`
-(results in `mtsm_data/Bayesian_optimization_output/BO_results_<area>/`). Not supported yet for any area: `micro_only` (microtransit without FRT) and networks per time period
-([`docs/study_area_inputs.md`](docs/study_area_inputs.md#not-supported-for-a-new-study-area-for-now)).
+(results in `mtsm_data/Bayesian_optimization_output/BO_results_<area>/`). Not supported yet for any area: `micro_only` (microtransit without FRT)
+([`docs/study_area_inputs.md`](docs/study_area_inputs.md#not-supported-for-a-new-study-area-for-now)). Networks per
+time period are supported since 2026-11-24 (step 1 above; until 2026-11-26 this paragraph still listed them as not
+supported).
 
 ### Building the inputs with TRA_input_data_prep
 

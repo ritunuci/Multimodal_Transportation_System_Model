@@ -541,6 +541,16 @@ Paths are relative to the codebase root.
 - **Impact:** none on results; changing an operator setting needs a code change, and the values are in two places.
 - **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
   from one place.
+- **2026-11-26 (user's decision: take it up with I-41):** the FleetPy settings files of a study area, the vehicle type
+  (`fleetpy/data/vehicles/<area>_vehtype.csv`) and the two constant configs
+  (`fleetpy/studies/example_study/scenarios/<area>_constant_config_ir_repo.csv`, `..._ir.csv`), are not study-area
+  data: `TRA_input_data_prep` does not write them, and a new area copies Lemon Grove's (README, "Add your own study
+  area", step 3), renaming `vtype_name_full`, `network_name` and `demand_name`. Their values (capacity 8, vehicle
+  costs, `op_max_wait_time` 900, `op_max_detour_time_factor` 40, `op_const_boarding_time` 30, FleetPy's fares,
+  `start_time` 0, `end_time` 86400, `time_step` 60, `op_repo_timestep` 300) then come from Lemon Grove without a
+  prompt to review them; e.g. an area with trips after midnight needs a later `end_time`. Kept as it is for now
+  (option a); option b, to decide with this item: neutral templates in one shared place (e.g.
+  `mtsm_data/input_parameter/fleetpy_templates/`) with the values to review marked.
 
 ### I-44: Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain
 - **Status:** Open (to revisit on the branch `TRA_resubmission`; user's decision 2026-11-25). **Severity:** Medium.
