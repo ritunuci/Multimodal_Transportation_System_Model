@@ -1768,6 +1768,16 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   file, a short optimizer run (details in `open_issues.md` I-42). Reference unchanged.
 - Docs: `README.md` (Bayesian optimization, Add your own study area, layout), `open_issues.md` (I-42 closed).
 
+## I-43 closed: FleetPy's travel times per period accepted (2026-11-26)
+
+- Read FleetPy's code for what it does with `network_dynamics.csv`: each period's travel times are loaded at the
+  switch and used for offers and insertions (the route store is emptied) and for moving the vehicles; only trips
+  planned before a switch keep their old node route, and their plan times are refreshed at their next stop.
+  Upstream FleetPy is the same. Details in `open_issues.md` I-43.
+- User's decision: accepted as is, closed; no code change. Offered, not taken: a `check_study_area.py` error for a
+  switch time that is not a multiple of FleetPy's `time_step` (such a time is never loaded, without a message).
+- Docs: `open_issues.md` (I-43 closed; I-35's list of open points). Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

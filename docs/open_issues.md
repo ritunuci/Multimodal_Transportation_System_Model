@@ -64,7 +64,7 @@ Paths are relative to the codebase root.
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Closed (2026-11-25) | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Closed (2026-11-26) | 2026-11-24 |
-| I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
+| I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Closed (2026-11-26) | 2026-11-24 |
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
 | I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Decision needed | 2026-11-25 |
@@ -401,7 +401,8 @@ Paths are relative to the codebase root.
     `car_network_AM.csv`).
   - FleetPy: `network_dynamics.csv` and its folders staged, `nw_dynamic_f` set, the pandas fix (item 6).
 - **Still open:** a run on period data (TRA's new Lemon Grove inputs, branch `TRA_resubmission`) and its reference;
-  the detour-ratio question of item 4; FleetPy's operator does not replan at a travel-time switch (I-43).
+  the detour-ratio question of item 4; FleetPy's operator does not replan at a travel-time switch (I-43, accepted
+  and closed 2026-11-26).
 
 ### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
 - **Status:** Open. **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
@@ -463,20 +464,6 @@ Paths are relative to the codebase root.
 - **Impact:** none on results; changing an operator setting needs a code change, and the values are in two places.
 - **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
   from one place.
-
-### I-43: With FleetPy travel times per period, the operator does not replan at a switch
-- **Status:** Open. **Severity:** Medium (affects runs with `network_dynamics.csv`, e.g. the new Lemon Grove data on
-  the branch `TRA_resubmission`; not the reference). **Found:** 2026-11-24
-  (`docs/period_networks_and_car_availability_plan.md`, step 5, test with MD travel times x 2).
-- **What:** when FleetPy loads a period's travel times (`NetworkBasic.update_network`), it calls the operator's
-  `inform_network_travel_time_update`. The operator MTSM uses, `PoolingIRSOnly` (`PoolingInsertionHeuristicOnly`),
-  does not implement it (`FleetControlBase` only logs "inform_network_travel_time_update not implemented for this
-  operator", once per switch in `00_simulation.log`). The routing engine has the new times, so later offers and
-  insertions use them, but the plans of vehicles already assigned are not recomputed at the switch.
-- **Impact:** unknown; near a switch, offers and vehicle plans can mix the old and the new period's times. The
-  pooling operators with batch optimization (`RidePoolingBatchOptimizationFleetControlBase`) do implement it.
-- **Fix (later):** check how FleetPy upstream handles it for `PoolingIRSOnly`, or implement the update (recompute the
-  current plans at the switch) as a local FleetPy change; or accept and document it.
 
 ### I-44: Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain
 - **Status:** Open (to revisit on the branch `TRA_resubmission`; user's decision 2026-11-25). **Severity:** Medium.
@@ -547,6 +534,39 @@ Paths are relative to the codebase root.
   reference.
 
 ## Closed
+
+### I-43: With FleetPy travel times per period, the operator does not replan at a switch
+- **Status:** Closed (2026-11-26). **Severity:** Medium (affects runs with `network_dynamics.csv`, e.g. the new
+  Lemon Grove data on the branch `TRA_resubmission`; not the reference). **Found:** 2026-11-24
+  (`docs/period_networks_and_car_availability_plan.md`, step 5, test with MD travel times x 2).
+- **What:** when FleetPy loads a period's travel times (`NetworkBasic.update_network`), it calls the operator's
+  `inform_network_travel_time_update`. The operator MTSM uses, `PoolingIRSOnly` (`PoolingInsertionHeuristicOnly`),
+  does not implement it (`FleetControlBase` only logs "inform_network_travel_time_update not implemented for this
+  operator", once per switch in `00_simulation.log`). The routing engine has the new times, so later offers and
+  insertions use them, but the plans of vehicles already assigned are not recomputed at the switch.
+- **Impact:** unknown; near a switch, offers and vehicle plans can mix the old and the new period's times. The
+  pooling operators with batch optimization (`RidePoolingBatchOptimizationFleetControlBase`) do implement it.
+- **Fix (later):** check how FleetPy upstream handles it for `PoolingIRSOnly`, or implement the update (recompute the
+  current plans at the switch) as a local FleetPy change; or accept and document it.
+- **Checked (2026-11-26):** what FleetPy does with `network_dynamics.csv` (code read; MTSM's settings:
+  `NetworkBasicWithStore`, `time_step` 60, `start_time` 0):
+  1. **Loading:** at every time step FleetPy calls `NetworkBasic.update_network(sim_time)`; at a time listed in
+     `network_dynamics.csv` it loads that folder's `edges_td_att.csv` (folder `0` at the first step). A listed time
+     that is not a multiple of `time_step`, or lies before `start_time`, is never loaded, without a message. The
+     times of TRA's new Lemon Grove data (`new_LG_data/`: 0, 10800, 21600, 32400, 55800, 68400) are all hit.
+  2. **Planning:** offers and insertions use the current edge times; `NetworkBasicWithStore` empties its stored
+     route times at every load (`_reset_internal_attributes_after_travel_time_update`).
+  3. **Moving:** `move_along_route` reads each edge's current time at every step, so a vehicle on the road drives at
+     the new period's times from the switch on.
+  4. **What remains:** a trip planned before a switch keeps its node route, the shortest under the old times
+     (`FleetSimulationBase.update_vehicle_routes` is never called); its planned stop times and promised pickup times
+     are recomputed only at its next stop (`VehiclePlan.update_plan`), and a plan that turns late is kept. Upstream
+     FleetPy (TUM-VT/FleetPy, `main`, checked 2026-11-26) is the same: `PoolingIRSOnly` does not implement
+     `inform_network_travel_time_update`.
+- **Resolution:** accepted as is (user's decision 2026-11-26). FleetPy uses each period's travel times for loading,
+  planning and moving, as intended; the remaining effect (the route choice of trips underway at a switch) is
+  accepted. No code change. Offered, not taken: a `tools/check_study_area.py` error for a switch time that is not a
+  multiple of FleetPy's `time_step`. Docs only; no run.
 
 ### I-42: The optimizer works only on the study area of the frozen model file
 - **Status:** Closed (2026-11-26); Open until then. **Severity:** Low. **Found:** 2026-11-24 (Phase 7 of `docs/study_area_plan.md`, writing the README
