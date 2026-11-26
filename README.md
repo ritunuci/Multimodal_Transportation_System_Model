@@ -83,7 +83,7 @@ for vehicle repositioning).
    With `--config`, the run prints at startup which values differ from the frozen file.
    A Lemon Grove run takes about 5–7 minutes. Results are written to `mtsm_data/<area>/output/` (`<area>`: the
    parameter `study_area`; Lemon Grove: `mtsm_data/lemon_grove/output/`); the main one is
-   `<area>_evaluation_zonal_partition_False.csv`: one line per metric, with the columns `FRT_only` (the base
+   `<area>_evaluation.csv`: one line per metric, with the columns `FRT_only` (the base
    case: FRT only, at `base_frt_headway` and `base_frt_fare`) and `FRT_and_micro` (the scenario of the run).
 5. **Check reproducibility (optional).** With the reference parameters and seed listed in
    [`docs/reference_results/README.md`](docs/reference_results/README.md), `python tools/compare_reference.py` must
@@ -144,7 +144,7 @@ been tested with Lemon Grove only; no second study area has been run yet.
 6. **Run.** Copy the model file `mtsm_data/input_parameter/mtsm_constant_configurations.csv`, set `study_area` to
    `<area>` in the copy, and run `python run_examples_new_parking.py --config <copy>` (as in
    [Running the model](#running-the-model)). The run creates the folders it writes into.
-7. **Results:** `mtsm_data/<area>/output/<area>_evaluation_zonal_partition_False.csv`, the individual results and the
+7. **Results:** `mtsm_data/<area>/output/<area>_evaluation.csv`, the individual results and the
    FRT ridership files in the same folder.
 
 The optimizer works on the study area of the frozen model file. To optimize another area, set `study_area` in

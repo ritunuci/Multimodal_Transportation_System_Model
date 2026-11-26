@@ -138,6 +138,9 @@ def read_parameter_file(path, keys, other_keys, other_file):
             name, value = row[0], row[1]
             if name in other_keys:
                 problems.append(f"line {line_number}: {name} belongs in {other_file}")
+            elif name in gp.REMOVED_PARAMETERS:
+                problems.append(f"line {line_number}: {name} is no longer a parameter ({gp.REMOVED_PARAMETERS[name]}); "
+                                f"delete the line")
             elif name not in keys:
                 problems.append(f"line {line_number}: unknown parameter {name}")
             elif name in params or name in unconverted:
@@ -320,10 +323,9 @@ F_GAS_PER_MILE = PARAMETERS[gp.G_F_GAS_PER_MILE]  # The fuel cost for the CNG bu
 # gasoline cost: 0.00019 dollar per meter, 0.305 dollar per mile # Ritun: set it to 0.55 $/mile
 M_GAS_PER_MILE = PARAMETERS[gp.G_M_GAS_PER_MILE]
 
-# ---- fare structure: the former fare scenario 10, the only one left (docs/progress.md, "Only fare scenario 10").
-# The number stays in the output file names (..._scen_10) and the evaluation rows. ----
-FARE_SCENARIO = PARAMETERS[gp.G_FARE_SCENARIO]
-SUPPORTED_FARE_SCENARIO = 10  # the fare structure the code implements (check_run_config)
+# ---- fare structure: the former fare scenario 10, the only one left (docs/progress.md, "Only fare scenario 10"). Its
+# number was the parameter fare_scenario (FARE_SCENARIO, checked to be 10) and stayed in the output file names
+# (..._scen_10) until 2026-11-25 (docs/open_issues.md I-40). ----
 
 # ---- scenarios (each list has one element in the run) ----
 # Microtransit operating periods: AM = 5-10 h, MD = 10-15 h, PM = 15-20 h, EV = 20-24 h. Used so far:
@@ -400,14 +402,8 @@ def read_run_config():
 def check_run_config(cfg):
     """Stop on a configuration the code does not support; warn if the frozen inputs changed; create the output
     folders."""
-    # The code supports only fare scenario 10; the branches for the other values were removed (docs/progress.md).
-    # Until 2026-11-24 it also supported only the study area Lemon Grove (docs/study_area_plan.md, Phase 2 decision 3).
-    unsupported = []
-    if FARE_SCENARIO != SUPPORTED_FARE_SCENARIO:
-        unsupported.append(f"fare_scenario={FARE_SCENARIO} (only {SUPPORTED_FARE_SCENARIO})")
-    if unsupported:
-        sys.exit("ERROR: configuration in %s is not supported: %s"
-                 % (cfg.config_file, ", ".join(unsupported)))
+    # Until 2026-11-25 this stopped on a fare_scenario other than 10, the only fare structure (I-40); until 2026-11-24
+    # also on a study area other than Lemon Grove (docs/study_area_plan.md, Phase 2 decision 3).
     # the study area's inputs against docs/study_area_inputs.md (since 2026-11-24, Phase 4 of docs/study_area_plan.md;
     # also a standalone tool: python tools/check_study_area.py). Imported here, not at the top: the tool imports this
     # module when it runs on its own.

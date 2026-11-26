@@ -137,7 +137,8 @@ def vmt_and_link_dict_creation(time_periods,transit_link_list):
 
     return transit_link_vmt,transit_link_pax,off_micro_transit_link_pax,off_micro_transit_link_vmt
 
-def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,test_scenario,microtransit):
+def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,microtransit):
+    # (until 2026-11-25 also test_scenario, the fare scenario number, for the file name; I-40)
     # until 2026-11-24 only for "lemon_grove" (LG_TRANSIT_DIR, LG_OUTPUT_DIR); networks/frt_links.csv was
     # transit/super_network_transit_edges.csv
     paths = mtsm.area_paths(study_area)
@@ -145,7 +146,8 @@ def write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,v
     # output_folder = "D:/Ritun/Siwei_Micro_Transit/Data/0719_input/lemon_grove/output_folder"
     # transit_link_vmt_output = os.path.join(output_folder, "debug_%s_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders.csv" % (str(debug_mode),str(study_area),str(microtransit),str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
     output_folder = paths.output_dir
-    transit_link_vmt_output = os.path.join(output_folder,"debug_False_%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders_scen_%s.csv" % (str(study_area), str(microtransit),str(fleet_size), str(M_operating_hrs), str(headway),str(virstop), str(test_scenario)))
+    # (until 2026-11-25 "debug_False_<area>_..._transit_edges_rders_scen_10.csv", I-40)
+    transit_link_vmt_output = mtsm.frt_ridership_file(study_area, microtransit, fleet_size, M_operating_hrs, headway, virstop)
 
 
     transit_link_list = []

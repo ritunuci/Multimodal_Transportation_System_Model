@@ -248,11 +248,18 @@ def evaluation_value(evaluation, column, metric):
 
 
 def model_output_files(values):
-    """the two model output files collect_output() reads for this candidate: (evaluation csv, individual results csv)"""
+    """the two model output files collect_output() reads for this candidate: (evaluation csv, individual results csv).
+    The names come from mtsm_paths, as in the model (since 2026-11-25, I-40; until then written here, with
+    zonal_partition_False and scen_10, and with op_hr_15 and virstop_75 fixed). The candidate's copy of the model file
+    has the frozen file's operating periods and the area file's virtual-stop share, one value each."""
     a, b, c, d, e, h, f = values
-    output_csv_path = os.path.join(AREA_PATHS.output_dir, "%s_evaluation_zonal_partition_False.csv" % STUDY_AREA)
-    indv_res_csv_path = os.path.join(AREA_PATHS.output_dir,
-                                     f"individual_results_micro_M_fsize_{int(d)}_op_hr_15_hw_{int(f)}_virstop_75_scen_10.csv")
+    if len(config.OPERATING_PERIODS_SCENARIOS) != 1 or len(config.VIRTUAL_STOP_SCENARIOS) != 1:
+        raise RuntimeError("the optimizer reads one scenario: operating_periods_scenarios and virtual_stop_scenarios "
+                           "must have one value each")
+    operating_hours = config.microtransit_operating_hours(config.OPERATING_PERIODS_SCENARIOS[0])
+    output_csv_path = mtsm.evaluation_file(STUDY_AREA)
+    indv_res_csv_path = mtsm.individual_results_file(STUDY_AREA, "micro", int(d), operating_hours, int(f),
+                                                     config.VIRTUAL_STOP_SCENARIOS[0])
     return output_csv_path, indv_res_csv_path
 
 

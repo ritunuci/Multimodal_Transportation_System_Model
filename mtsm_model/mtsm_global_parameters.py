@@ -44,7 +44,7 @@ G_MICRO_REJECTION_PENALTY = "micro_rejection_penalty"  # micro_rejection_penalty
 G_RANDOM_SEED = "random_seed"  # random_seed
 
 # ---- fare structure and the base case without microtransit ----
-G_FARE_SCENARIO = "fare_scenario"  # FARE_SCENARIO
+# (G_FARE_SCENARIO = "fare_scenario", FARE_SCENARIO: removed 2026-11-25, I-40; see REMOVED_PARAMETERS)
 G_BASE_FRT_HEADWAY = "base_frt_headway"  # BASE_FRT_HEADWAY
 G_BASE_FRT_FARE = "base_frt_fare"  # BASE_FRT_FARE
 
@@ -135,7 +135,6 @@ PARAMETER_TYPES = {
     G_INITIAL_REJECTION_RATE: FLOAT,
     G_MICRO_REJECTION_PENALTY: FLOAT,
     G_RANDOM_SEED: INT,
-    G_FARE_SCENARIO: INT,
     G_BASE_FRT_HEADWAY: INT,
     G_BASE_FRT_FARE: FLOAT,
     G_MAXIMUM_ITERATION: INT,
@@ -198,3 +197,9 @@ AREA_PARAMETERS = (
     G_PEAK_PERIODS,
 )
 MODEL_PARAMETERS = tuple(key for key in PARAMETER_TYPES if key not in AREA_PARAMETERS)
+
+# parameters that were removed: a parameter file that still has one stops with this reason (config.read_parameter_file)
+REMOVED_PARAMETERS = {
+    "fare_scenario": "removed 2026-11-25, docs/open_issues.md I-40: 10 was the only fare structure, and the number was "
+                     "used only in output file names",
+}

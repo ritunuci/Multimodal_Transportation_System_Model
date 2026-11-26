@@ -5,7 +5,7 @@
         "network_type": "NetworkBasicWithStore",
         "network_name": "lemon_grove_example_network",
         "demand_name": "lemon_grove_example_demand",
-        "rq_file": "lemon_grove_debug_False_fleetpy_demand.csv",
+        "rq_file": "lemon_grove_fleetpy_demand.csv",
         "random_seed": 0,
         "start_time": 0,
         "end_time": 86400,

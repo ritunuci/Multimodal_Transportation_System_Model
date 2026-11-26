@@ -1745,6 +1745,17 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   remaining point, sorting MTSM's own FleetPy demand file when the switch is off, is the new I-47, to do with the
   new reference on the branch `TRA_resubmission`. Record in `open_issues.md`.
 
+## Output file names without leftover parts; `fare_scenario` removed (I-40, 2026-11-25)
+
+- User's decision ("do it now"): `zonal_partition_False`, `debug_False` and `scen_10` leave the names of the files a
+  run writes; the names are made in `mtsm_paths`, which the optimizer uses too (no more fixed `op_hr_15`,
+  `virstop_75`); the parameter `fare_scenario` is removed (a file that still has it stops with a message).
+- Code: `mtsm_paths.py`, `scenarios.py`, `results.py`, `output_performance_metrics.py`, `fleetpy_runner.py`,
+  `config.py`, `mtsm_global_parameters.py`, the optimizer; the model file (`mtsm_data/MANIFEST.csv` rewritten).
+- Reference: 7 files renamed and the `rq_file` line of `00_config.json` (`reference_results/README.md`); a full run:
+  **`REPRODUCED`** (26 files). Old-named outputs of earlier runs were left on disk.
+- Docs: `README.md`, `open_issues.md` (I-40 closed), `reference_results/README.md`.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

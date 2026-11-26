@@ -11,6 +11,7 @@ import os
 
 import numpy as np
 
+import mtsm_paths as mtsm
 from mtsm_model.helpers import output_performance_metrics as output_metrics
 from mtsm_model import config
 from mtsm_model import mtsm_global_parameters as gp
@@ -89,8 +90,8 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
     """Compute and write the results of the converged scenario (area: scenarios.StudyArea, scen:
     scenarios.Scenario). evaluation: the EvaluationTable of the study area.
     headway and microtransit_run are changed only inside this function (for the base case and "micro_only").
-    test_scenario is the fare scenario number (10), used in file names."""
-    test_scenario, repositioning, microtransit_run, headway = config.FARE_SCENARIO, scen.repositioning, scen.microtransit_run, scen.headway
+    (Until 2026-11-25 also test_scenario, the fare scenario number 10, for the file names; I-40.)"""
+    repositioning, microtransit_run, headway = scen.repositioning, scen.microtransit_run, scen.headway
     virstop, fleet_size, M_operating_hrs, F_operating_hrs = scen.virstop, scen.fleet_size, scen.M_operating_hrs, scen.F_operating_hrs
     operating_periods = scen.operating_periods
     num_virstop_scen, num_fleet_size_scen, num_operating_periods_scen = scen.num_virstop_scen, scen.num_fleet_size_scen, scen.num_operating_periods_scen
@@ -130,14 +131,15 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
     F_oper_cost_base += F_gas_cost_base  # Ritun Jan 7, 2024: add base F gas cost calculation
 
     M_mode_operating_cost = M_operating_hrs * fleet_size * config.PARAMETERS[gp.G_MICRO_OPERATING_COST_PER_VEH_HOUR]  # microtransit operating cost $130/veh-hour
-    output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,test_scenario,microtransit="micro")
-    output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,off_micro_transit_link_vmt,off_micro_transit_link_pax,test_scenario,microtransit="non_micro")
+    output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,transit_link_vmt,transit_link_pax,microtransit="micro")
+    output_metrics.write_fixed_transit_link_vmt(study_area,fleet_size,M_operating_hrs,headway,virstop,off_micro_transit_link_vmt,off_micro_transit_link_pax,microtransit="non_micro")
 
 
     print("The program is converged.")
 
 
-    individual_result_dir=os.path.join(output_folder,"individual_results_%s_M_fsize_%s_op_hr_%s_hw_%s_virstop_%s_scen_%s.csv" % (str(microtransit_run),str(fleet_size),str(M_operating_hrs), str(headway),str(virstop),str(test_scenario)))
+    # (until 2026-11-25 with "_scen_10" at the end, I-40)
+    individual_result_dir = mtsm.individual_results_file(study_area, microtransit_run, fleet_size, M_operating_hrs, headway, virstop)
 
 
 
@@ -346,7 +348,7 @@ def write_converged_results(cfg, area, scen, evaluation, *, state, base, totals,
 
         microtransit_run_pre=microtransit_run
         microtransit_run="non_micro"
-        individual_result_dir = os.path.join(output_folder,"individual_results_%s_M_fsize_%s_op_hr_%s_hw_%s_virstop_%s_scen_%s.csv" % (str(microtransit_run), str(fleet_size),str(M_operating_hrs), str(headway),str(virstop),str(test_scenario)))
+        individual_result_dir = mtsm.individual_results_file(study_area, microtransit_run, fleet_size, M_operating_hrs, headway, virstop)
 
         aaa=1
         with open(individual_result_dir,'w+',newline='', encoding='utf-8') as csvfile_indiv_fixed_only:

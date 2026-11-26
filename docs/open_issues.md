@@ -61,7 +61,7 @@ Paths are relative to the codebase root.
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
-| I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Open | 2026-11-24 |
+| I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Closed (2026-11-25) | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Open | 2026-11-24 |
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Open | 2026-11-24 |
@@ -451,25 +451,6 @@ Paths are relative to the codebase root.
 - **Fix (later; user's decision 2026-11-24):** confirm the system (e.g. one node against a map), correct the file,
   rewrite `mtsm_data/MANIFEST.csv`, full run must print `REPRODUCED`.
 
-### I-40: Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`)
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 1 of `docs/study_area_plan.md`). Kept on the
-  user's request (decision 4 of Phase 1: keep the names for now).
-- **What:** names written by the run still contain parts of removed options:
-  - `zonal_partition_False`: the evaluation file `<area>_evaluation_zonal_partition_False.csv` (`scenarios.py`);
-  - `debug_False`: the FRT ridership files `debug_False_<area>_..._transit_edges_rders_scen_10.csv`
-    (`output_performance_metrics.write_fixed_transit_link_vmt`), FleetPy's demand file
-    `<area>_debug_False_fleetpy_demand.csv` (`scenarios.py`, `fleetpy_runner.create_config_files` and the FleetPy
-    scenario files) and the FRT demand file `debug_False_F_transit_demand_...` (`scenarios.py`);
-  - `scen_10` (the only fare scenario, `fare_scenario`): the individual-results and ridership files (`results.py`,
-    `output_performance_metrics.py`).
-  - The optimizer reads two of these names, partly with fixed values: `lemon_grove_evaluation_zonal_partition_False.csv`
-    and `individual_results_micro_M_fsize_<d>_op_hr_15_hw_<f>_virstop_75_scen_10.csv`
-    (`Bayesian_optimization_script.model_output_files`; `op_hr_15` and `virstop_75` fixed).
-- **Impact:** none on results; the names are longer than needed and carry meaningless parts.
-- **Fix (later):** drop the parts in the run and the optimizer together (and the optimizer's fixed `op_hr_15`,
-  `virstop_75`); a reference update that renames files only (and the FleetPy demand name inside FleetPy's
-  outputs); `fare_scenario` can then leave the parameter file.
-
 ### I-41: FleetPy's operator settings are fixed in the code (`create_config_files`)
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 3 of `docs/study_area_plan.md`). Kept in the code
   for now on the user's decision (Phase 3 decision 3), recorded here on the user's request.
@@ -581,6 +562,45 @@ Paths are relative to the codebase root.
   reference.
 
 ## Closed
+
+### I-40: Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`)
+- **Status:** Closed (2026-11-25); Open until then. **Severity:** Low. **Found:** 2026-11-24 (Phase 1 of `docs/study_area_plan.md`). Kept on the
+  user's request (decision 4 of Phase 1: keep the names for now).
+- **What:** names written by the run still contain parts of removed options:
+  - `zonal_partition_False`: the evaluation file `<area>_evaluation_zonal_partition_False.csv` (`scenarios.py`);
+  - `debug_False`: the FRT ridership files `debug_False_<area>_..._transit_edges_rders_scen_10.csv`
+    (`output_performance_metrics.write_fixed_transit_link_vmt`), FleetPy's demand file
+    `<area>_debug_False_fleetpy_demand.csv` (`scenarios.py`, `fleetpy_runner.create_config_files` and the FleetPy
+    scenario files) and the FRT demand file `debug_False_F_transit_demand_...` (`scenarios.py`);
+  - `scen_10` (the only fare scenario, `fare_scenario`): the individual-results and ridership files (`results.py`,
+    `output_performance_metrics.py`).
+  - The optimizer reads two of these names, partly with fixed values: `lemon_grove_evaluation_zonal_partition_False.csv`
+    and `individual_results_micro_M_fsize_<d>_op_hr_15_hw_<f>_virstop_75_scen_10.csv`
+    (`Bayesian_optimization_script.model_output_files`; `op_hr_15` and `virstop_75` fixed).
+- **Impact:** none on results; the names are longer than needed and carry meaningless parts.
+- **Fix (later):** drop the parts in the run and the optimizer together (and the optimizer's fixed `op_hr_15`,
+  `virstop_75`); a reference update that renames files only (and the FleetPy demand name inside FleetPy's
+  outputs); `fare_scenario` can then leave the parameter file.
+- **Resolution (2026-11-25, user's decision "do it now"):** the leftover parts are dropped, in the run and the
+  optimizer together; the names are made in one place, `mtsm_paths` (`evaluation_file`, `individual_results_file`,
+  `frt_ridership_file`, `fleetpy_demand_name`, `frt_demand_file`):
+
+  | Before | Since 2026-11-25 |
+  |---|---|
+  | `<area>_evaluation_zonal_partition_False.csv` | `<area>_evaluation.csv` |
+  | `individual_results_<setup>_M_fsize_<f>_op_hr_<h>_hw_<hw>_virstop_<v>_scen_10.csv` | `individual_results_<setup>_M_fsize_<f>_op_hr_<h>_hw_<hw>_virstop_<v>.csv` |
+  | `debug_False_<area>_<setup>_<f>_op_hr_<h>_hw_<hw>_virstop_<v>_transit_edges_rders_scen_10.csv` | `<area>_<setup>_<f>_op_hr_<h>_hw_<hw>_virstop_<v>_transit_edges_rders.csv` |
+  | `<area>_debug_False_fleetpy_demand.csv` (FleetPy's demand, also in its scenario file and `00_config.json`) | `<area>_fleetpy_demand.csv` |
+  | `debug_False_F_transit_demand_<f>_op_hr_<h>_hw_<hw>_virstop_<v>.csv` | `F_transit_demand_<f>_op_hr_<h>_hw_<hw>_virstop_<v>.csv` |
+
+  The optimizer's `model_output_files` takes them from `mtsm_paths`, with the operating hours and the virtual-stop
+  share of the parameters (one value each, else it stops) instead of the fixed `op_hr_15` and `virstop_75`. The
+  parameter `fare_scenario` is gone (`config.FARE_SCENARIO` and its check, `results.py`'s `test_scenario`, the
+  "Testing Scenario" print); a parameter file that still has it stops with a message saying to delete the line
+  (`mtsm_global_parameters.REMOVED_PARAMETERS`). Reference: the 7 files renamed (`git mv`, contents unchanged) and
+  in `intermediate/fleetpy_results/00_config.json` the `rq_file` line; a full run then printed **`REPRODUCED`** (26
+  files). Files with the old names from earlier runs are still in `mtsm_data/lemon_grove/output/` and FleetPy's
+  demand folder (git-ignored outputs, among them the optimizer runs of 2026-11-12/13); not deleted.
 
 ### I-32: Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute
 - **Status:** Closed (2026-11-25); In progress and Open until then. **Severity:** Medium. **Found:** 2026-11-16 (user's question).

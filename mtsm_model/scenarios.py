@@ -88,7 +88,8 @@ def load_study_area(cfg, study_area):
     fleet_size_scenarios = cfg.read_fleet_size
 
     demand_folder,initial_network_folder,final_network_folder,fleetpy_demand_folder,output_folder=fld_dir.determine_folders(study_area)
-    new_fleetpy_demand = os.path.join(fleetpy_demand_folder,"%s_debug_False_fleetpy_demand.csv" % str(study_area))
+    # (until 2026-11-25 "<area>_debug_False_fleetpy_demand.csv", I-40)
+    new_fleetpy_demand = os.path.join(fleetpy_demand_folder, mtsm.fleetpy_demand_name(study_area))
     #############
     ## transit information
     ##########
@@ -97,7 +98,7 @@ def load_study_area(cfg, study_area):
 
     print("study_area",study_area,"transit_line_duration ((route_id,direction),duration (h))",transit_line_duration)
 
-    evaluation_file = os.path.join(output_folder, "%s_evaluation_zonal_partition_False.csv" % str(study_area))
+    evaluation_file = mtsm.evaluation_file(study_area)  # (until 2026-11-25 "<area>_evaluation_zonal_partition_False.csv", I-40)
     paths = mtsm.area_paths(study_area)
     # demand/demand.csv (until 2026-11-24 demand_data/<area>_trips_nodes_study_area_with_beta.csv), or the sample file
     # when demand_upscaling is on (since 2026-11-25, I-32)
@@ -165,10 +166,10 @@ def scenarios(cfg, area, log_f):
     study_area = area.study_area
     for repositioning in config.REPOSITIONING_LIST:
 
-        # the fare structure: the former fare scenario 10, the only one (docs/progress.md, "Only fare scenario 10")
-        test_scenario = config.FARE_SCENARIO
+        # the fare structure: the former fare scenario 10, the only one (docs/progress.md, "Only fare scenario 10"); its
+        # number, the parameter fare_scenario, was printed here as "Testing Scenario" until 2026-11-25 (I-40)
         print("aggregation:",config.AGGREGATION,"; mode_change_threshold:",config.MODE_CHANGE_THRESHOLD,"; convergence_gap:",config.CONVERGENCE_GAP,"; maximum_iteration:",config.MAXIMUM_ITERATION,  "; F_gas_per_mile ($/mi):",config.F_GAS_PER_MILE,
-        "; M_gas_per_mile ($/mi):", config.M_GAS_PER_MILE,"; repositioning",repositioning,"; Testing Scenario:",test_scenario,"; transit_fare ($):", cfg.transit_fare,"; microtransit_start_fare ($):",cfg.microtransit_start_fare,"; microtransit_dist_based_rate ($/mi):",cfg.microtransit_dist_based_rate*config.MILE_METER,
+        "; M_gas_per_mile ($/mi):", config.M_GAS_PER_MILE,"; repositioning",repositioning,"; transit_fare ($):", cfg.transit_fare,"; microtransit_start_fare ($):",cfg.microtransit_start_fare,"; microtransit_dist_based_rate ($/mi):",cfg.microtransit_dist_based_rate*config.MILE_METER,
               "; Peak fare factor (0~1):",cfg.PkFareFactor,"; Off-peak fare factor (0~1):",cfg.OffPkFareFactor,"; Fixed to Micro discount factor (0~1):",cfg.Fixed2MicroFactor,"; Micro to Fixed discount factor (0~1):",cfg.Micro2FixedFactor)
 
         num_headway_scen = 0
@@ -194,7 +195,8 @@ def scenarios(cfg, area, log_f):
                         F_operating_hrs = config.PARAMETERS[gp.G_FRT_OPERATING_HOURS]  # fixed route transit 19 hrs
 
 
-                        F_transit_trips = os.path.join(area.fleetpy_demand_folder, "debug_False_F_transit_demand_%s_op_hr_%s_hw_%s_virstop_%s.csv" % (str(fleet_size),str(M_operating_hrs), str(headway), str(virstop)))
+                        # (until 2026-11-25 "debug_False_F_transit_demand_...", I-40)
+                        F_transit_trips = mtsm.frt_demand_file(study_area, fleet_size, M_operating_hrs, headway, virstop)
 
                         for microtransit_run in config.MICROTRANSIT_RUNNING_SCENARIOS:
                             if microtransit_run == "micro_only" and num_headway_scen>1:

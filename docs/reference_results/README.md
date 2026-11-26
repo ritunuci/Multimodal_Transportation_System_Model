@@ -179,3 +179,13 @@ case (lines 2 and 4; the base row twice).
   FleetPy's inputs and results did not change; distances, fares, costs and the values built on them moved by at most about 0.0003 % (1609.344 / 1609.34 = 1.0000025). `tot_sub ($)` 7,796.0346 -> 7,796.0333,
   `tt_mob_lgsm_inc_with_micro` 913.2664 -> 913.2677. The 3 files were replaced by the run's; a second full run printed
   `REPRODUCED`.
+- **2026-11-25, file names without leftover parts** (`docs/open_issues.md` I-40; user's decision): the run writes
+  `zonal_partition_False`, `debug_False` and `scen_10` no more. The 7 files with them were renamed with `git mv`,
+  contents unchanged: `output/lemon_grove_evaluation.csv`, `output/individual_results_{micro,non_micro}_M_fsize_2_op_hr_15_hw_10_virstop_75.csv`,
+  `output/lemon_grove_{micro,non_micro}_2_op_hr_15_hw_10_virstop_75_transit_edges_rders.csv`,
+  `intermediate/fleetpy_demand/lemon_grove_fleetpy_demand.csv` and
+  `intermediate/fleetpy_demand/F_transit_demand_2_op_hr_15_hw_10_virstop_75.csv`. In
+  `intermediate/fleetpy_results/00_config.json` one line changed, `"rq_file": "lemon_grove_fleetpy_demand.csv"` (FleetPy
+  records the demand file's name). The parameter `fare_scenario` (10) left the model file. A full run printed
+  `REPRODUCED`. (The model file now has 29 parameters: the 25 it had before 2026-11-25, minus `fare_scenario`, plus
+  the five of `demand_upscaling`, I-32 and I-45, which the reference run has off; the area file has 19.)

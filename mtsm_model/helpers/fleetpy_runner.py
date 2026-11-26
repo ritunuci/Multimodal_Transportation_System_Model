@@ -235,7 +235,7 @@ def create_config_files(sc,study_area,repositioning,fleet_size):
         if repositioning == True:
             op_module="PoolingIRSOnly"
             scenario_name="example_pool_repo_AM_sc_1"
-            rq_file="%s_debug_False_fleetpy_demand.csv" % str(study_area)
+            rq_file=mtsm.fleetpy_demand_name(study_area)  # "<area>_debug_False_fleetpy_demand.csv" until 2026-11-25 (I-40)
             op_fleet_composition="%s_vehtype:" % str(study_area) + str(fleet_size)  # lemon_grove_vehtype until 2026-11-24
             op_max_VR_con=int(3)
             forecast_f=""  # empty, as in the tracked files (until 2026-11-24 a space; FleetPy reads both as None)
@@ -249,7 +249,7 @@ def create_config_files(sc,study_area,repositioning,fleet_size):
         else:
             op_module = "PoolingIRSOnly"
             scenario_name = "example_pool_irsonly_sc_1"
-            rq_file = "%s_debug_False_fleetpy_demand.csv" % str(study_area)
+            rq_file = mtsm.fleetpy_demand_name(study_area)  # as above
             op_fleet_composition = "%s_vehtype:" % str(study_area) + str(fleet_size)  # lemon_grove_vehtype until 2026-11-24
             writer_config.writerow({"op_module": op_module, "scenario_name": scenario_name, "rq_file": rq_file,
                                     "op_fleet_composition": op_fleet_composition, **dynamics})

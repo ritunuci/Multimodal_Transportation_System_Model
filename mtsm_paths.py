@@ -171,6 +171,38 @@ def run_demand_file(area, params):
     return os.path.join(paths.dir, *parts)
 
 
+# ---- names of the files a run writes (since 2026-11-25, docs/open_issues.md I-40; before, each was written where it is
+# used, with the leftover parts zonal_partition_False, debug_False and scen_10, kept in the comments) ----
+def evaluation_file(area):
+    """The evaluation file of a study area (was <area>_evaluation_zonal_partition_False.csv)."""
+    return os.path.join(area_paths(area).output_dir, "%s_evaluation.csv" % area)
+
+
+def individual_results_file(area, microtransit, fleet_size, operating_hours, headway, virstop):
+    """The individual results of a scenario; microtransit "micro" (the scenario), "non_micro" (the base case) or
+    "micro_only" (was ..._virstop_<v>_scen_10.csv)."""
+    return os.path.join(area_paths(area).output_dir, "individual_results_%s_M_fsize_%s_op_hr_%s_hw_%s_virstop_%s.csv"
+                        % (microtransit, fleet_size, operating_hours, headway, virstop))
+
+
+def frt_ridership_file(area, microtransit, fleet_size, operating_hours, headway, virstop):
+    """The FRT link ridership of a scenario (was debug_False_<area>_..._transit_edges_rders_scen_10.csv)."""
+    return os.path.join(area_paths(area).output_dir, "%s_%s_%s_op_hr_%s_hw_%s_virstop_%s_transit_edges_rders.csv"
+                        % (area, microtransit, fleet_size, operating_hours, headway, virstop))
+
+
+def fleetpy_demand_name(area):
+    """FleetPy's demand file of an iteration, in area_paths(area).fleetpy_demand_dir and in FleetPy's scenario file
+    (was <area>_debug_False_fleetpy_demand.csv)."""
+    return "%s_fleetpy_demand.csv" % area
+
+
+def frt_demand_file(area, fleet_size, operating_hours, headway, virstop):
+    """The FRT legs of an iteration; written, read by no code (was debug_False_F_transit_demand_...)."""
+    return os.path.join(area_paths(area).fleetpy_demand_dir, "F_transit_demand_%s_op_hr_%s_hw_%s_virstop_%s.csv"
+                        % (fleet_size, operating_hours, headway, virstop))
+
+
 def not_self_contained(what):
     """Stop on a code branch whose folders are still outside the codebase.
 
