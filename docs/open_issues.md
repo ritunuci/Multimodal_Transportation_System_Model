@@ -35,7 +35,7 @@ Paths are relative to the codebase root.
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Closed (2026-11-23) | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Closed (2026-11-23) | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Closed (2026-11-24) | 2026-11-08 |
-| I-14 | The preprocessing code still contains downtown San Diego | Low | Open | 2026-11-08 |
+| I-14 | The preprocessing code still contains downtown San Diego | Low | Open (to close on the branch `TRA_resubmission`: `pre_process/` removed) | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Closed (2026-11-23) | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Closed (2026-11-25) | 2026-11-09 |
@@ -75,7 +75,8 @@ Paths are relative to the codebase root.
 ## Open
 
 ### I-14: The preprocessing code still contains downtown San Diego
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
+- **Status:** Open (to close on the branch `TRA_resubmission`, where `pre_process/` is removed; user's decision
+  2026-11-25; status written so on 2026-11-26). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
 - **What:** `pre_process/process_network.py` (`get_transit_link_route`, `construct_initial_network`, `__main__`
   with `new_downtown_sd=True`) and the `__main__` of `pre_process/generate_demand_files.py`
   (`test_area = ["downtown_sd","lemon_grove"]`) still build or handle both study areas.

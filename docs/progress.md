@@ -1778,6 +1778,12 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   switch time that is not a multiple of FleetPy's `time_step` (such a time is never loaded, without a message).
 - Docs: `open_issues.md` (I-43 closed; I-35's list of open points). Docs only; no run.
 
+## I-14's status names the branch (2026-11-26)
+
+- User's decision: I-14's status (index and entry) now reads "Open (to close on the branch `TRA_resubmission`:
+  `pre_process/` removed)", as decided on 2026-11-25, like I-25, I-44 and I-47. Nothing else changed. Docs only;
+  no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
