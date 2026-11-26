@@ -54,7 +54,7 @@ Paths are relative to the codebase root.
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
 | I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open (to close on the branch `TRA_resubmission`: TRA's FRT network) | 2026-11-13 |
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Closed (2026-11-25) | 2026-11-16 |
-| I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress | 2026-11-20 |
+| I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress (to close on the branch `TRA_resubmission`: TRA's networks) | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
@@ -230,7 +230,8 @@ Paths are relative to the codebase root.
     distances stay as they are (main keeps it as the record); the question does not carry over to the branch.
 
 ### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
-- **Status:** In progress (since 2026-11-23: decided; the builder change and the networks built with it are not in
+- **Status:** In progress (to close on the branch `TRA_resubmission`, once TRA's networks are in use; status
+  written so on 2026-11-26; since 2026-11-23: decided; the builder change and the networks built with it are not in
   MTSM yet). **Severity:** Medium. **Found:** 2026-11-20 (user: the walk mode needs to stay off the freeways).
   Title until 2026-11-23: "Walking, virtual stops and FRT stops are not kept off the freeways".
 - **What:** the walk links (type 0) are a copy of every road edge (`pre_process/build_super_network.py`, `build`:
@@ -333,6 +334,15 @@ Paths are relative to the codebase root.
   The user's decision: I-33 closes on the branch `TRA_resubmission`, once TRA's networks built with it are in use.
 - **Closes when** the new builder is in MTSM's `pre_process/` and the networks built with it are in use (a new
   reference; see I-34 and I-35).
+  - **2026-11-26:** the builder condition no longer applies: `pre_process/` is to be removed on the branch (I-14,
+    user's decision 2026-11-25; the inputs are prepared in `TRA_input_data_prep`). I-33 closes on the branch
+    `TRA_resubmission` once TRA's networks are in use there (with its new reference).
+- **Checked 2026-11-26 on TRA's new Lemon Grove data** (read-only; the user's untracked `new_LG_data/lemon_grove/`,
+  `network/Lemon_grove_edge_kind.csv` and `_node_kind.csv`): all 115 super-networks in `super_network/`
+  (`initial_super_network_*.csv`, every variant, headway, share and period) have no walk (type 0) or microtransit
+  (type 4) link on any of the 27 car-only edges (15 `ramp`, 11 `freeway`, 1 `fwy_connector`), and no virtual stop
+  (type 5) or FRT stop join (types 2 and 3) at any of the 20 freeway nodes; the car network (`auto_edges_AM.csv`,
+  2,601 edges) has all 27.
 
 ### I-35: One super-network for the whole day; MTSM is to use one per time period
 - **Status:** In progress (since 2026-11-24: the model reads period networks; not yet run on period data). Open

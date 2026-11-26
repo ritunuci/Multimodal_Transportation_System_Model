@@ -1792,6 +1792,15 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   mileposts); main's old network stays unresolved and unchanged. Dated note in `open_issues.md` I-31. Docs only;
   no run.
 
+## I-33's status names the branch; the new data checked for freeways (2026-11-26)
+
+- User's decision: I-33's status (index and entry) now reads "In progress (to close on the branch
+  `TRA_resubmission`: TRA's networks)"; dated note that the condition "the new builder in `pre_process/`" no longer
+  applies (`pre_process/` is removed on the branch, I-14).
+- Read-only check of TRA's new Lemon Grove networks: no walk or microtransit link on a car-only edge, no virtual stop
+  or FRT stop join at a freeway node, in all 115 super-networks; the car network has the car-only edges. Record in
+  `open_issues.md` I-33. Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
