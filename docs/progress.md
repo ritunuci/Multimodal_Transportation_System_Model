@@ -1811,6 +1811,15 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   multiply them by the ratio (car time x 1.4 x ratio from iteration 1 on). Recorded in `open_issues.md` I-35 as a
   decision for the branch's new reference. Docs only; no run.
 
+## I-36 and I-39: statuses name the branch (2026-11-26)
+
+- User's decisions: I-36 (vehicle start file) and I-39 (`crs.info`) close on the branch `TRA_resubmission`; their
+  statuses (index and entry) say so. `TRA_input_data_prep` will be checked for how its `imbalanced.csv` is made,
+  and that is documented (I-36). `crs.info` is updated on the branch; `main` keeps `EPSG:32632` (I-39).
+- Read-only checks of TRA's new Lemon Grove data: its `imbalanced.csv` has five street nodes at 0.2 each; its
+  FleetPy `crs.info` already says `EPSG:2230`. Dated notes in `open_issues.md` (also: the two files' paths since
+  `fleetpy_inputs/` became `fleetpy/`). Docs only; no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

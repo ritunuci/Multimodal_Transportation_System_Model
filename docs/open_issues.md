@@ -57,10 +57,10 @@ Paths are relative to the codebase root.
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress (to close on the branch `TRA_resubmission`: TRA's networks) | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress (to close on the branch `TRA_resubmission`: first run on period data) | 2026-11-23 |
-| I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open | 2026-11-23 |
+| I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open (to close on the branch `TRA_resubmission`: TRA's start file) | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
-| I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open | 2026-11-24 |
+| I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open (to close on the branch `TRA_resubmission`: TRA's FleetPy network) | 2026-11-24 |
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Closed (2026-11-25) | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Closed (2026-11-26) | 2026-11-24 |
@@ -447,7 +447,8 @@ Paths are relative to the codebase root.
     goes with the branch's new reference.
 
 ### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
-- **Status:** Open. **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
+- **Status:** Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,
+  status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
 - **What:** FleetPy places the microtransit vehicles at the start of each simulation from
   `mtsm_data/lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv`,
   named by `op_init_veh_distribution,imbalanced.csv` in `lemon_grove_constant_config_ir_repo.csv` (the reference's
@@ -481,9 +482,22 @@ Paths are relative to the codebase root.
     FleetPy's uniform default), and write the file per area and network (street nodes only);
   - name it after what it is, and record where the nodes come from;
   - a change belongs to a new reference.
+- **2026-11-26:**
+  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/fleetctrl/initial_vehicle_distribution/`
+    `lemon_grove_example_network/imbalanced.csv` (the folder `fleetpy_inputs/` was renamed `fleetpy/` on
+    2026-11-24).
+  - TRA's new Lemon Grove data has its own file (read-only check;
+    `new_LG_data/lemon_grove/fleetpy_initial_vehicle_distribution/imbalanced.csv`): the same format, five nodes
+    (694, 225, 863, 498, 189), 0.2 each, sum 1; all five are street nodes (`Lemon_grove_node_kind.csv`), none a
+    freeway node. How they were chosen is not recorded in this repository (`TRA_input_data_prep` was not at hand).
+  - User's decision: `TRA_input_data_prep` will be checked for how its `imbalanced.csv` is made, and that is
+    documented. On the branch, when the data moves in: keep the five-node rule or choose another (e.g. all virtual
+    stops, FleetPy's default without the parameter, or demand-weighted); a change of the rule goes with the
+    branch's new reference.
 
 ### I-39: Lemon Grove's FleetPy `crs.info` names the wrong coordinate system
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (writing the input specification).
+- **Status:** Open (to close on the branch `TRA_resubmission`, where `crs.info` is updated; user's decision
+  2026-11-26). **Severity:** Low. **Found:** 2026-11-24 (writing the input specification).
 - **What:** `mtsm_data/lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info` says
   `EPSG:32632` (WGS 84 / UTM zone 32N, in Germany). The node coordinates in `nodes.csv` (`pos_x` about 6.27-6.33
   million, `pos_y` about 1.82-1.86 million) look like NAD83 California zone 6 in US feet (`EPSG:2230`). Probably a
@@ -493,6 +507,12 @@ Paths are relative to the codebase root.
   plot update), which the run does not turn on. Wrong for anyone who plots or exports the coordinates.
 - **Fix (later; user's decision 2026-11-24):** confirm the system (e.g. one node against a map), correct the file,
   rewrite `mtsm_data/MANIFEST.csv`, full run must print `REPRODUCED`.
+- **2026-11-26 (user's decision): `crs.info` is updated on the branch `TRA_resubmission`; `main` keeps
+  `EPSG:32632`.**
+  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/networks/lemon_grove_example_network/base/crs.info`
+    (the folder `fleetpy_inputs/` was renamed `fleetpy/` on 2026-11-24); it still says `EPSG:32632`.
+  - TRA's new FleetPy network (`new_LG_data/lemon_grove/fleetpy_network/base/crs.info`, read-only check) already
+    says `EPSG:2230`, the system named above, so moving the new data in corrects it.
 
 ### I-41: FleetPy's operator settings are fixed in the code (`create_config_files`)
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 3 of `docs/study_area_plan.md`). Kept in the code
