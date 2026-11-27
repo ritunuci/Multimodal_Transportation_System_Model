@@ -3,7 +3,7 @@ study_area,lemon_grove,study area: the folder mtsm_data/<area>/ with its inputs 
 transit_fare,3.615388,FRT fare ($)
 microtransit_dist_based_rate,5,microtransit distance-based fare ($/mile)
 microtransit_start_fare,2.3811314,microtransit start fare ($)
-fleet_size,2,microtransit fleet size (vehicles)
+fleet_size,7,microtransit fleet size (vehicles); 7 on the branch TRA_resubmission since 2026-11-26 (2 before; main keeps 2)
 pk_fare_factor,2.3703918,microtransit fare factor in the peak periods AM and PM
 off_pk_fare_factor,1,microtransit fare factor in the off-peak periods MD and EV
 fixed2micro_factor,1,microtransit fare factor after an FRT leg (transfer discount)
