@@ -65,7 +65,7 @@ Paths are relative to the codebase root.
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Closed (2026-11-26) | 2026-11-24 |
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Closed (2026-11-26) | 2026-11-24 |
-| I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
+| I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | In progress (rules kept 2026-11-27; closes when the branch's reference run confirms the short rides) | 2026-11-25 |
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
 | I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
 | I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
@@ -411,6 +411,23 @@ Paths are relative to the codebase root.
   networks with shared stop nodes, whether a route change pays a fare. Very short microtransit rides: accept them, or
   set a minimum ride (distance or time) for the transfer discount, or for any microtransit request (then the search
   needs the ride length in its label); neither was tried. A rule change needs its own reference update.
+- **2026-11-27, branch `TRA_resubmission` (user's decisions; no code change):**
+  1. **Rules kept:** every FRT boarding pays the full fare, except the first FRT boarding after a microtransit
+     ride, which gets the transfer discount (`micro2fixed_factor`, with the floor); no free or discounted FRT ->
+     FRT transfer. How often it applies: the full run of 2026-11-26 (all travelers, before the I-46 fix) about 18
+     base-case travelers with two FRT legs (406 FRT trips by 388 riders) and about 16 extra FRT legs in the
+     scenario (477 by 461); the 10 % sample (I-46's after run) 2 and 2: about 4 % of FRT riders change routes.
+     (Context given to the user, not verified here: San Diego MTS charges 2.50 $ per ride without free transfers,
+     the Pronto card caps the day at the price of a day pass.)
+  2. **Point 2 not applicable on the branch:** no stop node of TRA's FRT network is used by two routes (checked
+     2026-11-26, I-31 closed), so every route change is an alighting and a boarding and pays. `main` keeps the
+     free route change at a shared stop node as it is.
+  3. **Short microtransit rides accepted** (no minimum ride). Full run of 2026-11-26 (before the I-46 fix): MTSM
+     rides under 30 s 0 (shortest 33 s), under 60 s 19 of 502, microtransit + FRT users 9 (rides 40-348 s); FleetPy
+     direct rides under 30 s 28 of 500. 10 % sample after the I-46 fix: MTSM under 30 s 0 (shortest 51 s), under
+     60 s 2, microtransit + FRT 2 (85 and 348 s); FleetPy direct rides under 30 s 0: the very short FleetPy rides
+     came mostly from I-46 (the request started one link past the stop). To check once more in the branch's
+     reference run; then the item closes.
 
 ---
 

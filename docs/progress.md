@@ -2008,6 +2008,15 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   (a) keep and document, (b) FleetPy's vehicles 1.4 x slower too; to decide. Notes in `open_issues.md`, I-35. No
   code change, no run.
 
+## I-44: fare rules kept on the branch (2026-11-27)
+
+- User's decisions: every FRT boarding pays the full fare except the first FRT boarding after a microtransit ride
+  (transfer discount), i.e. the rules as they are; the free route change at a shared stop node does not arise on
+  TRA's network (point 2 not applicable on the branch); short microtransit rides accepted. No code change, no run.
+  Counts (full run of 2026-11-26 and the 10 % sample after the I-46 fix) in `open_issues.md`, I-44; FleetPy's
+  direct rides under 30 s went from 28 of 500 (full run, before I-46) to 0 (10 % sample, after). I-44 closes when
+  the branch's reference run confirms the short rides.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
