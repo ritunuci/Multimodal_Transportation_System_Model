@@ -1947,6 +1947,33 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   layout, with the run log, in `mtsm_data/lemon_grove/output/full_demand_fsize7_2026-11-26/` (36 files, ignored by
   `mtsm_data/*/output/*`, so local only). To compare with a 25 % sample run with `demand_upscaling`, then delete.
 
+## `demand_upscaling` on 10 % and 25 % samples against the full run (branch, 2026-11-27)
+
+- Sample files (the user's, 2026-11-27): `demand/demand_10pct.csv` (4,270 rows) and `demand/demand_25pct.csv`
+  (10,674 rows): every row byte-identical to a row of `demand/demand.csv`, unique ids, the 10 % inside the 25 %;
+  in the model's day 4,240 and 10,603 (x 10 = 42,400, x 4 = 42,412; full 42,380); period, mode, car-availability
+  and purpose shares within about 0.5 points of the full file. `check_study_area.py` with each: 0 errors, 0
+  warnings, 1 note. Not in the area manifest (`check_inputs.py` lists only `demand/demand.csv` as file 2).
+- Runs: copies of the model file with `demand_upscaling` True, `demand_sample_share` 0.1 / 0.25,
+  `sample_demand_file` the sample (`--config`; the frozen file unchanged), otherwise as the full run of
+  2026-11-26 (fleet 7, seed 0). Run times: full 1:00:48 (iterations 0-7), 25 % 17:30 (0-7), 10 % 8:25 (0-6); about
+  7.6, 2.2 and 1.2 min per iteration. FleetPy's last iteration: full 502 requests; 25 % 115 + 345 synthetic = 460;
+  10 % 50 + 450 = 500 (9 rejected in MD). Outputs copied to `mtsm_data/lemon_grove/output/sample_10pct_2026-11-27/`
+  and `sample_25pct_2026-11-27/` (local only, like the full run's copy).
+- Scenario against the full run (10 % | 25 %): car users +0.2 | +0.2 %; transit users -0.9 | -0.6 %; microtransit
+  trips -0.4 | -8.4 %; FRT trips +19.5 | -2.7 %; `tot_sub` -5.5 | -0.3 %; logsum increase -7.5 | +8.0 %; mode
+  switches -15.2 | -15.5 %; microtransit wait +15.8 | -5.4 %; M_PMT -0.9 | -1.9 %; **M_VMT -29.7 | -20.4 %**,
+  utilisation 38.6 | 43.8 % (full 51.8), occupancy 0.83 | 0.73 (full 0.57); car VMT -0.5 | -0.0 %. Base case: car
+  and transit users within 0.5 %, FRT trips +10.8 | +8.4 % (about 400 riders, so sampling noise).
+- Found: (1) a traveler's random draw differs between a sample run and the full run (one random stream drawn in
+  the order of the travelers; 0 of 4,240 and 0 of 10,603 draws equal), so individual choices are not comparable
+  (81 % same car/transit choice), only totals. (2) The fleet's miles are underestimated and its occupancy
+  overestimated: a synthetic request is a copy of a sample request within +-15 min and 400 m (I-45), so each
+  sample request becomes a cluster of 1/share near-identical requests that FleetPy pools; more so for 10 %. (3)
+  Mode switches are 15 % low in both, more than the sampling-only estimate (the full run's rows of the sample's
+  travelers x 1/share: -8.8 | -3.4 %); not explained yet.
+- Script and tables: session scratchpad (`compare_upscaling.py`, `upscaling_comparison.md`). No decision yet.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
