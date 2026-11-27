@@ -1978,6 +1978,26 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - 2026-11-27 (user's decision): the 25 % run's copy is kept as a backup (`output/sample_25pct_2026-11-27/`, checked
   identical to the run's outputs; its model file `mtsm_config_sample_25pct.csv` added, 37 files).
 
+## I-46 and I-47 fixed; tested on the 10 % sample without upscaling (branch, 2026-11-27)
+
+- User's decisions (2026-11-27, the recommendations): a leg's FleetPy request starts at the boarding stop at the
+  rider's arrival there; a kept leg's wait is that of the traveler's departure period; FRT legs the same; MTSM's
+  FleetPy demand file sorted by `rq_time` also when `demand_upscaling` is off.
+- Code: `trip_legs.split_time_path` (origin and request time; a ride without a boarding link before it stops the
+  run), `iteration.py` (kept-leg wait period), `fleetpy_runner.sort_demand_file`, `microtransit.py` (sorts when
+  upscaling is off). Unit check of `split_time_path` on three made-up paths (walk + microtransit; origin at the
+  stop; FRT then microtransit): origins the boarding stops, times the arrivals there.
+- Test runs (user's request: the 10 % sample as the whole demand, upscaling off): `demand/demand.csv` replaced by
+  `demand/demand_10pct.csv` for the two runs (the run then warns that `demand.csv` differs from its manifest) and
+  restored with `git checkout`; `check_inputs.py` afterwards: all inputs match. Before (code of `8d00449`) 4:52,
+  after 4:51; outputs copied to `mtsm_data/lemon_grove/output/i46_before_10pct_2026-11-27/` and
+  `i46_after_10pct_2026-11-27/` (local only).
+- Results: MTSM's choices identical; the 82 requests of FleetPy's last file all start at a boarding stop (57
+  before), 206 s earlier on average (181-330 s), file in time order (2 rows stepped back before), no direct ride
+  under 30 s (2 before); microtransit VMT +6.3 % (128.9 -> 137.1 mi), wait 211.9 -> 217.3 s, `tot_sub` +4.4 $,
+  logsum increase -3.7. Details in I-46 and I-47 (`docs/open_issues.md`). The sort itself was tested on the
+  before run's file (4 rows moved). Not a reference: the branch's reference comes after the other items.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

@@ -67,8 +67,8 @@ Paths are relative to the codebase root.
 | I-43 | With FleetPy travel times per period, the operator does not replan at a switch | Medium | Closed (2026-11-26) | 2026-11-24 |
 | I-44 | Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain | Medium | Open (to revisit on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
-| I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Open (to revisit and fix on the branch `TRA_resubmission`) | 2026-11-25 |
-| I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | Open (with the new reference on the branch `TRA_resubmission`) | 2026-11-25 |
+| I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
+| I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
 | I-48 | All ABM3 trip modes are in the demand file; which belong to MTSM's market is to be decided | Medium | Decision needed | 2026-11-26 |
 
 ---
@@ -431,6 +431,25 @@ Paths are relative to the codebase root.
   request time, not of the traveler's departure. With the request time at the rider's arrival at the stop (option
   (a) above) there would be fewer such legs, not none; whether the kept leg's period should be the traveler's
   departure period is to decide with this item.
+- **2026-11-27 (branch `TRA_resubmission`; user's decisions: the recommendations):** fixed in the code.
+  - `trip_legs.split_time_path`: a leg's origin is its boarding stop (the node before its first in-vehicle link)
+    and its request time the rider's arrival there (the time before the boarding link: microtransit the waiting
+    link 5 not after a ride link 4, which would be the 0-s alighting link; FRT the link 2 not after an FRT link 1);
+    a ride without such a link before it stops the run (`ValueError`; none in the networks: every microtransit
+    node is entered by a link 4 or 5, every FRT stop by a link 1 or 2). FRT legs the same (their file is not read).
+  - `iteration.py`: a kept leg's wait is the average of the traveler's departure period, whose network the path
+    was found on (was: the period of the leg's request time); the warning checks that period too.
+  - Test (2026-11-27, user's request: the 10 % sample `demand/demand_10pct.csv` as the whole demand,
+    `demand_upscaling` False; `demand/demand.csv` replaced by it for the two runs and restored with `git checkout`,
+    `check_inputs.py`: all inputs match): before (the code of `8d00449`) and after, fleet 7, seed 0, both 4:51-4:52.
+    MTSM's choices identical (car 3,512, transit 728, microtransit trips 82, FRT trips 49, mode switches 53; base
+    case unchanged). FleetPy's last demand file: origin a boarding stop 57 -> 82 of 82; the same 82 legs requested
+    206 s earlier on average (median 201, 181-330 s: the modelled wait and the first ride link); rows stepping back in
+    time 2 -> 0; direct rides under 30 s 2 -> 0, mean direct ride 147.7 -> 165.7 s. Scenario: microtransit VMT
+    128.9 -> 137.1 mi (+6.3 %), microtransit wait 211.9 -> 217.3 s, FleetPy wait 228.9 -> 228.8 s, `tot_sub`
+    15,601.6 -> 15,606.0, logsum increase 1,191.4 -> 1,187.7. The fleet is little used there (9 % utilisation), so
+    the effect with all travelers can be larger; no request after 19:00 in either run. Record:
+    `docs/progress.md` ("I-46 and I-47 fixed").
 
 ### I-47: MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step
 - **Status:** Open (to do with the new reference on the branch `TRA_resubmission`; user's decision 2026-11-25).
@@ -443,6 +462,11 @@ Paths are relative to the codebase root.
 - **To do:** write the file sorted by `rq_time` (a stable sort) also when `demand_upscaling` is off, as it is when on
   (`synthetic_demand.add_synthetic_requests`). It changes FleetPy's results, so it goes into the branch's new
   reference.
+- **2026-11-27 (branch `TRA_resubmission`; user's decision):** fixed with I-46: `fleetpy_runner.sort_demand_file`
+  (stable sort by `rq_time`, every row's text unchanged), called by `microtransit.run_fleetpy_and_update_networks`
+  before FleetPy when `demand_upscaling` is off; it prints how many rows moved. Tested on the before run's last
+  file (I-46's test): 4 of 82 rows moved, the same rows, sorted, a second sort moves none. In the after run the
+  file was already in order (0 moved): with the requests at the stop, the 2 rows that stepped back are gone.
 
 ### I-48: All ABM3 trip modes are in the demand file; which belong to MTSM's market is to be decided
 - **Status:** Decision needed (user's decision 2026-11-26: keep all modes for now, decide later). **Severity:**

@@ -332,11 +332,13 @@ def run_iteration(cfg, area, scen, *, iteration, state, base, iter_choice_prob, 
 
 
                             # Ritun added: March 2nd, 2026
-                            pre_iter_period = choice.time_period_of(pre_iter_rq_time)
-                            if pre_iter_period not in operating_periods:  # until 2026-11-24: == "EV"
+                            # the period of the traveler's departure, whose network the path was found on (I-46,
+                            # 2026-11-27; until then the period of the leg's request time, so a late-PM leg requested
+                            # after 19:00 got EV's wait and this warning)
+                            if time_period not in operating_periods:  # until 2026-11-24: == "EV"
                                 print("!!!! MICRO USER OUTSIDE THE OPERATING PERIODS DETECTED !!!!")
                             # the period's average wait per leg (until 2026-11-25: the last leg's period x the number of legs)
-                            M_wait_kept += wait_times[pre_iter_period]
+                            M_wait_kept += wait_times[time_period]
                         if M_legs_kept:
                             state.agent_M_tot_wait_time[rq_id] = M_wait_kept
 

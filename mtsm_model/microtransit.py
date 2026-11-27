@@ -47,6 +47,11 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
             config.PARAMETERS[gp.G_SYNTHETIC_TIME_SHIFT_MIN] * 60, cfg.random_seed)
         print(f"{Fore.RED}FleetPy demand: {n_real} requests of the sample + {n_new} synthetic (ids from "
               f"{area.synthetic_id_start}) = {n_real + n_new}{Style.RESET_ALL}")
+    else:
+        # MTSM's FleetPy demand file sorted by rq_time, as with demand_upscaling on (I-47, 2026-11-27, branch
+        # TRA_resubmission; until then in the order of the traveler list)
+        n_rq, n_moved = fleetpy.sort_demand_file(new_fleetpy_demand)
+        print(f"FleetPy demand: {n_rq} requests, sorted by rq_time ({n_moved} moved)")
     # FleetPy's simulation window for this run (since 2026-11-26, branch TRA_resubmission; user's decisions): from the
     # start of the first microtransit operating period to one time step after the latest request of FleetPy's demand
     # file (at least the end of the last operating period); the scenario file is written again with it

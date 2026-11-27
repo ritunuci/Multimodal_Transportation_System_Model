@@ -42,23 +42,42 @@ def split_time_path(time_path, rq_time, iteration):
 
     A leg's request time is set when the leg starts. An FRT leg starts at an in-vehicle link (1) that does not follow
     an in-vehicle link; a route change at a shared stop stays in the same leg.
+
+    Since 2026-11-27 (I-46, branch TRA_resubmission, user's decisions) a leg starts at its boarding stop, the node
+    before its first in-vehicle link, and its request time is the rider's arrival at the stop, the time before the
+    boarding link (microtransit: the waiting link 5 that does not follow a ride link 4, which would be the 0-s
+    alighting link; FRT: the link 2 that does not follow an FRT link 1). Until then the origin was the node after
+    the first in-vehicle link and the request time the time there, after the modelled wait and the first link.
     """
     legs = TimeLegs()
     pre_link_type = None
     sum_link_type = 0  # recorde the pure walking trips
     # 11/07 Siwei: record the time of reaching the previous link
     pre_time = 0
+    pre_node = None
+    M_stop_arrival = F_stop_arrival = None  # the time (s after departure) the rider reached the boarding stop (I-46)
     for (node, time, link_type, route) in time_path:
+        # the rider reaches a stop: the time before its boarding link (I-46, 2026-11-27)
+        if link_type == 5 and pre_link_type != 4:
+            M_stop_arrival = pre_time
+        if link_type == 2 and pre_link_type != 1:
+            F_stop_arrival = pre_time
         # calculate the number of microtransit trip legs
         if (pre_link_type != 4) and (link_type == 4):  ##1228 testing!
-            M_origin_node = node
-            request_time = rq_time + round(time, 0)
+            if pre_link_type != 5:
+                raise ValueError(f"a microtransit ride starts at node {node} without a waiting link before it")
+            # the boarding stop and the arrival there (until 2026-11-27: node and round(time, 0), I-46)
+            M_origin_node = pre_node
+            request_time = rq_time + round(M_stop_arrival, 0)
         if (pre_link_type == 4) and (link_type != 4):  ##1228 testing!
             legs.M_legs.append((request_time, M_origin_node, pre_node))
         # calculate the number of fixed route transit trip legs
         if (pre_link_type != 1) and (link_type == 1):
-            F_origin_node = node
-            request_time = rq_time + int(time)
+            if pre_link_type != 2:
+                raise ValueError(f"an FRT ride starts at node {node} without a boarding link before it")
+            # the boarding stop and the arrival there (until 2026-11-27: node and int(time), I-46)
+            F_origin_node = pre_node
+            request_time = rq_time + int(F_stop_arrival)
         if (pre_link_type == 1) and (link_type != 1):
             legs.F_legs.append((request_time, F_origin_node, pre_node))
         # 11/07 Siwei: calculate the microtransit waiting time

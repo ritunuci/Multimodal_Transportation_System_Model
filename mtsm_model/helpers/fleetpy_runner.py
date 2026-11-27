@@ -76,6 +76,22 @@ def stage_inputs(constant_config_file, scenario_file, study_area):
     return os.path.join(mtsm.FLEETPY_DIR, rel_cc), scenario_file
 
 
+def sort_demand_file(demand_file):
+    """Sort FleetPy's demand file by rq_time, equal times keeping their order (a stable sort), every row's text
+    unchanged (I-47, 2026-11-27, branch TRA_resubmission): FleetPy takes the requests of one time step in the order of
+    the file. With demand_upscaling on, synthetic_demand.add_synthetic_requests sorts the file (since 2026-11-25).
+    Returns (the number of requests, the number not already in place)."""
+    with open(demand_file, newline="") as f:
+        rows = list(csv.reader(f))
+    header, body = rows[0], rows[1:]
+    col = header.index("rq_time")
+    ordered = sorted(body, key=lambda row: float(row[col]))
+    moved = sum(1 for a, b in zip(body, ordered) if a is not b)
+    with open(demand_file, "w", newline="") as f:
+        csv.writer(f).writerows([header] + ordered)
+    return len(body), moved
+
+
 def constant_config_value(constant_config_file, key):
     """the value of `key` in a FleetPy constant config (Input_Parameter_Name, Parameter_Value), as text, or None"""
     with open(constant_config_file, newline="") as f:
