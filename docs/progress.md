@@ -1998,6 +1998,16 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   logsum increase -3.7. Details in I-46 and I-47 (`docs/open_issues.md`). The sort itself was tested on the
   before run's file (4 rows moved). Not a reference: the branch's reference comes after the other items.
 
+## I-35: the 1.4 and the detour ratio examined; kept open (branch, 2026-11-27)
+
+- User: the 1.4 of the microtransit links means microtransit is slower than a car, beyond the detour; keep I-35
+  open with notes. Found: the detour ratio is FleetPy's offered drive time over the direct-route time per period
+  (the 30-s boarding stop and planned sharing detours); on the 10 % sample (I-46's after run) FleetPy's rides are
+  1.20 x direct, MTSM's recorded in-vehicle times 1.42 x, the choice model's from iteration 1 about 1.65 x;
+  FleetPy's vehicles drive at car speed, so the fleet is simulated 1.4 x faster than the travelers ride. Options
+  (a) keep and document, (b) FleetPy's vehicles 1.4 x slower too; to decide. Notes in `open_issues.md`, I-35. No
+  code change, no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

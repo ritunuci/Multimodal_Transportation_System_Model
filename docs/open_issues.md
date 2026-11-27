@@ -56,7 +56,7 @@ Paths are relative to the codebase root.
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Closed (2026-11-25) | 2026-11-16 |
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | Closed (2026-11-26) | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
-| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress (to close on the branch `TRA_resubmission`: first run on period data) | 2026-11-23 |
+| I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress (period networks in use, first runs on them done on the branch `TRA_resubmission`; open: the 1.4 against FleetPy's car-speed vehicles, decision needed; closes with the branch's reference) | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open (to close on the branch `TRA_resubmission`: TRA's start file) | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
@@ -276,6 +276,36 @@ Paths are relative to the codebase root.
   - To decide: what the 1.4 stands for, and whether the final networks apply the ratio to the car time (car time x
     ratio) or, as now, to the initial microtransit time (car time x 1.4 x ratio). A change alters results, so it
     goes with the branch's new reference.
+- **2026-11-27, branch `TRA_resubmission` (user: keep I-35 open with these notes):**
+  - **What the 1.4 stands for (user):** microtransit is slower than a car, beyond the detour. Its source:
+    `build_super_network.py --micro-time-factor` (default 1.4, "microtransit time = car time x this"); the old
+    `pre_process/process_network.py` multiplied by 1.4 without a comment. So the final networks' car time x 1.4 x
+    the detour ratio counts two different things, not the detour twice.
+  - **What the detour ratio stands for** (`update_network_files.update_network_files`): per period, the sum of
+    FleetPy's offered drive times (`t_drive` of the offer) of the served requests over the sum of their
+    direct-route times. `t_drive` includes the stop at pickup (`op_const_boarding_time` 30 s) and the detours for
+    other riders as planned when the ride is offered (riders inserted later are not counted). FleetPy's direct
+    route uses its own times of the period (`network_dynamics.csv`), i.e. car times without the 1.4.
+  - **Measured** (I-46's after run, the 10 % sample without upscaling, 82 microtransit users matched to their
+    FleetPy requests): FleetPy's direct route 165.7 s, its ride 199.4 s (x 1.20: +34 s, almost all the 30-s
+    boarding stop, since the fleet is barely used, 9 %), MTSM's recorded in-vehicle time 236.1 s (x 1.42). The
+    final networks' type-4 times are 1.176 (AM), 1.204 (MD), 1.153 (PM) x the initial ones, so from iteration 1
+    on the choice model sees about car time x 1.65. The recorded time is lower because 68 of the 82 kept their
+    iteration-0 path (probability within `mode_change_threshold`; their path values are kept, I-17), while their
+    probabilities and logsums are computed again each iteration on the final networks.
+  - **Consequences found:** (1) FleetPy's vehicles drive at car speed (its network has the car times), so the
+    fleet's waits, miles, utilisation and capacity are those of vehicles 1.4 x faster than the travelers' rides;
+    long-standing, also in `main`'s reference. (2) One ratio per period scales every link, so the fixed 30-s
+    boarding stop becomes a share of the ride (more than 30 s on a long ride, less on a short one). (3) Separate
+    from the 1.4: the demand file values a microtransit in-vehicle minute below a car minute (`bt_m_ivt` median
+    0.150, `bt_c_ivt` 0.200).
+  - **Options, to decide:** (a) keep as is and document the meaning (no result change); (b) also make FleetPy's
+    vehicles 1.4 x slower (FleetPy's edge times x 1.4 in the staged copy, or built so by `TRA_input_data_prep`):
+    the ratio stays a sharing factor, MTSM's ride matches FleetPy's, the fleet's waits and capacity reflect the
+    slower vehicles (changes FleetPy's results). With either, the 1.4 could become an area parameter
+    (`micro_time_factor` in `area_parameters.csv`) checked against the networks by `check_study_area.py`. Which
+    depends on why microtransit is slower: real driving (speed, curb stops, vehicle) points to (b), an allowance
+    on the travelers' side only to (a). Recommended: (b) if the slowness is real driving.
 
 ### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
 - **Status:** Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,
