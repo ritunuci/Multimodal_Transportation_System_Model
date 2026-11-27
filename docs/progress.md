@@ -1975,6 +1975,8 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - Script and tables: session scratchpad (`compare_upscaling.py`, `upscaling_comparison.md`). No decision yet.
 - Full report (2026-11-27, user's request): `docs/LG_demand_upscaling_test.md` (sample files, settings, run
   times, FleetPy's requests, every evaluation value of both columns, sampling alone, findings, options).
+- 2026-11-27 (user's decision): the 25 % run's copy is kept as a backup (`output/sample_25pct_2026-11-27/`, checked
+  identical to the run's outputs; its model file `mtsm_config_sample_25pct.csv` added, 37 files).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 

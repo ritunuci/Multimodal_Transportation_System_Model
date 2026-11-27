@@ -284,13 +284,14 @@ sample is too noisy.
 ## 9. Where the outputs are
 
 Local only (ignored by `mtsm_data/*/output/*`, so not in git); each folder holds the run's outputs in the layout of
-`docs/reference_results/` (`output/`, `intermediate/...`) and its run log `run.log`. To delete once the comparison
-is done (user's request 2026-11-26).
+`docs/reference_results/` (`output/`, `intermediate/...`) and its run log `run.log`. The full and 10 % copies are
+to be deleted once the comparison is done (user's request 2026-11-26); the 25 % copy is kept as a backup (user's
+decision 2026-11-27) and also holds the model file it ran with (`mtsm_config_sample_25pct.csv`).
 
 | Run | Folder (in `mtsm_data/lemon_grove/output/`) | Files |
 |---|---|---|
 | Full demand | `full_demand_fsize7_2026-11-26/` | 36 |
-| 25 % sample | `sample_25pct_2026-11-27/` | 36 |
+| 25 % sample (kept) | `sample_25pct_2026-11-27/` | 37 (with its model file) |
 | 10 % sample | `sample_10pct_2026-11-27/` | 35 (7 iterations, so one `iter_*_user-stats.csv` fewer) |
 
 The comparison scripts (evaluation tables, sampling alone, random draws) were run from the session scratchpad and
