@@ -1973,6 +1973,8 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   Mode switches are 15 % low in both, more than the sampling-only estimate (the full run's rows of the sample's
   travelers x 1/share: -8.8 | -3.4 %); not explained yet.
 - Script and tables: session scratchpad (`compare_upscaling.py`, `upscaling_comparison.md`). No decision yet.
+- Full report (2026-11-27, user's request): `docs/LG_demand_upscaling_test.md` (sample files, settings, run
+  times, FleetPy's requests, every evaluation value of both columns, sampling alone, findings, options).
 
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
