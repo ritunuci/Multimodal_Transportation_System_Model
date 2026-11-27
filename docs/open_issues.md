@@ -421,6 +421,16 @@ Paths are relative to the codebase root.
     checked); origin the boarding stop; FRT legs the same (their file is not read, so no result change); before
     the branch's reference run, count on `main`'s networks how many requests change origin and time. Goes with
     I-47 (the same file) in the branch's new reference.
+- **2026-11-26 (first full run on the new data, fleet size 7; user's decision: leave it until this item):** 3-4
+  microtransit legs per iteration from iteration 5 on (PM travelers) have a request time after the last operating
+  period (19:00; last FleetPy file: 68,465-68,586 s), because the request time is after the modelled wait.
+  FleetPy simulates them (the simulation window runs to one time step after the latest request, since
+  2026-11-26), but `iteration.py` prints "MICRO USER OUTSIDE THE OPERATING PERIODS DETECTED" and the kept leg's
+  wait (`M_wait_kept`) is EV's average (269 s in the last iteration, from those 4 requests alone) instead of PM's
+  (365 s): `choice.time_period_of` of the
+  request time, not of the traveler's departure. With the request time at the rider's arrival at the stop (option
+  (a) above) there would be fewer such legs, not none; whether the kept leg's period should be the traveler's
+  departure period is to decide with this item.
 
 ### I-47: MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step
 - **Status:** Open (to do with the new reference on the branch `TRA_resubmission`; user's decision 2026-11-25).

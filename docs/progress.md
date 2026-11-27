@@ -1926,6 +1926,27 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   `study_area_inputs.md` (section 8, rule 4), I-35 note.
 - No run (the full run waits for the user's go-ahead).
 
+## First full run on the new data, fleet size 7 (branch, 2026-11-26)
+
+- `fleet_size` 7 on the branch (user's decision 2026-11-26; `main` keeps 2; commit `98a6c6b`). Full run with the new
+  data, all trips of the model's day (42,380 of 42,698), transfer penalty on, seed 0: exit 0, 17:37:55-18:38:50
+  (1:00:48), converged at iteration 7 (iterations 0-7, then the base case). About 7.5 min per iteration, of which
+  FleetPy 0.5-1.2 min; `main`'s old data (3,742 trips, fleet 2) took 6.5-7.7 min in all. Not a reference (the
+  branch's result-changing fixes come first).
+- Results (base case FRT only | scenario FRT + microtransit): car users 35,596 | 35,223; transit users 6,784 |
+  7,157 (walk only 6,396 | 6,203); microtransit trips - | 502; FRT trips 406 | 477; microtransit + FRT users - | 9;
+  microtransit wait - | 386 s; microtransit VMT - | 763 (vehicle use 51.8 %, empty 45.9 %); mode switches - | 625;
+  subsidy 1,337.02 | 9,924.85; logsum - | 7,142.75. FleetPy: iteration 0 824 requests, 90 % offered; then about
+  500, all served. FleetPy's window: start 21600 s; end 68580 s (iteration 0), 68640 s (iterations 1-7).
+- "MICRO USER OUTSIDE THE OPERATING PERIODS DETECTED" 24 times (iterations 5-7, 3-4 per iteration): microtransit
+  legs of PM travelers whose request time is after 19:00 (last FleetPy file: 4 requests, 68,465-68,586 s).
+  FleetPy simulates them (the window); MTSM's kept-leg wait (`iteration.py`, `M_wait_kept`) takes EV's average
+  wait (269 s, the average of those 4 requests in the last iteration) instead of PM's (365 s). User's decision
+  2026-11-26: leave it until I-46 (dated note there).
+- Copy kept for the `demand_upscaling` comparison (user's request 2026-11-26): the run's outputs in the reference
+  layout, with the run log, in `mtsm_data/lemon_grove/output/full_demand_fsize7_2026-11-26/` (36 files, ignored by
+  `mtsm_data/*/output/*`, so local only). To compare with a 25 % sample run with `demand_upscaling`, then delete.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
