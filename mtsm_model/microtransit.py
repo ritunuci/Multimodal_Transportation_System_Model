@@ -47,6 +47,18 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
             config.PARAMETERS[gp.G_SYNTHETIC_TIME_SHIFT_MIN] * 60, cfg.random_seed)
         print(f"{Fore.RED}FleetPy demand: {n_real} requests of the sample + {n_new} synthetic (ids from "
               f"{area.synthetic_id_start}) = {n_real + n_new}{Style.RESET_ALL}")
+    # FleetPy's simulation window for this run (since 2026-11-26, branch TRA_resubmission; user's decisions): from the
+    # start of the first microtransit operating period to one time step after the latest request of FleetPy's demand
+    # file (at least the end of the last operating period); the scenario file is written again with it
+    # (fleetpy_runner.simulation_window). Until then the constant config's start_time 0 and end_time 86400
+    time_step = int(float(fleetpy.constant_config_value(cc, "time_step")))
+    start_time, end_time, before_start = fleetpy.simulation_window(
+        new_fleetpy_demand, [config.PERIOD_BOUNDS[p] for p in scen.operating_periods], time_step)
+    sc = fleetpy.scenario_config_file(study_area, repositioning, fleet_size, window=(start_time, end_time))
+    print(f"FleetPy simulation window: start_time {start_time} s, end_time {end_time} s")
+    if before_start:
+        print(f"{Fore.RED}WARNING: {before_start} FleetPy requests before start_time {start_time} s are not "
+              f"simulated (FleetPy reads only start_time <= rq_time < end_time){Style.RESET_ALL}")
     # FleetPy runs on copies of the inputs in mtsm_data/<area>/fleetpy/ placed inside fleetpy/
     cc_fleetpy, sc_fleetpy = fleetpy.stage_inputs(cc, sc, study_area)
     fleetpy.run_scenarios(cc_fleetpy, sc_fleetpy, log_level=log_level, n_cpu_per_sim=1, n_parallel_sim=1, random_seed=cfg.random_seed)

@@ -35,7 +35,7 @@ Paths are relative to the codebase root.
 | I-11 | Old, unused MTSM files inside `fleetpy/` | Low | Closed (2026-11-23) | 2026-11-07 |
 | I-12 | FleetPy's example a) serves 90 users; its check expects 88 | Low | Closed (2026-11-23) | 2026-11-08 |
 | I-13 | The `micro_only` scenario uses the downtown San Diego node limit | Low | Closed (2026-11-24) | 2026-11-08 |
-| I-14 | The preprocessing code still contains downtown San Diego | Low | Open (to close on the branch `TRA_resubmission`: `pre_process/` removed) | 2026-11-08 |
+| I-14 | The preprocessing code still contains downtown San Diego | Low | Closed (2026-11-26) | 2026-11-08 |
 | I-15 | Unused columns in `input_parameter.csv`; the optimizer writes it by column position | Low | Closed (2026-11-10) | 2026-11-08 |
 | I-16 | The aggregate convergence test is unfinished | Low | Closed (2026-11-23) | 2026-11-09 |
 | I-17 | Travelers who keep their transit choice resubmit only their last microtransit and FRT leg | Medium | Closed (2026-11-25) | 2026-11-09 |
@@ -52,15 +52,15 @@ Paths are relative to the codebase root.
 | I-28 | The base case's subsidy used the FRT cost of the scenario's headway, not of the base headway | High | Closed (2026-11-12) | 2026-11-12 |
 | I-29 | Evaluation file: one line per metric, read by name by the optimizer | Medium | Closed (2026-11-12) | 2026-11-12 |
 | I-30 | The evaluation file holds one scenario; its base column is empty for runs without a base case | Medium | Open | 2026-11-12 |
-| I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Open (to close on the branch `TRA_resubmission`: TRA's FRT network) | 2026-11-13 |
+| I-31 | The route labels of the FRT links may not show which routes run on a link | Medium | Closed (2026-11-26) | 2026-11-13 |
 | I-32 | Synthetic FleetPy requests are appended out of time order; FleetPy's results depend on the order within a minute | Medium | Closed (2026-11-25) | 2026-11-16 |
-| I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | In progress (to close on the branch `TRA_resubmission`: TRA's networks) | 2026-11-20 |
+| I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | Closed (2026-11-26) | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress (to close on the branch `TRA_resubmission`: first run on period data) | 2026-11-23 |
 | I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open (to close on the branch `TRA_resubmission`: TRA's start file) | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
-| I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Open (to close on the branch `TRA_resubmission`: TRA's FleetPy network) | 2026-11-24 |
+| I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Closed (2026-11-26) | 2026-11-24 |
 | I-40 | Output file names carry leftover parts (`zonal_partition_False`, `debug_False`, `scen_10`) | Low | Closed (2026-11-25) | 2026-11-24 |
 | I-41 | FleetPy's operator settings are fixed in the code (`create_config_files`) | Low | Open | 2026-11-24 |
 | I-42 | The optimizer works only on the study area of the frozen model file | Low | Closed (2026-11-26) | 2026-11-24 |
@@ -69,45 +69,11 @@ Paths are relative to the codebase root.
 | I-45 | How the synthetic FleetPy requests are drawn (`demand_upscaling`): flattened time profile, time and direction drawn apart, repeated stop pairs | Medium | Closed (2026-11-25) | 2026-11-25 |
 | I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | Open (to revisit and fix on the branch `TRA_resubmission`) | 2026-11-25 |
 | I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | Open (with the new reference on the branch `TRA_resubmission`) | 2026-11-25 |
+| I-48 | All ABM3 trip modes are in the demand file; which belong to MTSM's market is to be decided | Medium | Decision needed | 2026-11-26 |
 
 ---
 
 ## Open
-
-### I-14: The preprocessing code still contains downtown San Diego
-- **Status:** Open (to close on the branch `TRA_resubmission`, where `pre_process/` is removed; user's decision
-  2026-11-25; status written so on 2026-11-26). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
-- **What:** `pre_process/process_network.py` (`get_transit_link_route`, `construct_initial_network`, `__main__`
-  with `new_downtown_sd=True`) and the `__main__` of `pre_process/generate_demand_files.py`
-  (`test_area = ["downtown_sd","lemon_grove"]`) still build or handle both study areas.
-- **Why it was left:** this is the one-time preprocessing that built the frozen inputs in `mtsm_data/`; the run
-  does not use it, and it cannot be run here (its source data is not in the repository), so an edit could not be
-  tested. The user decided to keep it unchanged as the record of how the inputs were made (2026-11-08).
-- **Impact:** none on results. The repository is not yet free of downtown San Diego code.
-- **Fix (later):** remove `"downtown_sd"` from the loops and delete the downtown branches and the downtown part of
-  `__main__`, with a note that the preprocessing has not been re-run since; the original stays at tag
-  `last-with-downtown-sd`. Alternatively, bring the source data into the repository first, so that the
-  preprocessing can be re-run and checked.
-- **2026-11-23 (user's request; the downtown parts are not changed):** `synthesize_requests_with_trend_time` and its
-  helper `make_time_sampler` (the "Ritun added" block, the only part of `pre_process/` the run imported) moved
-  unchanged to `mtsm_model/helpers/synthetic_demand.py`; `mtsm_model/microtransit.py` imports it from there (still as
-  `syn_rq`, call still commented out). `generate_demand_files.py` lost the block and its two imports used only by it
-  (`colorama`, `typing`). The run now loads nothing from `pre_process/` (checked: no `pre_process` module in
-  `sys.modules` after importing the entry script; `pyproj` is no longer loaded by the run either).
-  - Checked: the moved lines are byte-identical to the old ones; old and new function give byte-identical output
-    files on the reference's FleetPy demand file (seed 42, 204 new requests; defaults, ordered, undirected, independent
-    marginals). Full run: `compare_reference.py` printed `REPRODUCED` (32 identical).
-  - User's choice: `standalone_scripts/` is left untouched, so the four scripts in `standalone_scripts/New folder/`
-    that import the function from `pre_process.generate_demand_files` (`run_examples_new.py`,
-    `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
-    that import.
-  - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
-  - 2026-11-25 (user's decision): `standalone_scripts/` removed from the repository (27 files, in the git history;
-    the last commit that has them is the parent of the removal commit), including the four scripts above.
-- **2026-11-25 (user's decision):** `pre_process/` is out of date: the inputs are now prepared in the repository
-  `TRA_input_data_prep` (https://github.com/ritunuci/TRA_input_data_prep). On the branch `TRA_resubmission` the folder
-  is to be removed and the README to say that the data is prepared there; that closes I-14 on the branch. On `main`
-  the folder stays as the record of how the old Lemon Grove inputs were made.
 
 ### I-25: Turn on the transfer penalty (`enable_num_transfer_penalty`) with a new reference
 - **Status:** In progress (turned on on the branch `TRA_resubmission` on 2026-11-26; closes with the branch's new
@@ -201,51 +167,316 @@ Paths are relative to the codebase root.
 - **To decide:** a design for runs with several scenarios (user: an architecture for this may come later), and what
   the file should show when there is no base case.
 
-### I-31: The route labels of the FRT links may not show which routes run on a link
-- **Status:** Open (to close on the branch `TRA_resubmission`, once TRA's networks are in use: its FRT network has
-  one stop node per stop, route and direction, so every route change is an alighting and a boarding; user's
-  decision 2026-11-25, status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-13 (before turning on the transfer penalty, I-25).
-- **What:** every FRT link (type 1) of the super-networks has one route number. In the raw Lemon Grove transit file
-  a link served by several routes had a list (e.g. `[856, 936]`); the old preprocessing kept only the first number
-  (`pre_process/process_network.py`, `construct_super_network_transit_links`: `route_id_str_.split(',')[0]`; route
-  120 became 3). The raw file is not in the repository, and the user does not have it at hand (2026-11-13), so the
-  links that had a list cannot be found.
-- **What the frozen network shows** (`initial_super_network_non_micro_hw_20.csv`, 130 FRT links, routes 4, 520, 856,
-  916, 917, 936):
-  - Routes 916, 917 and 936 each end at a stop in the middle of route 856: 917 at stop 1115, 936 at stops 1119 and
-    1110 (the same walk node), 916 at stop 1160. These are the only stops served by more than one route. This is
-    what the first-number rule gives if these routes in fact run on along 856's street (856 is the smallest number,
-    so every shared link would be labelled 856); it is also what three routes that really end on 856 look like. The
-    network alone cannot tell.
-  - Routes 4, 520, 856 and 936 are each in two pieces without a link between them. For 856 and 936 the pieces have
-    the same length and lie on each other (most stops of one piece are at the walk node of a stop of the other), so
-    they are probably the two directions (stops on the two sides of the street); for 4 and 520 they lie less close.
-    Not a label problem. Every FRT link exists in both directions.
-- **Impact:** none on the reference: nothing reads the route label for a cost while `enable_num_transfer_penalty` is
-  `False`. With the switch on, a route change at a shared stop costs `bt_f_trfer`; if a label is only the first of a
-  list, a rider who stays on the same bus is charged a transfer (e.g. 917 -> 856 -> 936: two penalties, about 1.0, or
-  about 6.6 min of FRT waiting). 72 % of the AM paths that use FRT change route at the four shared stops (I-25), so
-  the labels decide most of the penalty's effect. If the labels are right, the opposite gap is there: a transfer at
-  a shared stop has no waiting time.
-- **To do:** when the raw transit and road network files are available and the super-network is rebuilt (user,
-  2026-11-13: possibly later), keep all routes of a link. `pre_process/build_super_network.py` takes one route number
-  per link, so it needs a way to carry several (and the path search a rule for "same bus"). Then decide I-25.
-  Other ways to check the labels: the operator's route maps.
-- **Also noticed, not checked further:** the distances of the FRT links look too short. For every route the sum of
-  its link distances is less than the straight line between its two end stops (walk-node coordinates in feet; e.g.
-  route 856: 1,836 against about 2,875 m; route 4: 1,205 against about 1,995 m); multiplied by 1.609 they fit. They
-  may be miles x 1,000, not metres. How the model uses this column (FRT passenger miles, the per-mile subsidy
-  values) was not checked. See also I-21.
-  - **2026-11-26 (read-only check):** in TRA's new Lemon Grove data (`new_LG_data/lemon_grove/frt/frt_edges.csv`,
-    110 FRT edges) `distance` is in metres: it equals the milepost difference x 1609.344 (median ratio 1.0000), and
-    its median ratio to the straight line between the two stops is 1.00. A comparison of the route lengths
-    (`networks/frt_routes.csv` against TRA's `frt_routes.csv`) does not settle the old network: route 4 2,618
-    against 2,669 m, but 856, 916 and 936 are 1.7-1.8 times longer in TRA's data, with other stop counts (856: 19
-    against 14 and 15), so the routes probably do not cover the same stretch. User's decision: the old network's
-    distances stay as they are (main keeps it as the record); the question does not carry over to the branch.
+### I-35: One super-network for the whole day; MTSM is to use one per time period
+- **Status:** In progress (to close on the branch `TRA_resubmission` with the first run on period data and its
+  reference; status written so on 2026-11-26; since 2026-11-24: the model reads period networks; not yet run on
+  period data). Open until 2026-11-24. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
+  the input-preparation repository `TRA_input_data_prep`).
+- **Plan (user, 2026-11-23):** MTSM is to use one super-network per time period. `TRA_input_data_prep` builds them,
+  per area and per period, with the modified `build_super_network.py` (I-33):
+  - Periods: the five of SANDAG's ABM3 assignment, EA 3:00-6:00, AM 6:00-9:00, MD 9:00-15:30, PM 15:30-19:00,
+    EV 19:00-3:00. The road link times per period come from ABM3's loaded link times (hwyload files).
+  - What changes between periods:
+    - the microtransit in-vehicle links (type 4 = the period's car time x 1.4);
+    - the car network (`auto_edges`, type 7 = the period's car time).
+  - What does not change: walk (0), FRT in-vehicle (1) and FRT waiting (2) are the same in every period.
+    Microtransit waiting (5) starts at 180 s, as now.
+  - Full grid per period and area, 24 files:
+    - micro: headways 10/15/20/30/60 x virtual-stop shares 50/75/100 (15 files);
+    - non_micro: the 5 headways;
+    - micro_only: the 3 shares;
+    - `auto_edges`.
+  - Walk speed 1.6 m/s (the builder's default is 1.251).
+  - Virtual stops drawn with seed 42. Every period and headway gets the same stops, and a smaller share is a subset
+    of a larger one.
+  - The node numbering (`num_walk_nodes`, `microtransit_node_offset`) is the same in every period.
+  - File names (proposed, to agree): MTSM's current names with the period appended, e.g.
+    `initial_super_network_micro_hw_10_virstop_75_AM.csv` and `auto_edges_AM.csv`.
+- **What in MTSM assumes one network for all periods** (checked at `a912056`):
+  1. **Periods.**
+     - MTSM has four: `time_periods = ["AM", "MD", "PM", "EV"]` in `scenarios.py` and `update_network_files.py`, with
+       the boundaries `config.AM_END` / `MD_END` / `PM_END`. Currently AM runs to 10:00, MD to 15:00, PM to 20:00,
+       then EV.
+     - ABM3 has five, with other boundaries.
+     - The new demand files have requests from 3:00 (Lemon Grove: 281 in EA) and after midnight (`rq_time` past
+       86,400 s).
+     - To decide: switch MTSM to the five ABM3 periods, or map them.
+     - Also found while checking (2026-11-23): `config.PERIOD_HOURS` takes the period lengths from `day_start_h` (5)
+       and `day_end_h` (24), and `output_performance_metrics.all_scenario_micro_acc_calculation` picks its own period
+       list from the microtransit operating hours (10 h: AM, PM; 15 h: AM, MD, PM; else all four). Both name the four
+       periods and need the same decision.
+  2. **Initial networks are keyed by variant, headway and virtual-stop share, not by period.**
+     - `testing_scenario_creation.scen_create` builds the file names.
+     - `paths.networks_for_traveler` uses `initial_super_network["micro"][headway][virstop][M_operating_hrs]` in
+       iteration 0.
+     - It uses the FRT-only network `initial_super_network["non_micro"][BASE_FRT_HEADWAY]` for every period.
+  3. **The car network is one file.** `scenarios.py:108-109` reads `auto_edges.csv` once, and `paths.auto_path` and
+     the micro_only fallback use it in every period.
+  4. **Final networks.** `update_network_files.update_network_files` writes one final network per period, each copied
+     from the same initial network (type 5 = FleetPy's waiting time for the period; type 4 x the period's detour
+     ratio).
+     - With period networks, each final network must start from that period's initial network.
+     - Check whether the detour ratio is still wanted on top of period times. FleetPy's direct route time comes from
+       its own network, which loads period times when `nw_dynamic_f` is set.
+  5. **Headway update.** `update_initial_network.py` sets the headway in the Lemon Grove base networks only (Lemon
+     Grove file names). It must do so in every period's file.
+  6. **Related, FleetPy period times.** `TRA_input_data_prep` writes a FleetPy network folder with period subfolders
+     plus `network_dynamics.csv`.
+     - `fleetpy_runner.LG_STAGED_INPUTS` copies only `base/`.
+     - `fleetpy/src/routing/NetworkBasic.py:249` uses `Series.iteritems()`, which pandas 2 removed.
+- **Impact:** until this is done, MTSM uses one network for the whole day, so car and microtransit times do not vary
+  over the day. Downtown AM link times are about 2.15 x free flow.
+- **To do:**
+  - a period key in the network loaders and in `networks_for_traveler`;
+  - a car network per period;
+  - the period definitions;
+  - final networks per period from the period's initial network;
+  - the headway update in every period file;
+  - a new reference.
+  - See also I-33 and I-34.
+- **Done 2026-11-24 on `main`** (`docs/period_networks_and_car_availability_plan.md`, steps 3-5; each step
+  `REPRODUCED` for Lemon Grove's whole-day inputs): the to-do list above except the new reference.
+  - Periods: the area file defines them (`time_periods`, `period_start_h`, `period_end_h`, `peak_periods`), so ABM3's
+    five can be set; the four names left the code (item 1).
+  - The microtransit super-network (file 3) and the car network (file 5) per period, `..._<P>.csv`, with whole-day
+    files as the fallback; the FRT-only networks stay whole-day (user's decision). Scenario networks and the headway
+    update per period file, each period's final network from its own scenario network, the car path on the
+    traveler's period (items 2-5). The file names put the period last, as proposed (`..._virstop_75_AM.csv`,
+    `car_network_AM.csv`).
+  - FleetPy: `network_dynamics.csv` and its folders staged, `nw_dynamic_f` set, the pandas fix (item 6).
+- **Still open:** a run on period data (TRA's new Lemon Grove inputs, branch `TRA_resubmission`) and its reference;
+  the detour-ratio question of item 4; FleetPy's operator does not replan at a travel-time switch (I-43, accepted
+  and closed 2026-11-26).
+- **2026-11-26, branch `TRA_resubmission` (user's decisions):** TRA's period networks moved in
+  (`docs/new_lemon_grove_data_move.md`); the area's periods are ABM3's boundaries within a model's day of
+  5:00-24:00 (`EA;AM;MD;PM;EV`, start 5, ends `6;9;15.5;19;24`; peak `AM;PM`); trips departing outside the model's
+  day are not modelled (code, `config.in_model_day`; the demand file is not changed: 318 of 42,698 trips, 118
+  before 5:00 and 200 after 24:00); microtransit stays `AM;MD;PM` (6:00-19:00, 13 h). FleetPy's simulation window
+  is set by the run for each FleetPy run (`fleetpy_runner.simulation_window`): start at the first operating period
+  (6:00), end one time step after the latest request, at least the end of the last operating period (19:00).
+  `check_study_area.py`: 0 errors, 0 warnings, 1 note. Not run yet (the full run waits for the user's go-ahead).
+- **The detour-ratio question of item 4, answered for period times (2026-11-26, code read):** the ratio is FleetPy's
+  drive time of the served requests over their direct-route time, per period
+  (`update_network_files.update_network_files`: `time_detour_ratio[P] = time_tt_drive_time[P] /
+  time_tt_direct_time[P]`); with `network_dynamics.csv` both come from the same period's FleetPy times, so period
+  times are not counted twice by it.
+- **To decide on the branch (found 2026-11-26; user's decision to record it here): the microtransit link times are
+  car time x 1.4 x the detour ratio in the final networks.**
+  - In the super-networks, a microtransit in-vehicle link (type 4) has 1.4 x FleetPy's time of the same edge:
+    `mtsm_data/lemon_grove/networks/super_network_micro_virstop_75.csv` against FleetPy's `base/edges.csv`
+    (2,816 links), and TRA's new Lemon Grove networks per period against FleetPy's period times
+    (`initial_super_network_micro_hw_10_virstop_75_AM.csv` against `21600/edges_td_att.csv`, `_MD` against
+    `32400`; 2,574 links each); the 5th, 50th and 95th percentiles of the ratio are all 1.400.
+  - Each final network starts from its period's initial network and multiplies its type-4 times by the period's
+    detour ratio (`update_network_files.update_network_files`: `travel_time = travel_time *
+    time_detour_ratio[time_period]` for `link_type == 4`), so from iteration 1 on a microtransit link costs car time
+    x 1.4 x the detour ratio. In iteration 0 it is car time x 1.4.
+  - If the 1.4 is a first guess of the detour, the detour is counted twice from iteration 1 on; if it stands for
+    something else (e.g. microtransit slower than a car), it is not. Long-standing, so in `main`'s reference.
+  - To decide: what the 1.4 stands for, and whether the final networks apply the ratio to the car time (car time x
+    ratio) or, as now, to the initial microtransit time (car time x 1.4 x ratio). A change alters results, so it
+    goes with the branch's new reference.
+
+### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
+- **Status:** Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,
+  status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
+- **What:** FleetPy places the microtransit vehicles at the start of each simulation from
+  `mtsm_data/lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv`,
+  named by `op_init_veh_distribution,imbalanced.csv` in `lemon_grove_constant_config_ir_repo.csv` (the reference's
+  `00_config.json` shows it). The file lists five road nodes, each with probability 0.2:
+
+  | node_index | probability |
+  |---|---|
+  | 256 | 0.2 |
+  | 400 | 0.2 |
+  | 600 | 0.2 |
+  | 650 | 0.2 |
+  | 700 | 0.2 |
+
+  `FleetSimulationBase` (about line 480) draws each vehicle's start node from this list with `np.random` (seed 0 in
+  the reference). Without the parameter, FleetPy would spread the vehicles uniformly over the boarding nodes, or over
+  all nodes if there are none.
+- **What is known** (checked 2026-11-23):
+  - The name comes from FleetPy's example (`fleetpy/data/fleetctrl/initial_vehicle_distribution/example_network/imbalanced.csv`:
+    one node, probability 1.0, i.e. all vehicles at one place). The Lemon Grove file is not imbalanced in that sense.
+  - Who chose the five nodes, and why, is not recorded. They are ordinary street nodes (car speeds 10-35 mph; none on
+    a 50+ mph edge, I-33); 13 trips of the demand file start at one of them.
+  - The node numbers belong to the frozen Lemon Grove road network.
+- **Why it matters:**
+  - With the reference's fleet of 2, each vehicle starts at one of these five nodes in every FleetPy run; the start
+    positions affect the first waiting times and so the results read back by MTSM.
+  - The new road networks (I-33, I-34) number the nodes anew, so the file does not carry over: a node number may not
+    exist, or be another place, or be a freeway node. Downtown San Diego has no such file; FleetPy reads it from the
+    network's own folder and stops if it is missing.
+- **To do:**
+  - decide the rule for the start positions (e.g. a few chosen nodes, all virtual stops, demand-weighted, or
+    FleetPy's uniform default), and write the file per area and network (street nodes only);
+  - name it after what it is, and record where the nodes come from;
+  - a change belongs to a new reference.
+- **2026-11-26:**
+  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/fleetctrl/initial_vehicle_distribution/`
+    `lemon_grove_example_network/imbalanced.csv` (the folder `fleetpy_inputs/` was renamed `fleetpy/` on
+    2026-11-24).
+  - TRA's new Lemon Grove data has its own file (read-only check;
+    `new_LG_data/lemon_grove/fleetpy_initial_vehicle_distribution/imbalanced.csv`): the same format, five nodes
+    (694, 225, 863, 498, 189), 0.2 each, sum 1; all five are street nodes (`Lemon_grove_node_kind.csv`), none a
+    freeway node. How they were chosen is not recorded in this repository (`TRA_input_data_prep` was not at hand).
+  - User's decision: `TRA_input_data_prep` will be checked for how its `imbalanced.csv` is made, and that is
+    documented. On the branch, when the data moves in: keep the five-node rule or choose another (e.g. all virtual
+    stops, FleetPy's default without the parameter, or demand-weighted); a change of the rule goes with the
+    branch's new reference.
+
+### I-41: FleetPy's operator settings are fixed in the code (`create_config_files`)
+- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 3 of `docs/study_area_plan.md`). Kept in the code
+  for now on the user's decision (Phase 3 decision 3), recorded here on the user's request.
+- **What:** `fleetpy_runner.create_config_files` writes FleetPy's scenario file with fixed values: `op_module`
+  `PoolingIRSOnly`; with repositioning `op_max_VR_con` 3, `op_repo_method` `AlonsoMoraRepositioning`,
+  `op_repo_horizons` 60, `op_repo_timestep` 300; and the scenario names `example_pool_repo_AM_sc_1` /
+  `example_pool_irsonly_sc_1`, by which MTSM finds FleetPy's results (`microtransit.py`,
+  `update_network_files.py`, `output_performance_metrics.py`, `tools/compare_reference.py`). The area's FleetPy
+  constant config (`<area>_constant_config_ir_repo.csv`) has some of them too (`op_repo_timestep` 300).
+- **Impact:** none on results; changing an operator setting needs a code change, and the values are in two places.
+- **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
+  from one place.
+- **2026-11-26 (user's decision: take it up with I-41):** the FleetPy settings files of a study area, the vehicle type
+  (`fleetpy/data/vehicles/<area>_vehtype.csv`) and the two constant configs
+  (`fleetpy/studies/example_study/scenarios/<area>_constant_config_ir_repo.csv`, `..._ir.csv`), are not study-area
+  data: `TRA_input_data_prep` does not write them, and a new area copies Lemon Grove's (README, "Add your own study
+  area", step 3), renaming `vtype_name_full`, `network_name` and `demand_name`. Their values (capacity 8, vehicle
+  costs, `op_max_wait_time` 900, `op_max_detour_time_factor` 40, `op_const_boarding_time` 30, FleetPy's fares,
+  `start_time` 0, `end_time` 86400, `time_step` 60, `op_repo_timestep` 300) then come from Lemon Grove without a
+  prompt to review them; e.g. an area with trips after midnight needs a later `end_time`. Kept as it is for now
+  (option a); option b, to decide with this item: neutral templates in one shared place (e.g.
+  `mtsm_data/input_parameter/fleetpy_templates/`) with the values to review marked.
+
+### I-44: Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain
+- **Status:** Open (to revisit on the branch `TRA_resubmission`; user's decision 2026-11-25). **Severity:** Medium.
+  **Found:** 2026-11-25 (trial of I-22 + I-24, `docs/pathfinding_code_update.md`).
+- **What:** three points of the fare rules set on 2026-11-25 (I-24), in `network_algorithms.transit_label_search`:
+  1. **The rules themselves:** `micro2fixed_factor` (with the floor) only for the first FRT boarding after a
+     microtransit ride, `fixed2micro_factor` only for the first microtransit ride after an FRT ride, and every other
+     FRT boarding pays the full fare, also a re-boarding at the same walk node right after an alighting (free before
+     2026-11-25).
+  2. **A route change at a shared stop node pays no fare.** Where several routes share one stop node (Lemon Grove's
+     network on `main`), a path can go from an FRT link of one route to an FRT link of another at that node without
+     an alighting and a boarding link, so no fare is charged: a free FRT -> FRT transfer under rule 1. On the
+     reference's networks 1,227 of the 1,774 base-case paths with FRT have such a route change; many may be label
+     artifacts (I-31: a shared link keeps one route's label), which is why it was left free on `main`.
+  3. **Very short microtransit rides remain** (added 2026-11-25, user's request). The floor removes the fare reason
+     for them (microtransit + FRT never cost less than the FRT alone), but a microtransit ride before the FRT then
+     costs no extra fare as long as its fare is at most the FRT fare, so a short access ride is chosen whenever its
+     ride and wait cost less than the walk it replaces. Least-cost paths on the new reference's final networks (AM-PM,
+     3,472 travelers): 19 microtransit + FRT paths have a ride under 30 s (17 MD, 2 PM; 211 with the old rules and the
+     exact search), no microtransit-only path. In the new reference run 7 of the 68 FleetPy requests have a direct
+     ride under 30 s by FleetPy's travel times (11-28 s; 40-110 s on the super-network; the 2026-11-24 reference had
+     6): travelers 4543, 6218, 4380, 5743 microtransit only (full microtransit fare, 3.24-3.96 $; not related to the
+     discount), 4729, 8153, 9747 microtransit + FRT (fare at least the FRT fare). Traveler 4543's least-cost path on
+     the final networks is walking; probably it kept an earlier microtransit choice (`mode_change_threshold`), not
+     traced.
+- **Why on the branch:** TRA's FRT network has one stop node per stop, route and direction, so every route change is
+  an alighting and a re-boarding: rule 1 charges each transfer the full fare, and point 2 does not arise. With the
+  transfer penalty on there (I-25), a transfer also costs `bt_f_trfer`.
+- **Impact on `main`:** in the new reference (I-22); rule "no free re-boarding" changed no base-case path there.
+- **To decide on the branch:** keep the full fare per FRT boarding, or a free or discounted FRT -> FRT transfer; on
+  networks with shared stop nodes, whether a route change pays a fare. Very short microtransit rides: accept them, or
+  set a minimum ride (distance or time) for the transfer discount, or for any microtransit request (then the search
+  needs the ride length in its label); neither was tried. A rule change needs its own reference update.
+
+---
+
+### I-46: A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node
+- **Status:** Open (to revisit and fix on the branch `TRA_resubmission`; user's decision 2026-11-26; Decision
+  needed until then). **Severity:** High (FleetPy is given other requests than the travelers' paths).
+  **Found:** 2026-11-25 (I-45: 21 of the 68 requests of the reference's last FleetPy file start at a node that has no
+  microtransit boarding link; all 68 end at one).
+- **What:** the transit paths are lists of (node reached, time at it, link type of the link into it, route), in
+  `network_algorithms.transit_label_search` and before it in `getTrajectory_O_to_D`. `trip_legs.split_time_path`
+  takes a microtransit leg's origin from the first element with link type 4: the node reached by the first
+  microtransit link, one link past the boarding node (the microtransit node reached by the type-5 boarding link). Its
+  request time is the time at that node: departure + walking + the modelled wait (type-5 link: 180 s in the initial
+  networks, FleetPy's average after) + the first ride link (median 101 m, 16 s). The leg's destination is right (the
+  node reached by its last type-4 link). FRT legs are built the same way (origin the next FRT stop, time after the
+  FRT wait and the first link), but the FRT demand file (`debug_False_F_transit_demand_*.csv`) is only written, not
+  read.
+- **Impact:** FleetPy picks the rider up one link downstream, and the request enters FleetPy later than the rider
+  reaches the stop, by about the modelled wait; FleetPy's own wait then counts from that time. A leg with a single
+  ride link would start where it ends (none in the reference's last iteration). Long-standing (the old trajectory
+  function had the same format), so in the reference.
+- **To do:** the user decides the request time (the rider's arrival at the stop, or as now after the modelled wait)
+  and the origin (the boarding stop); a fix changes FleetPy's inputs, so it goes with a new reference (the branch
+  `TRA_resubmission`).
+- **2026-11-26 (code read; user's decision: keep open, revisit and fix on the branch):**
+  - Where: `trip_legs.split_time_path`, `if (pre_link_type != 4) and (link_type == 4)`: `M_origin_node = node` (the
+    end of the first ride link) and `request_time = rq_time + round(time, 0)` (the time there). The boarding stop is
+    `pre_node` at that element (the microtransit node reached by the waiting link, type 5); the rider's arrival at
+    the stop is the time of the element before the waiting link.
+  - A leg with a single ride link would start where it ends, and FleetPy declines such a request
+    (`PoolingIRSOnly.user_request`: `prq.o_pos == prq.d_pos` -> rejection).
+  - Possibly related, not checked: the very short FleetPy rides of I-44 (11-28 s by FleetPy's times against
+    40-110 s on the super-network) lack the first ride link; the factor 1.4 of the microtransit links (I-35) also
+    makes the super-network's ride longer than FleetPy's.
+  - Options to decide on the branch: request time (a) the rider's arrival at the stop (recommended: FleetPy's wait
+    then means what the waiting link stands for), (b) as now, after the modelled wait, (c) the departure from the
+    trip origin with pickup not before the arrival at the stop (FleetPy would need an earliest pickup time; not
+    checked); origin the boarding stop; FRT legs the same (their file is not read, so no result change); before
+    the branch's reference run, count on `main`'s networks how many requests change origin and time. Goes with
+    I-47 (the same file) in the branch's new reference.
+
+### I-47: MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step
+- **Status:** Open (to do with the new reference on the branch `TRA_resubmission`; user's decision 2026-11-25).
+  **Severity:** Medium. **Found:** 2026-11-16 (as part of I-32; its own item since 2026-11-25).
+- **What:** `iteration.run_iteration` writes FleetPy's demand file in the order of the traveler list, not of the
+  request times (the reference's last iteration: 35 of 68 rows step back in time). FleetPy rounds `rq_time` down to
+  its time step (60 s) and handles the requests of one step in the order of the file (I-32), so the order of the
+  traveler list decides the order within a minute, and FleetPy's results depend on it (I-32's test: a different order
+  within a minute moved the share served, the waits and the vehicle miles).
+- **To do:** write the file sorted by `rq_time` (a stable sort) also when `demand_upscaling` is off, as it is when on
+  (`synthetic_demand.add_synthetic_requests`). It changes FleetPy's results, so it goes into the branch's new
+  reference.
+
+### I-48: All ABM3 trip modes are in the demand file; which belong to MTSM's market is to be decided
+- **Status:** Decision needed (user's decision 2026-11-26: keep all modes for now, decide later). **Severity:**
+  Medium. **Found:** 2026-11-26 (moving TRA's new Lemon Grove inputs in, held decision 3).
+- **What:** TRA's demand file (`mtsm_data/lemon_grove/demand/demand.csv` on the branch `TRA_resubmission`, 42,698
+  trips) has every ABM3 trip of the area, with its ABM3 mode in the column `trip_mode` (not read by the run): car
+  29,727 (`DRIVEALONE` 16,035, `SHARED2` 7,747, `SHARED3` 5,945), `WALK` 12,270, `BIKE` 234, `EBIKE` 35, `TAXI` 227,
+  `TNC_SINGLE` 60, `SCH_BUS` 8, transit 137 (`WALK_LOC` 99, `WALK_PRM` 30, `KNR_PRM` 6, `PNR_PRM` 2). MTSM chooses again
+  between car and transit (walk, FRT, microtransit; a walk-only path counts as transit) for every trip; 1,328
+  travelers have no car (`auto_available` False) and ride transit or walk.
+- **Impact:** the size of the market and so the mode shares, the transit and microtransit trips, the subsidy per
+  rider and the logsum. Old Lemon Grove's 3,742 trips came from the old preprocessing (`generate_demand_files.py`);
+  which ABM modes it kept was not checked.
+- **Options:** (a) keep all; (b) leave out walking and biking trips (`WALK`, `BIKE`, `EBIKE`); (c) also school bus,
+  taxi and ride-hailing; (d) other. A filter would be in the code (as the model's day, 2026-11-26), not in the
+  demand file. Goes with the branch's new reference.
+
+## Closed
+
+### I-39: Lemon Grove's FleetPy `crs.info` names the wrong coordinate system
+- **Status:** Closed (2026-11-26); until then: Open (to close on the branch `TRA_resubmission`, where `crs.info` is updated; user's decision
+  2026-11-26). **Severity:** Low. **Found:** 2026-11-24 (writing the input specification).
+- **What:** `mtsm_data/lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info` says
+  `EPSG:32632` (WGS 84 / UTM zone 32N, in Germany). The node coordinates in `nodes.csv` (`pos_x` about 6.27-6.33
+  million, `pos_y` about 1.82-1.86 million) look like NAD83 California zone 6 in US feet (`EPSG:2230`). Probably a
+  leftover of FleetPy's example data, like I-10.
+- **Impact:** none on results. FleetPy reads the file on startup (`NetworkBasic.py:173`) and uses it only to convert
+  coordinates to longitude/latitude for its real-time plot (`FleetSimulationBase._start_realtime_plot` and the
+  plot update), which the run does not turn on. Wrong for anyone who plots or exports the coordinates.
+- **Fix (later; user's decision 2026-11-24):** confirm the system (e.g. one node against a map), correct the file,
+  rewrite `mtsm_data/MANIFEST.csv`, full run must print `REPRODUCED`.
+- **2026-11-26 (user's decision): `crs.info` is updated on the branch `TRA_resubmission`; `main` keeps
+  `EPSG:32632`.**
+  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/networks/lemon_grove_example_network/base/crs.info`
+    (the folder `fleetpy_inputs/` was renamed `fleetpy/` on 2026-11-24); it still says `EPSG:32632`.
+  - TRA's new FleetPy network (`new_LG_data/lemon_grove/fleetpy_network/base/crs.info`, read-only check) already
+    says `EPSG:2230`, the system named above, so moving the new data in corrects it.
+- **Resolution (2026-11-26, branch `TRA_resubmission`):** TRA's FleetPy network moved in;
+  `fleetpy/data/networks/lemon_grove_example_network/base/crs.info` says `EPSG:2230`;
+  `mtsm_data/lemon_grove/MANIFEST.csv` rewritten. No effect on results (FleetPy uses the file only for its
+  real-time plot). `main` keeps `EPSG:32632`.
 
 ### I-33: Walking, microtransit, virtual stops and FRT stops are not kept off the freeways
-- **Status:** In progress (to close on the branch `TRA_resubmission`, once TRA's networks are in use; status
+- **Status:** Closed (2026-11-26); until then: In progress (to close on the branch `TRA_resubmission`, once TRA's networks are in use; status
   written so on 2026-11-26; since 2026-11-23: decided; the builder change and the networks built with it are not in
   MTSM yet). **Severity:** Medium. **Found:** 2026-11-20 (user: the walk mode needs to stay off the freeways).
   Title until 2026-11-23: "Walking, virtual stops and FRT stops are not kept off the freeways".
@@ -358,286 +589,104 @@ Paths are relative to the codebase root.
   (type 4) link on any of the 27 car-only edges (15 `ramp`, 11 `freeway`, 1 `fwy_connector`), and no virtual stop
   (type 5) or FRT stop join (types 2 and 3) at any of the 20 freeway nodes; the car network (`auto_edges_AM.csv`,
   2,601 edges) has all 27.
+- **Resolution (2026-11-26, branch `TRA_resubmission`):** TRA's networks, built with car-only freeways, connectors
+  and ramps, are the branch's inputs since 2026-11-26 (`docs/new_lemon_grove_data_move.md`; the check of 2026-11-26
+  above covers the five period files and the FRT-only files now in `networks/`); `tools/check_study_area.py` on
+  the moved data: 0 errors, 0 warnings. `main` keeps its old networks (walk links on the fast roads) as its
+  record.
 
-### I-35: One super-network for the whole day; MTSM is to use one per time period
-- **Status:** In progress (to close on the branch `TRA_resubmission` with the first run on period data and its
-  reference; status written so on 2026-11-26; since 2026-11-24: the model reads period networks; not yet run on
-  period data). Open until 2026-11-24. **Severity:** High (blocks a planned run). **Found:** 2026-11-23 (planning the super-networks in
-  the input-preparation repository `TRA_input_data_prep`).
-- **Plan (user, 2026-11-23):** MTSM is to use one super-network per time period. `TRA_input_data_prep` builds them,
-  per area and per period, with the modified `build_super_network.py` (I-33):
-  - Periods: the five of SANDAG's ABM3 assignment, EA 3:00-6:00, AM 6:00-9:00, MD 9:00-15:30, PM 15:30-19:00,
-    EV 19:00-3:00. The road link times per period come from ABM3's loaded link times (hwyload files).
-  - What changes between periods:
-    - the microtransit in-vehicle links (type 4 = the period's car time x 1.4);
-    - the car network (`auto_edges`, type 7 = the period's car time).
-  - What does not change: walk (0), FRT in-vehicle (1) and FRT waiting (2) are the same in every period.
-    Microtransit waiting (5) starts at 180 s, as now.
-  - Full grid per period and area, 24 files:
-    - micro: headways 10/15/20/30/60 x virtual-stop shares 50/75/100 (15 files);
-    - non_micro: the 5 headways;
-    - micro_only: the 3 shares;
-    - `auto_edges`.
-  - Walk speed 1.6 m/s (the builder's default is 1.251).
-  - Virtual stops drawn with seed 42. Every period and headway gets the same stops, and a smaller share is a subset
-    of a larger one.
-  - The node numbering (`num_walk_nodes`, `microtransit_node_offset`) is the same in every period.
-  - File names (proposed, to agree): MTSM's current names with the period appended, e.g.
-    `initial_super_network_micro_hw_10_virstop_75_AM.csv` and `auto_edges_AM.csv`.
-- **What in MTSM assumes one network for all periods** (checked at `a912056`):
-  1. **Periods.**
-     - MTSM has four: `time_periods = ["AM", "MD", "PM", "EV"]` in `scenarios.py` and `update_network_files.py`, with
-       the boundaries `config.AM_END` / `MD_END` / `PM_END`. Currently AM runs to 10:00, MD to 15:00, PM to 20:00,
-       then EV.
-     - ABM3 has five, with other boundaries.
-     - The new demand files have requests from 3:00 (Lemon Grove: 281 in EA) and after midnight (`rq_time` past
-       86,400 s).
-     - To decide: switch MTSM to the five ABM3 periods, or map them.
-     - Also found while checking (2026-11-23): `config.PERIOD_HOURS` takes the period lengths from `day_start_h` (5)
-       and `day_end_h` (24), and `output_performance_metrics.all_scenario_micro_acc_calculation` picks its own period
-       list from the microtransit operating hours (10 h: AM, PM; 15 h: AM, MD, PM; else all four). Both name the four
-       periods and need the same decision.
-  2. **Initial networks are keyed by variant, headway and virtual-stop share, not by period.**
-     - `testing_scenario_creation.scen_create` builds the file names.
-     - `paths.networks_for_traveler` uses `initial_super_network["micro"][headway][virstop][M_operating_hrs]` in
-       iteration 0.
-     - It uses the FRT-only network `initial_super_network["non_micro"][BASE_FRT_HEADWAY]` for every period.
-  3. **The car network is one file.** `scenarios.py:108-109` reads `auto_edges.csv` once, and `paths.auto_path` and
-     the micro_only fallback use it in every period.
-  4. **Final networks.** `update_network_files.update_network_files` writes one final network per period, each copied
-     from the same initial network (type 5 = FleetPy's waiting time for the period; type 4 x the period's detour
-     ratio).
-     - With period networks, each final network must start from that period's initial network.
-     - Check whether the detour ratio is still wanted on top of period times. FleetPy's direct route time comes from
-       its own network, which loads period times when `nw_dynamic_f` is set.
-  5. **Headway update.** `update_initial_network.py` sets the headway in the Lemon Grove base networks only (Lemon
-     Grove file names). It must do so in every period's file.
-  6. **Related, FleetPy period times.** `TRA_input_data_prep` writes a FleetPy network folder with period subfolders
-     plus `network_dynamics.csv`.
-     - `fleetpy_runner.LG_STAGED_INPUTS` copies only `base/`.
-     - `fleetpy/src/routing/NetworkBasic.py:249` uses `Series.iteritems()`, which pandas 2 removed.
-- **Impact:** until this is done, MTSM uses one network for the whole day, so car and microtransit times do not vary
-  over the day. Downtown AM link times are about 2.15 x free flow.
-- **To do:**
-  - a period key in the network loaders and in `networks_for_traveler`;
-  - a car network per period;
-  - the period definitions;
-  - final networks per period from the period's initial network;
-  - the headway update in every period file;
-  - a new reference.
-  - See also I-33 and I-34.
-- **Done 2026-11-24 on `main`** (`docs/period_networks_and_car_availability_plan.md`, steps 3-5; each step
-  `REPRODUCED` for Lemon Grove's whole-day inputs): the to-do list above except the new reference.
-  - Periods: the area file defines them (`time_periods`, `period_start_h`, `period_end_h`, `peak_periods`), so ABM3's
-    five can be set; the four names left the code (item 1).
-  - The microtransit super-network (file 3) and the car network (file 5) per period, `..._<P>.csv`, with whole-day
-    files as the fallback; the FRT-only networks stay whole-day (user's decision). Scenario networks and the headway
-    update per period file, each period's final network from its own scenario network, the car path on the
-    traveler's period (items 2-5). The file names put the period last, as proposed (`..._virstop_75_AM.csv`,
-    `car_network_AM.csv`).
-  - FleetPy: `network_dynamics.csv` and its folders staged, `nw_dynamic_f` set, the pandas fix (item 6).
-- **Still open:** a run on period data (TRA's new Lemon Grove inputs, branch `TRA_resubmission`) and its reference;
-  the detour-ratio question of item 4; FleetPy's operator does not replan at a travel-time switch (I-43, accepted
-  and closed 2026-11-26).
-- **The detour-ratio question of item 4, answered for period times (2026-11-26, code read):** the ratio is FleetPy's
-  drive time of the served requests over their direct-route time, per period
-  (`update_network_files.update_network_files`: `time_detour_ratio[P] = time_tt_drive_time[P] /
-  time_tt_direct_time[P]`); with `network_dynamics.csv` both come from the same period's FleetPy times, so period
-  times are not counted twice by it.
-- **To decide on the branch (found 2026-11-26; user's decision to record it here): the microtransit link times are
-  car time x 1.4 x the detour ratio in the final networks.**
-  - In the super-networks, a microtransit in-vehicle link (type 4) has 1.4 x FleetPy's time of the same edge:
-    `mtsm_data/lemon_grove/networks/super_network_micro_virstop_75.csv` against FleetPy's `base/edges.csv`
-    (2,816 links), and TRA's new Lemon Grove networks per period against FleetPy's period times
-    (`initial_super_network_micro_hw_10_virstop_75_AM.csv` against `21600/edges_td_att.csv`, `_MD` against
-    `32400`; 2,574 links each); the 5th, 50th and 95th percentiles of the ratio are all 1.400.
-  - Each final network starts from its period's initial network and multiplies its type-4 times by the period's
-    detour ratio (`update_network_files.update_network_files`: `travel_time = travel_time *
-    time_detour_ratio[time_period]` for `link_type == 4`), so from iteration 1 on a microtransit link costs car time
-    x 1.4 x the detour ratio. In iteration 0 it is car time x 1.4.
-  - If the 1.4 is a first guess of the detour, the detour is counted twice from iteration 1 on; if it stands for
-    something else (e.g. microtransit slower than a car), it is not. Long-standing, so in `main`'s reference.
-  - To decide: what the 1.4 stands for, and whether the final networks apply the ratio to the car time (car time x
-    ratio) or, as now, to the initial microtransit time (car time x 1.4 x ratio). A change alters results, so it
-    goes with the branch's new reference.
+### I-31: The route labels of the FRT links may not show which routes run on a link
+- **Status:** Closed (2026-11-26); until then: Open (to close on the branch `TRA_resubmission`, once TRA's networks are in use: its FRT network has
+  one stop node per stop, route and direction, so every route change is an alighting and a boarding; user's
+  decision 2026-11-25, status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-13 (before turning on the transfer penalty, I-25).
+- **What:** every FRT link (type 1) of the super-networks has one route number. In the raw Lemon Grove transit file
+  a link served by several routes had a list (e.g. `[856, 936]`); the old preprocessing kept only the first number
+  (`pre_process/process_network.py`, `construct_super_network_transit_links`: `route_id_str_.split(',')[0]`; route
+  120 became 3). The raw file is not in the repository, and the user does not have it at hand (2026-11-13), so the
+  links that had a list cannot be found.
+- **What the frozen network shows** (`initial_super_network_non_micro_hw_20.csv`, 130 FRT links, routes 4, 520, 856,
+  916, 917, 936):
+  - Routes 916, 917 and 936 each end at a stop in the middle of route 856: 917 at stop 1115, 936 at stops 1119 and
+    1110 (the same walk node), 916 at stop 1160. These are the only stops served by more than one route. This is
+    what the first-number rule gives if these routes in fact run on along 856's street (856 is the smallest number,
+    so every shared link would be labelled 856); it is also what three routes that really end on 856 look like. The
+    network alone cannot tell.
+  - Routes 4, 520, 856 and 936 are each in two pieces without a link between them. For 856 and 936 the pieces have
+    the same length and lie on each other (most stops of one piece are at the walk node of a stop of the other), so
+    they are probably the two directions (stops on the two sides of the street); for 4 and 520 they lie less close.
+    Not a label problem. Every FRT link exists in both directions.
+- **Impact:** none on the reference: nothing reads the route label for a cost while `enable_num_transfer_penalty` is
+  `False`. With the switch on, a route change at a shared stop costs `bt_f_trfer`; if a label is only the first of a
+  list, a rider who stays on the same bus is charged a transfer (e.g. 917 -> 856 -> 936: two penalties, about 1.0, or
+  about 6.6 min of FRT waiting). 72 % of the AM paths that use FRT change route at the four shared stops (I-25), so
+  the labels decide most of the penalty's effect. If the labels are right, the opposite gap is there: a transfer at
+  a shared stop has no waiting time.
+- **To do:** when the raw transit and road network files are available and the super-network is rebuilt (user,
+  2026-11-13: possibly later), keep all routes of a link. `pre_process/build_super_network.py` takes one route number
+  per link, so it needs a way to carry several (and the path search a rule for "same bus"). Then decide I-25.
+  Other ways to check the labels: the operator's route maps.
+- **Also noticed, not checked further:** the distances of the FRT links look too short. For every route the sum of
+  its link distances is less than the straight line between its two end stops (walk-node coordinates in feet; e.g.
+  route 856: 1,836 against about 2,875 m; route 4: 1,205 against about 1,995 m); multiplied by 1.609 they fit. They
+  may be miles x 1,000, not metres. How the model uses this column (FRT passenger miles, the per-mile subsidy
+  values) was not checked. See also I-21.
+  - **2026-11-26 (read-only check):** in TRA's new Lemon Grove data (`new_LG_data/lemon_grove/frt/frt_edges.csv`,
+    110 FRT edges) `distance` is in metres: it equals the milepost difference x 1609.344 (median ratio 1.0000), and
+    its median ratio to the straight line between the two stops is 1.00. A comparison of the route lengths
+    (`networks/frt_routes.csv` against TRA's `frt_routes.csv`) does not settle the old network: route 4 2,618
+    against 2,669 m, but 856, 916 and 936 are 1.7-1.8 times longer in TRA's data, with other stop counts (856: 19
+    against 14 and 15), so the routes probably do not cover the same stretch. User's decision: the old network's
+    distances stay as they are (main keeps it as the record); the question does not carry over to the branch.
+- **Resolution (2026-11-26, branch `TRA_resubmission`):** TRA's networks are the branch's inputs since 2026-11-26
+  (`docs/new_lemon_grove_data_move.md`). Checked on them: `networks/frt_links.csv` has 122 stop nodes, none used by
+  two routes, and one route label per link, so every route change is an alighting and a boarding and the question
+  of this item does not arise there. `main`'s old network keeps it (labels, and the unresolved FRT distances) as
+  its record.
 
-### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
-- **Status:** Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,
-  status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
-- **What:** FleetPy places the microtransit vehicles at the start of each simulation from
-  `mtsm_data/lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv`,
-  named by `op_init_veh_distribution,imbalanced.csv` in `lemon_grove_constant_config_ir_repo.csv` (the reference's
-  `00_config.json` shows it). The file lists five road nodes, each with probability 0.2:
-
-  | node_index | probability |
-  |---|---|
-  | 256 | 0.2 |
-  | 400 | 0.2 |
-  | 600 | 0.2 |
-  | 650 | 0.2 |
-  | 700 | 0.2 |
-
-  `FleetSimulationBase` (about line 480) draws each vehicle's start node from this list with `np.random` (seed 0 in
-  the reference). Without the parameter, FleetPy would spread the vehicles uniformly over the boarding nodes, or over
-  all nodes if there are none.
-- **What is known** (checked 2026-11-23):
-  - The name comes from FleetPy's example (`fleetpy/data/fleetctrl/initial_vehicle_distribution/example_network/imbalanced.csv`:
-    one node, probability 1.0, i.e. all vehicles at one place). The Lemon Grove file is not imbalanced in that sense.
-  - Who chose the five nodes, and why, is not recorded. They are ordinary street nodes (car speeds 10-35 mph; none on
-    a 50+ mph edge, I-33); 13 trips of the demand file start at one of them.
-  - The node numbers belong to the frozen Lemon Grove road network.
-- **Why it matters:**
-  - With the reference's fleet of 2, each vehicle starts at one of these five nodes in every FleetPy run; the start
-    positions affect the first waiting times and so the results read back by MTSM.
-  - The new road networks (I-33, I-34) number the nodes anew, so the file does not carry over: a node number may not
-    exist, or be another place, or be a freeway node. Downtown San Diego has no such file; FleetPy reads it from the
-    network's own folder and stops if it is missing.
-- **To do:**
-  - decide the rule for the start positions (e.g. a few chosen nodes, all virtual stops, demand-weighted, or
-    FleetPy's uniform default), and write the file per area and network (street nodes only);
-  - name it after what it is, and record where the nodes come from;
-  - a change belongs to a new reference.
-- **2026-11-26:**
-  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/fleetctrl/initial_vehicle_distribution/`
-    `lemon_grove_example_network/imbalanced.csv` (the folder `fleetpy_inputs/` was renamed `fleetpy/` on
-    2026-11-24).
-  - TRA's new Lemon Grove data has its own file (read-only check;
-    `new_LG_data/lemon_grove/fleetpy_initial_vehicle_distribution/imbalanced.csv`): the same format, five nodes
-    (694, 225, 863, 498, 189), 0.2 each, sum 1; all five are street nodes (`Lemon_grove_node_kind.csv`), none a
-    freeway node. How they were chosen is not recorded in this repository (`TRA_input_data_prep` was not at hand).
-  - User's decision: `TRA_input_data_prep` will be checked for how its `imbalanced.csv` is made, and that is
-    documented. On the branch, when the data moves in: keep the five-node rule or choose another (e.g. all virtual
-    stops, FleetPy's default without the parameter, or demand-weighted); a change of the rule goes with the
-    branch's new reference.
-
-### I-39: Lemon Grove's FleetPy `crs.info` names the wrong coordinate system
-- **Status:** Open (to close on the branch `TRA_resubmission`, where `crs.info` is updated; user's decision
-  2026-11-26). **Severity:** Low. **Found:** 2026-11-24 (writing the input specification).
-- **What:** `mtsm_data/lemon_grove/fleetpy_inputs/data/networks/lemon_grove_example_network/base/crs.info` says
-  `EPSG:32632` (WGS 84 / UTM zone 32N, in Germany). The node coordinates in `nodes.csv` (`pos_x` about 6.27-6.33
-  million, `pos_y` about 1.82-1.86 million) look like NAD83 California zone 6 in US feet (`EPSG:2230`). Probably a
-  leftover of FleetPy's example data, like I-10.
-- **Impact:** none on results. FleetPy reads the file on startup (`NetworkBasic.py:173`) and uses it only to convert
-  coordinates to longitude/latitude for its real-time plot (`FleetSimulationBase._start_realtime_plot` and the
-  plot update), which the run does not turn on. Wrong for anyone who plots or exports the coordinates.
-- **Fix (later; user's decision 2026-11-24):** confirm the system (e.g. one node against a map), correct the file,
-  rewrite `mtsm_data/MANIFEST.csv`, full run must print `REPRODUCED`.
-- **2026-11-26 (user's decision): `crs.info` is updated on the branch `TRA_resubmission`; `main` keeps
-  `EPSG:32632`.**
-  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/networks/lemon_grove_example_network/base/crs.info`
-    (the folder `fleetpy_inputs/` was renamed `fleetpy/` on 2026-11-24); it still says `EPSG:32632`.
-  - TRA's new FleetPy network (`new_LG_data/lemon_grove/fleetpy_network/base/crs.info`, read-only check) already
-    says `EPSG:2230`, the system named above, so moving the new data in corrects it.
-
-### I-41: FleetPy's operator settings are fixed in the code (`create_config_files`)
-- **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 3 of `docs/study_area_plan.md`). Kept in the code
-  for now on the user's decision (Phase 3 decision 3), recorded here on the user's request.
-- **What:** `fleetpy_runner.create_config_files` writes FleetPy's scenario file with fixed values: `op_module`
-  `PoolingIRSOnly`; with repositioning `op_max_VR_con` 3, `op_repo_method` `AlonsoMoraRepositioning`,
-  `op_repo_horizons` 60, `op_repo_timestep` 300; and the scenario names `example_pool_repo_AM_sc_1` /
-  `example_pool_irsonly_sc_1`, by which MTSM finds FleetPy's results (`microtransit.py`,
-  `update_network_files.py`, `output_performance_metrics.py`, `tools/compare_reference.py`). The area's FleetPy
-  constant config (`<area>_constant_config_ir_repo.csv`) has some of them too (`op_repo_timestep` 300).
-- **Impact:** none on results; changing an operator setting needs a code change, and the values are in two places.
-- **Fix (later):** move them into the area's FleetPy constant config (or the model file), and read the scenario name
-  from one place.
-- **2026-11-26 (user's decision: take it up with I-41):** the FleetPy settings files of a study area, the vehicle type
-  (`fleetpy/data/vehicles/<area>_vehtype.csv`) and the two constant configs
-  (`fleetpy/studies/example_study/scenarios/<area>_constant_config_ir_repo.csv`, `..._ir.csv`), are not study-area
-  data: `TRA_input_data_prep` does not write them, and a new area copies Lemon Grove's (README, "Add your own study
-  area", step 3), renaming `vtype_name_full`, `network_name` and `demand_name`. Their values (capacity 8, vehicle
-  costs, `op_max_wait_time` 900, `op_max_detour_time_factor` 40, `op_const_boarding_time` 30, FleetPy's fares,
-  `start_time` 0, `end_time` 86400, `time_step` 60, `op_repo_timestep` 300) then come from Lemon Grove without a
-  prompt to review them; e.g. an area with trips after midnight needs a later `end_time`. Kept as it is for now
-  (option a); option b, to decide with this item: neutral templates in one shared place (e.g.
-  `mtsm_data/input_parameter/fleetpy_templates/`) with the values to review marked.
-
-### I-44: Fare rules to revisit on the branch: discount for the next FRT boarding only, no free re-boarding; a route change at a shared stop pays no fare; very short microtransit rides remain
-- **Status:** Open (to revisit on the branch `TRA_resubmission`; user's decision 2026-11-25). **Severity:** Medium.
-  **Found:** 2026-11-25 (trial of I-22 + I-24, `docs/pathfinding_code_update.md`).
-- **What:** three points of the fare rules set on 2026-11-25 (I-24), in `network_algorithms.transit_label_search`:
-  1. **The rules themselves:** `micro2fixed_factor` (with the floor) only for the first FRT boarding after a
-     microtransit ride, `fixed2micro_factor` only for the first microtransit ride after an FRT ride, and every other
-     FRT boarding pays the full fare, also a re-boarding at the same walk node right after an alighting (free before
-     2026-11-25).
-  2. **A route change at a shared stop node pays no fare.** Where several routes share one stop node (Lemon Grove's
-     network on `main`), a path can go from an FRT link of one route to an FRT link of another at that node without
-     an alighting and a boarding link, so no fare is charged: a free FRT -> FRT transfer under rule 1. On the
-     reference's networks 1,227 of the 1,774 base-case paths with FRT have such a route change; many may be label
-     artifacts (I-31: a shared link keeps one route's label), which is why it was left free on `main`.
-  3. **Very short microtransit rides remain** (added 2026-11-25, user's request). The floor removes the fare reason
-     for them (microtransit + FRT never cost less than the FRT alone), but a microtransit ride before the FRT then
-     costs no extra fare as long as its fare is at most the FRT fare, so a short access ride is chosen whenever its
-     ride and wait cost less than the walk it replaces. Least-cost paths on the new reference's final networks (AM-PM,
-     3,472 travelers): 19 microtransit + FRT paths have a ride under 30 s (17 MD, 2 PM; 211 with the old rules and the
-     exact search), no microtransit-only path. In the new reference run 7 of the 68 FleetPy requests have a direct
-     ride under 30 s by FleetPy's travel times (11-28 s; 40-110 s on the super-network; the 2026-11-24 reference had
-     6): travelers 4543, 6218, 4380, 5743 microtransit only (full microtransit fare, 3.24-3.96 $; not related to the
-     discount), 4729, 8153, 9747 microtransit + FRT (fare at least the FRT fare). Traveler 4543's least-cost path on
-     the final networks is walking; probably it kept an earlier microtransit choice (`mode_change_threshold`), not
-     traced.
-- **Why on the branch:** TRA's FRT network has one stop node per stop, route and direction, so every route change is
-  an alighting and a re-boarding: rule 1 charges each transfer the full fare, and point 2 does not arise. With the
-  transfer penalty on there (I-25), a transfer also costs `bt_f_trfer`.
-- **Impact on `main`:** in the new reference (I-22); rule "no free re-boarding" changed no base-case path there.
-- **To decide on the branch:** keep the full fare per FRT boarding, or a free or discounted FRT -> FRT transfer; on
-  networks with shared stop nodes, whether a route change pays a fare. Very short microtransit rides: accept them, or
-  set a minimum ride (distance or time) for the transfer discount, or for any microtransit request (then the search
-  needs the ride length in its label); neither was tried. A rule change needs its own reference update.
-
----
-
-### I-46: A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node
-- **Status:** Open (to revisit and fix on the branch `TRA_resubmission`; user's decision 2026-11-26; Decision
-  needed until then). **Severity:** High (FleetPy is given other requests than the travelers' paths).
-  **Found:** 2026-11-25 (I-45: 21 of the 68 requests of the reference's last FleetPy file start at a node that has no
-  microtransit boarding link; all 68 end at one).
-- **What:** the transit paths are lists of (node reached, time at it, link type of the link into it, route), in
-  `network_algorithms.transit_label_search` and before it in `getTrajectory_O_to_D`. `trip_legs.split_time_path`
-  takes a microtransit leg's origin from the first element with link type 4: the node reached by the first
-  microtransit link, one link past the boarding node (the microtransit node reached by the type-5 boarding link). Its
-  request time is the time at that node: departure + walking + the modelled wait (type-5 link: 180 s in the initial
-  networks, FleetPy's average after) + the first ride link (median 101 m, 16 s). The leg's destination is right (the
-  node reached by its last type-4 link). FRT legs are built the same way (origin the next FRT stop, time after the
-  FRT wait and the first link), but the FRT demand file (`debug_False_F_transit_demand_*.csv`) is only written, not
-  read.
-- **Impact:** FleetPy picks the rider up one link downstream, and the request enters FleetPy later than the rider
-  reaches the stop, by about the modelled wait; FleetPy's own wait then counts from that time. A leg with a single
-  ride link would start where it ends (none in the reference's last iteration). Long-standing (the old trajectory
-  function had the same format), so in the reference.
-- **To do:** the user decides the request time (the rider's arrival at the stop, or as now after the modelled wait)
-  and the origin (the boarding stop); a fix changes FleetPy's inputs, so it goes with a new reference (the branch
-  `TRA_resubmission`).
-- **2026-11-26 (code read; user's decision: keep open, revisit and fix on the branch):**
-  - Where: `trip_legs.split_time_path`, `if (pre_link_type != 4) and (link_type == 4)`: `M_origin_node = node` (the
-    end of the first ride link) and `request_time = rq_time + round(time, 0)` (the time there). The boarding stop is
-    `pre_node` at that element (the microtransit node reached by the waiting link, type 5); the rider's arrival at
-    the stop is the time of the element before the waiting link.
-  - A leg with a single ride link would start where it ends, and FleetPy declines such a request
-    (`PoolingIRSOnly.user_request`: `prq.o_pos == prq.d_pos` -> rejection).
-  - Possibly related, not checked: the very short FleetPy rides of I-44 (11-28 s by FleetPy's times against
-    40-110 s on the super-network) lack the first ride link; the factor 1.4 of the microtransit links (I-35) also
-    makes the super-network's ride longer than FleetPy's.
-  - Options to decide on the branch: request time (a) the rider's arrival at the stop (recommended: FleetPy's wait
-    then means what the waiting link stands for), (b) as now, after the modelled wait, (c) the departure from the
-    trip origin with pickup not before the arrival at the stop (FleetPy would need an earliest pickup time; not
-    checked); origin the boarding stop; FRT legs the same (their file is not read, so no result change); before
-    the branch's reference run, count on `main`'s networks how many requests change origin and time. Goes with
-    I-47 (the same file) in the branch's new reference.
-
-### I-47: MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step
-- **Status:** Open (to do with the new reference on the branch `TRA_resubmission`; user's decision 2026-11-25).
-  **Severity:** Medium. **Found:** 2026-11-16 (as part of I-32; its own item since 2026-11-25).
-- **What:** `iteration.run_iteration` writes FleetPy's demand file in the order of the traveler list, not of the
-  request times (the reference's last iteration: 35 of 68 rows step back in time). FleetPy rounds `rq_time` down to
-  its time step (60 s) and handles the requests of one step in the order of the file (I-32), so the order of the
-  traveler list decides the order within a minute, and FleetPy's results depend on it (I-32's test: a different order
-  within a minute moved the share served, the waits and the vehicle miles).
-- **To do:** write the file sorted by `rq_time` (a stable sort) also when `demand_upscaling` is off, as it is when on
-  (`synthetic_demand.add_synthetic_requests`). It changes FleetPy's results, so it goes into the branch's new
-  reference.
-
-## Closed
+### I-14: The preprocessing code still contains downtown San Diego
+- **Status:** Closed (2026-11-26); until then: Open (to close on the branch `TRA_resubmission`, where `pre_process/` is removed; user's decision
+  2026-11-25; status written so on 2026-11-26). **Severity:** Low. **Found:** 2026-11-08 (removing downtown San Diego, step 2b).
+- **What:** `pre_process/process_network.py` (`get_transit_link_route`, `construct_initial_network`, `__main__`
+  with `new_downtown_sd=True`) and the `__main__` of `pre_process/generate_demand_files.py`
+  (`test_area = ["downtown_sd","lemon_grove"]`) still build or handle both study areas.
+- **Why it was left:** this is the one-time preprocessing that built the frozen inputs in `mtsm_data/`; the run
+  does not use it, and it cannot be run here (its source data is not in the repository), so an edit could not be
+  tested. The user decided to keep it unchanged as the record of how the inputs were made (2026-11-08).
+- **Impact:** none on results. The repository is not yet free of downtown San Diego code.
+- **Fix (later):** remove `"downtown_sd"` from the loops and delete the downtown branches and the downtown part of
+  `__main__`, with a note that the preprocessing has not been re-run since; the original stays at tag
+  `last-with-downtown-sd`. Alternatively, bring the source data into the repository first, so that the
+  preprocessing can be re-run and checked.
+- **2026-11-23 (user's request; the downtown parts are not changed):** `synthesize_requests_with_trend_time` and its
+  helper `make_time_sampler` (the "Ritun added" block, the only part of `pre_process/` the run imported) moved
+  unchanged to `mtsm_model/helpers/synthetic_demand.py`; `mtsm_model/microtransit.py` imports it from there (still as
+  `syn_rq`, call still commented out). `generate_demand_files.py` lost the block and its two imports used only by it
+  (`colorama`, `typing`). The run now loads nothing from `pre_process/` (checked: no `pre_process` module in
+  `sys.modules` after importing the entry script; `pyproj` is no longer loaded by the run either).
+  - Checked: the moved lines are byte-identical to the old ones; old and new function give byte-identical output
+    files on the reference's FleetPy demand file (seed 42, 204 new requests; defaults, ordered, undirected, independent
+    marginals). Full run: `compare_reference.py` printed `REPRODUCED` (32 identical).
+  - User's choice: `standalone_scripts/` is left untouched, so the four scripts in `standalone_scripts/New folder/`
+    that import the function from `pre_process.generate_demand_files` (`run_examples_new.py`,
+    `run_examples_new_LG_rejection.py`, `run_examples_new_TRC_R1.py`, `run_examples_new_parking_old.py`) now fail at
+    that import.
+  - I-14 stays open for the downtown parts (the user will take up downtown San Diego with I-34).
+  - 2026-11-25 (user's decision): `standalone_scripts/` removed from the repository (27 files, in the git history;
+    the last commit that has them is the parent of the removal commit), including the four scripts above.
+- **2026-11-25 (user's decision):** `pre_process/` is out of date: the inputs are now prepared in the repository
+  `TRA_input_data_prep` (https://github.com/ritunuci/TRA_input_data_prep). On the branch `TRA_resubmission` the folder
+  is to be removed and the README to say that the data is prepared there; that closes I-14 on the branch. On `main`
+  the folder stays as the record of how the old Lemon Grove inputs were made.
+- **Resolution (2026-11-26, branch `TRA_resubmission`; user's decisions 2026-11-25 and 2026-11-26):** `pre_process/`
+  removed on the branch (its four files `build_super_network.py`, `dictionary_initialization.py`,
+  `generate_demand_files.py`, `process_network.py`); the inputs are prepared in `TRA_input_data_prep`, which
+  `README.md` now says ("Data", and "Building the inputs with TRA_input_data_prep"; the layout table lost the
+  folder). The remaining mentions got "(removed on the branch 2026-11-26)": code comments in
+  `network_algorithms.py`, `synthetic_demand.py`, `update_initial_network.py`; `docs/study_area_plan.md`,
+  `docs/entry_script_refactor_plan.md`; `docs/study_area_inputs.md` now names `TRA_input_data_prep` for the demand
+  file. Checked: no module imports from `pre_process` (none since 2026-11-23). `main` keeps the folder with its
+  downtown parts, as the record of how the old Lemon Grove inputs were made. No run (the full run waits for the
+  user's go-ahead).
 
 ### I-43: With FleetPy travel times per period, the operator does not replan at a switch
 - **Status:** Closed (2026-11-26). **Severity:** Medium (affects runs with `network_dynamics.csv`, e.g. the new

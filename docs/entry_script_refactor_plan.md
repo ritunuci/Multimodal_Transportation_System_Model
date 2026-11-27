@@ -106,7 +106,8 @@ The rule stays: after every step, a full seed-0 run must print `REPRODUCED` (all
   unchanged. **Since step 6:** in `mtsm_model/microtransit.py`, `run_fleetpy_and_update_networks()`, first lines
   of the function (the 27 lines are identical to `92ae5fa` apart from the indentation; checked).
 - **Its import must stay too,** although nothing active uses it:
-  `from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq`.
+  `from pre_process.generate_demand_files import synthesize_requests_with_trend_time as syn_rq`
+  (removed on the branch 2026-11-26; the function is in `mtsm_model/helpers/synthetic_demand.py` since 2026-11-23).
   It moves along with the block. **Since step 6:** in `mtsm_model/microtransit.py`. The block's names are
   available there: `demand_file` and `new_fleetpy_demand` are arguments of the function, `pd`, `Fore`, `Style` and
   `syn_rq` are imported.
@@ -175,7 +176,8 @@ Each step ends with a full run (`REPRODUCED`), a stop for the user's review, and
 5. **Paths and choice** → `paths.py`, `choice.py`. **Done 2026-11-09** (`REPRODUCED`):
    - `paths.py`: `networks_for_traveler()`, `auto_path()`, `frt_path()`, `micro_path()` (the calls of
      `network_algorithms` unchanged) and `PathCache`, which replaces the 15 cache dicts of
-     `pre_process/dictionary_initialization.py` (the module stays: the standalone scripts import it);
+     `pre_process/dictionary_initialization.py` (the module stays: the standalone scripts import it; removed on the
+     branch 2026-11-26);
    - `choice.py`: `time_period_of()`, `trip_costs()` (with the parking charge), `choice_probabilities()`,
      `keeps_previous_mode()`, `mobility_logsum_delta()`; new constants in `config.py`: `AM_END`, `MD_END`,
      `PM_END`, `PARKING_FACTOR_PEAK`, `PARKING_FACTOR_OFFPEAK` (same values and types);

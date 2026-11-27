@@ -1,5 +1,5 @@
 path,size_bytes,sha256,role
-area_parameters.csv,1710,131e77ede09adfa75549a4101aa6effe26f2ffafe134e90f9b4e7e2adb87048f,area parameter file (file 1)
+area_parameters.csv,2044,c8425061450cbfeef78e6a4ea9674b592c991c5ef472b1ec328a44687e8b8930,area parameter file (file 1)
 demand/demand.csv,10624847,56150a079bb20a4422a428cf84228987b2c7bc5f46b4f85ec882eee397af6f89,travel demand (file 2)
 networks/super_network_micro_virstop_75_AM.csv,312214,ce65c17376143bf6be6c77d96a8a2c3837921e8a5a6ad99892cd72658ced4bc4,super-network with microtransit (file 3)
 networks/super_network_micro_virstop_75_EA.csv,312223,53b24c910a0d5d35d4c989492556a5f18be994ae14c6691b2448ec4ad5e5075f,super-network with microtransit (file 3)

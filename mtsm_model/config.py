@@ -197,8 +197,11 @@ AGGREGATION = PARAMETERS[gp.G_AGGREGATION]
 # ---- time periods of the study area (area file; since 2026-11-24, docs/period_networks_and_car_availability_plan.md,
 # step 3). A trip departing at t (s) belongs to the first period whose end is at or after t; before the start: the
 # first period, after the last end: the last (as before: AM if t <= AM_END, MD if t <= MD_END, PM if t <= PM_END,
-# else EV, with AM_END = am_end_h x 3600 ...) ----
-TIME_PERIODS = PARAMETERS[gp.G_TIME_PERIODS]  # Lemon Grove: ["AM", "MD", "PM", "EV"]
+# else EV, with AM_END = am_end_h x 3600 ...). Since 2026-11-26 a trip outside the model's day (MODEL_DAY_START,
+# MODEL_DAY_END below) is not modelled, so for trips only the first rule applies; period_of still gives a time after
+# the last end (e.g. a microtransit leg's request time) the last period ----
+TIME_PERIODS = PARAMETERS[gp.G_TIME_PERIODS]  # Lemon Grove: ["EA", "AM", "MD", "PM", "EV"] (until 2026-11-26
+# ["AM", "MD", "PM", "EV"])
 PEAK_PERIODS = PARAMETERS[gp.G_PEAK_PERIODS]  # the peak fare factor and the peak parking rate: Lemon Grove AM, PM
 _START_H, _END_H = PARAMETERS[gp.G_PERIOD_START_H], PARAMETERS[gp.G_PERIOD_END_H]
 
@@ -227,6 +230,17 @@ PERIOD_ENDS = [(period, end_h * 3600) for period, end_h in zip(TIME_PERIODS, _EN
 # start: the first period). Since 2026-11-25, for the times of the synthetic requests (I-32)
 PERIOD_BOUNDS = {period: (start_h * 3600, end_h * 3600)
                  for period, start_h, end_h in zip(TIME_PERIODS, [_START_H] + list(_END_H), _END_H)}
+# the model's day (since 2026-11-26, branch TRA_resubmission; user's decision): from period_start_h to the last
+# period_end_h, both included. A trip departing outside it is not modelled: scenarios.py leaves it out when it reads
+# the demand file (the file is not changed). Until then such a trip belonged to the first or the last period
+MODEL_DAY_START, MODEL_DAY_END = _START_H * 3600, _END_H[-1] * 3600
+
+
+def in_model_day(t):
+    """a departure at t (s) is modelled: period_start_h <= t <= the last period_end_h"""
+    return MODEL_DAY_START <= t <= MODEL_DAY_END
+
+
 # a period without microtransit service gets this period's average FleetPy waiting time (update_network_files):
 # the first peak period (until 2026-11-24 "AM", written in the code)
 WAIT_TIME_FALLBACK_PERIOD = PEAK_PERIODS[0] if PEAK_PERIODS else TIME_PERIODS[0]

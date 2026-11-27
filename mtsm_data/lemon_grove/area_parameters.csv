@@ -14,7 +14,7 @@ frt_speed_mph,30,FRT bus speed for the line duration (mph)
 frt_dwell_time_min,3,FRT dwell time per stop (min)
 frt_dead_end_time_min,20,FRT dead-end time per line run (min)
 virtual_stop_scenarios,75,% of the nodes that are virtual microtransit stops
-time_periods,AM;MD;PM;EV,the time periods in order (a departure belongs to the first period whose end is at or after it; after the last end: the last)
-period_start_h,5,start of the first time period (h)
-period_end_h,10;15;20;24,end of each time period (h; decimals allowed: 15.5 = 15:30)
+time_periods,EA;AM;MD;PM;EV,the time periods in order (a departure belongs to the first period whose end is at or after it); SANDAG ABM3's periods since 2026-11-26 (until then AM;MD;PM;EV)
+period_start_h,5,start of the first time period and of the model's day (h); trips departing before it are not modelled (since 2026-11-26)
+period_end_h,6;9;15.5;19;24,end of each time period (h; decimals allowed: 15.5 = 15:30); the last is the end of the model's day: trips departing after it are not modelled (since 2026-11-26); ABM3's boundaries 6;9;15.5;19 (its EA starts at 3 and its EV ends at 27; until 2026-11-26: 10;15;20;24)
 peak_periods,AM;PM,peak periods: peak fare factor (pk_fare_factor) and peak parking rate; the others are off-peak

@@ -134,12 +134,13 @@ time period (I-35).
 
 - A user supplies basic inputs: road nodes and edges (with the link kind of I-33), FRT stops, links and routes,
   demand, zone data.
-- One command builds everything the run reads, with `pre_process/build_super_network.py` (the I-33 version from
+- One command builds everything the run reads, with `pre_process/build_super_network.py` (removed on the branch
+  2026-11-26) (the I-33 version from
   `TRA_input_data_prep`): every headway x virtual-stop-share variant, `auto_edges`, the FleetPy network folder, and
   (decision 8) one set per time period.
 - The demand format (one row per traveler with that traveler's `bt_*` coefficients, `income`, `transit_pass`,
-  `parking_dur_min`, ...) is documented. `pre_process/generate_demand_files.py` stays as the SANDAG/ActivitySim
-  example of how to produce it.
+  `parking_dur_min`, ...) is documented. `pre_process/generate_demand_files.py` (removed on the branch
+  2026-11-26) stays as the SANDAG/ActivitySim example of how to produce it.
 
 ### Phase 6: prove it with a second area
 
@@ -189,7 +190,8 @@ it, how to run it, and where the outputs are. Lemon Grove is the worked example.
 
 1. **(b) Users supply finished super-networks.** Phase 0 specifies the super-network files (and the other inputs the
    run reads) as they are now. Phase 5 (building the networks from basic inputs) is dropped;
-   `pre_process/build_super_network.py` stays as an optional tool that shows how the Lemon Grove networks were made.
+   `pre_process/build_super_network.py` stays as an optional tool that shows how the Lemon Grove networks were made
+   (removed on the branch 2026-11-26); the inputs are prepared in `TRA_input_data_prep`.
 2. **(b) One shared model parameter file plus a small area file.** The area file holds what belongs to the study area;
    which parameters go where is settled in Phase 0.
 3. **(a) Node counts are derived from the network files** (`num_walk_nodes`, `microtransit_node_offset` leave the

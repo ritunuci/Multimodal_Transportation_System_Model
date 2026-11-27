@@ -129,7 +129,16 @@ def load_study_area(cfg, study_area):
     #################################################
     # 1108: prepare for the request files - demand side
     ###################################################
-    agent_list_ = n_a.read_request(demand_file)
+    agent_list_all = n_a.read_request(demand_file)
+    # only the trips departing within the model's day are modelled (since 2026-11-26, config.in_model_day); the
+    # demand file is not changed
+    agent_list_ = [agent for agent in agent_list_all if config.in_model_day(agent.rq_time)]
+    if len(agent_list_) < len(agent_list_all):
+        before = sum(1 for agent in agent_list_all if agent.rq_time < config.MODEL_DAY_START)
+        after = len(agent_list_all) - len(agent_list_) - before
+        print(f"study_area: {study_area} trips outside the model's day ({config.MODEL_DAY_START:g}-"
+              f"{config.MODEL_DAY_END:g} s) not modelled: {before} before, {after} after; {len(agent_list_)} of "
+              f"{len(agent_list_all)} kept")
     tt_num_agents=len(agent_list_)
     has_auto_available = "auto_available" in n_a.demand_columns(demand_file)
     no_car = sum(1 for agent in agent_list_ if not agent.auto_available)
@@ -143,7 +152,8 @@ def load_study_area(cfg, study_area):
     print("study_area:", study_area,"total number of agents:",tt_num_agents,"\n")
     synthetic_id_start = None
     if config.DEMAND_UPSCALING:
-        synthetic_id_start = synthetic_demand.synthetic_id_start([agent.rq_id for agent in agent_list_],
+        # (the ids of all trips of the file, also those outside the model's day, so no synthetic id repeats one)
+        synthetic_id_start = synthetic_demand.synthetic_id_start([agent.rq_id for agent in agent_list_all],
                                                                  config.DEMAND_SAMPLE_SHARE)
         print(f"demand_upscaling: {demand_file} holds a share {config.DEMAND_SAMPLE_SHARE} of the travelers; the "
               f"results are scaled by {config.DEMAND_SCALE}; synthetic FleetPy request ids from {synthetic_id_start}\n")

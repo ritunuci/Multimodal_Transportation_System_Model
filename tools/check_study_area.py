@@ -15,9 +15,11 @@ base_frt_headway, a route table (file 10) that does not fit the FRT links, an FR
 edges that differ between FleetPy, the walk links and the microtransit links, or are missing from the car network,
 trips that cannot reach their destination by walk + FRT or by car, FleetPy inputs that do not fit (vehicle start nodes
 outside the network, probabilities not summing to 1, a constant config naming another network), an unknown
-aggregation. Warnings: duplicate (from_node, to_node) pairs (decision E), departures after FleetPy's end_time
-(decision 3). Not checked: whether a network is one strongly connected part (decision 4: TRA_input_data_prep builds
-its networks that way; the trip-level rule is what the model needs).
+aggregation. Warnings: duplicate (from_node, to_node) pairs (decision E); until 2026-11-26 also departures after
+FleetPy's end_time (decision 3; since then the run sets FleetPy's start_time and end_time itself). Notes (since 2026-11-26): trips departing outside the model's day (period_start_h to the last
+period_end_h), which the run does not model; the trip rules below skip them. Not checked: whether a network is one
+strongly connected part (decision 4: TRA_input_data_prep builds its networks that way; the trip-level rule is what
+the model needs).
 """
 import csv
 import math
@@ -40,13 +42,16 @@ MAX_EXAMPLES = 3
 
 class Report:
     def __init__(self):
-        self.errors, self.warnings = [], []
+        self.errors, self.warnings, self.notes = [], [], []
 
     def error(self, text):
         self.errors.append(text)
 
     def warning(self, text):
         self.warnings.append(text)
+
+    def note(self, text):
+        self.notes.append(text)
 
 
 def _examples(items):
@@ -340,6 +345,15 @@ def check_study_area(area, params, n, m):
             report.error(f"file 2: negative travel coefficients (bt_*) on lines {_examples(negative)}")
         if any(t[col["rq_time"]] < 0 for t in trips):
             report.error("file 2: negative rq_time")
+        # trips outside the model's day are not modelled (since 2026-11-26, config.in_model_day): a note; the
+        # reachability rule below skips them
+        model_day_start, model_day_end = params["period_start_h"] * 3600, params["period_end_h"][-1] * 3600
+        in_day = [model_day_start <= t[col["rq_time"]] <= model_day_end for t in trips]
+        if not all(in_day):
+            before = sum(1 for t in trips if t[col["rq_time"]] < model_day_start)
+            report.note(f"file 2: {in_day.count(False)} trips depart outside the model's day ({model_day_start:g}-"
+                        f"{model_day_end:g} s; {before} before, {in_day.count(False) - before} after) and are not "
+                        f"modelled")
         # optional auto_available (2026-11-24): True / False or 1 / 0; missing column = every traveler has a car
         has_car = [True] * len(trips)
         if rows and "auto_available" in rows[0]:
@@ -354,8 +368,8 @@ def check_study_area(area, params, n, m):
         if not outside:
             wanted_frt = defaultdict(set)
             wanted_car = defaultdict(lambda: defaultdict(set))  # {car file: {origin: destinations}}
-            for t, car_available in zip(trips, has_car):
-                if t[col["start"]] != t[col["end"]]:
+            for t, car_available, modelled in zip(trips, has_car, in_day):
+                if modelled and t[col["start"]] != t[col["end"]]:
                     wanted_frt[t[col["start"]]].add(t[col["end"]])
                     if car_available and car:
                         f = car_by_period[_period_of(t[col["rq_time"]], params)]
@@ -440,7 +454,6 @@ def check_study_area(area, params, n, m):
                 report.warning(f"network_dynamics.csv: FleetPy's travel times change at {_examples(off)} s, which is not "
                                f"the start of a time period of the area ({sorted(starts)} s)")
 
-    end_time = None
     for repositioning in params["repositioning_list"]:
         name = "%s_constant_config_ir_repo.csv" % area if repositioning else "%s_constant_config_ir.csv" % area
         p = os.path.join(paths.fleetpy_scenarios_dir, name)
@@ -453,15 +466,12 @@ def check_study_area(area, params, n, m):
                 report.error(f"FleetPy {name}: {key} must be {expected}, not {values.get(key)!r}")
         if values.get("op_init_veh_distribution") not in (None, "", "imbalanced.csv"):
             report.error(f"FleetPy {name}: op_init_veh_distribution must be imbalanced.csv")
+        # (until 2026-11-26 a warning for trips departing at or after the config's end_time; since then the run
+        # sets FleetPy's start_time and end_time for each FleetPy run, fleetpy_runner.simulation_window)
         try:
-            end_time = float(values.get("end_time"))
+            float(values.get("time_step"))
         except (TypeError, ValueError):
-            report.error(f"FleetPy {name}: end_time is not a number")
-    if trips is not None and end_time is not None:
-        late = sum(1 for t in trips if t[0] >= end_time)
-        if late:
-            report.warning(f"file 2: {late} trips depart at or after FleetPy's end_time ({end_time:g} s); FleetPy does "
-                           f"not simulate them (decision 3; time periods: I-35)")
+            report.error(f"FleetPy {name}: time_step is not a number (the run reads it for FleetPy's end_time)")
 
     # ---- node file (file 7), read only with census_track ----
     if aggregation == "census_track":
@@ -480,7 +490,9 @@ def print_report(area, report):
         print(f"ERROR: {text}")
     for text in report.warnings:
         print(f"WARNING: {text}")
-    print(f"study area {area}: {len(report.errors)} errors, {len(report.warnings)} warnings")
+    for text in report.notes:
+        print(f"NOTE: {text}")
+    print(f"study area {area}: {len(report.errors)} errors, {len(report.warnings)} warnings, {len(report.notes)} notes")
 
 
 if __name__ == "__main__":

@@ -1890,6 +1890,42 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - `README.md`, "Add your own study area": the last paragraph no longer lists networks per time period as not
   supported (supported since 2026-11-24; `docs/study_area_inputs.md` already said so). Docs only; no run.
 
+## ABM3 periods; trips outside the model's day; `pre_process/` removed; items closed (branch, 2026-11-26)
+
+- User's decisions (the held decisions, 2026-11-26): demand: all trips for now, `demand_upscaling` later, a full run
+  first to time it (held for the user's go-ahead); modes: all kept for now, new I-48; periods: ABM3's boundaries,
+  the model starting at 5:00 and ending at 24:00; microtransit `AM;MD;PM`; virtual stops 75 only; area values
+  unchanged (one FRT headway for all routes, base headway 20, base fare 2.5, `frt_operating_hours` 19 = 5:00-24:00);
+  `new_LG_data/` kept, ignored locally; `pre_process/` removed; close what can be closed.
+- `area_parameters.csv`: `time_periods` `EA;AM;MD;PM;EV`, `period_start_h` 5, `period_end_h` `6;9;15.5;19;24`,
+  `peak_periods` `AM;PM` (unchanged); descriptions updated. Manifest rewritten.
+- Trips outside the model's day (`period_start_h` to the last `period_end_h`, both included) are not modelled:
+  `config.MODEL_DAY_START`, `MODEL_DAY_END`, `in_model_day`; `scenarios.py` leaves them out when it reads the demand
+  file (the file is not changed) and prints how many; the synthetic request ids still start after every id of the
+  file. `tools/check_study_area.py`: a note (new level) with the count; the reachability rule and the `end_time`
+  warning skip them. On the new data: 318 of 42,698 trips (118 before 5:00, 200 after 24:00); the checker: 0
+  errors, 0 warnings, 1 note. (`main`'s old demand lies within 5:00-24:00, so the rule would not change it.)
+- `pre_process/` removed (4 files); `README.md` says the data is prepared in `TRA_input_data_prep` ("Data" paragraph,
+  the TRA section) and lost the folder's layout row; the other mentions got "(removed on the branch 2026-11-26)"
+  (code comments in `network_algorithms.py`, `synthetic_demand.py`, `update_initial_network.py`;
+  `study_area_plan.md`, `entry_script_refactor_plan.md`); `study_area_inputs.md` names `TRA_input_data_prep` for the
+  demand and describes the model's day (section 1, rule 4).
+- Closed: I-14 (`pre_process/` removed), I-31 (no stop node of TRA's FRT network has two routes), I-33 (TRA's
+  networks in use), I-39 (`crs.info` `EPSG:2230`). New: I-48 (modes). I-35: dated note.
+- FleetPy's simulation window, set by the run for each FleetPy run (user's decisions: start at the first
+  microtransit operating period, 6:00; end (a): one time step after the time step of the latest request in that
+  run's demand file, at least the end of the last operating period, 19:00; the constant configs keep FleetPy's
+  format and values, the scenario file overrides them). `fleetpy_runner.simulation_window`,
+  `constant_config_value`; `create_config_files` / `scenario_config_file` take the window (columns `start_time`,
+  `end_time`); `microtransit.run_fleetpy_and_update_networks` writes the scenario file again before each FleetPy
+  run, prints the window and warns of requests before the start. FleetPy reads only `start_time <= rq_time <
+  end_time` and finishes the assigned rides after `end_time` (`record_remaining_assignments`, always on). The
+  checker's `end_time` warning removed (it checks `time_step` is a number instead). Tested without a run: main's
+  reference demand (latest 70,228 s) gives (21600, 70260); an empty file (21600, 68400); a request at exactly
+  68400 s gives 68460; FleetPy's merged config takes the scenario values. Docs: README step 3,
+  `study_area_inputs.md` (section 8, rule 4), I-35 note.
+- No run (the full run waits for the user's go-ahead).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

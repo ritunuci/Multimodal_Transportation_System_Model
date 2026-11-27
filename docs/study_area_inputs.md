@@ -127,15 +127,20 @@ the model file and this file and stops if a key is in the wrong file, missing or
 | `car_gas_cost_per_meter` ($/m) | 0.00025 | same |
 | `parking_rate_peak`, `parking_rate_offpeak` ($ per interval) | 1, 0.5 | same |
 | `parking_charge_interval_min` | 30 | same |
-| `time_periods` | `AM;MD;PM;EV` | since 2026-11-24 (before: the four names written in the code) |
+| `time_periods` | `EA;AM;MD;PM;EV` (until 2026-11-26 `AM;MD;PM;EV`) | since 2026-11-24 (before: the four names written in the code) |
 | `period_start_h` | 5 | `day_start_h` |
-| `period_end_h` | `10;15;20;24` | `am_end_h`, `md_end_h`, `pm_end_h`, `day_end_h` |
+| `period_end_h` | `6;9;15.5;19;24` (until 2026-11-26 `10;15;20;24`) | `am_end_h`, `md_end_h`, `pm_end_h`, `day_end_h` |
 | `peak_periods` | `AM;PM` | since 2026-11-24 (before: written in the code) |
 
 The time periods (since 2026-11-24, `docs/period_networks_and_car_availability_plan.md`, step 3): names in order,
 the start of the first and the end of each in hours (decimals allowed: `15.5` = 15:30), and the peak periods (peak
 fare factor `pk_fare_factor`, peak parking rate; the others are off-peak). A departure at time `t` belongs to the
-first period whose end is at or after `t`; before the start: the first period, after the last end: the last. The
+first period whose end is at or after `t`. The model's day runs from `period_start_h` to the last `period_end_h`,
+both included: since 2026-11-26 a trip departing outside it is not modelled (the run leaves it out when it reads
+the demand file, which is not changed; the run and the checker report how many); until then a trip before the
+start belonged to the first period and one after the last end to the last. Lemon Grove since 2026-11-26: ABM3's
+boundaries within 5:00-24:00, `EA;AM;MD;PM;EV`, start `5`, ends `6;9;15.5;19;24` (EA 5:00-6:00, EV 19:00-24:00).
+The
 names must be distinct, the times must increase, and the model file's `operating_periods_scenarios` may name only
 these periods; the run stops otherwise. A period without served microtransit requests gets the FleetPy waiting time
 of the first peak period (Lemon Grove AM, as before). Example with SANDAG ABM3's periods: `EA;AM;MD;PM;EV`, start
@@ -179,8 +184,9 @@ share `demand_sample_share` of all of them. The checks below apply to it.
 
 - The coefficients are positive: the generalized cost is a disutility (a choice probability is `exp(-cost)` over the
   sum), and a negative link cost stops the run.
-- Each traveler has their own coefficients. `pre_process/generate_demand_files.py` is the SANDAG/ActivitySim
-  example of how Lemon Grove's file was made.
+- Each traveler has their own coefficients. `TRA_input_data_prep` builds the demand file from SANDAG ABM3
+  (ActivitySim). Until 2026-11-26 `pre_process/generate_demand_files.py` (removed on the branch 2026-11-26) was the
+  example of how the old Lemon Grove file was made (it is on `main`).
 
 ## 3. Super-network with microtransit (`networks/super_network_micro_virstop_<v>.csv`)
 
@@ -286,6 +292,17 @@ into its outputs keep the area prefix (decision 4).
 | `studies/example_study/scenarios/<area>_constant_config_ir_repo.csv` | FleetPy constant config with repositioning; `network_name` = `<area>_example_network`, `demand_name` = `<area>_example_demand` |
 | `studies/example_study/scenarios/<area>_constant_config_ir.csv` | the same without repositioning (`repositioning_list` False) |
 
+FleetPy's simulation window (since 2026-11-26; `fleetpy_runner.simulation_window`): the run writes `start_time` and
+`end_time` into FleetPy's scenario file before each FleetPy run, and they override the constant configs' values,
+which stay as FleetPy has them. `start_time` is the start of the first microtransit operating period
+(`operating_periods_scenarios`; Lemon Grove AM, 6:00); `end_time` is one time step (the constant config's
+`time_step`) after the time step of the latest request in that FleetPy run's demand file, and not before the end of
+the last operating period (Lemon Grove PM, 19:00). FleetPy reads only the requests with `start_time <= rq_time <
+end_time`; after `end_time` it takes no requests and finishes the assigned rides
+(`FleetSimulationBase.record_remaining_assignments`). Until 2026-11-26 the constant configs' 0 and 86400 were used.
+With `network_dynamics.csv`, `start_time` should be one of its times; otherwise FleetPy uses `base/` until the
+next switch (Lemon Grove: 21600 is one).
+
 FleetPy's scenario file (`<area>_example_ir_heuristics_repositioning_<fleet>_veh.csv`, or `..._ir_only_...`) is not an
 input: since 2026-11-24 the run writes it for its fleet size into FleetPy's own scenarios folder
 (`fleetpy_runner.scenario_config_file`; the operator settings in it are fixed in the code, I-41). Until then one
@@ -307,7 +324,9 @@ except where it says "warning". Lemon Grove: no error, one warning (rule 9), in 
    stop nodes; type-4 links only microtransit nodes; type-5 links join `i` and `M + i`.
 3. Type 2: boarding (walk -> stop) has `travel_time` > 0, alighting (stop -> walk) has 0.
 4. Every trip's `start` and `end` is a walk node; `request_id` is unique; no travel coefficient (`bt_*`) is negative.
-   A trip departing at or after FleetPy's `end_time` (its constant config) is a warning (decision 3; I-35).
+   Until 2026-11-26 a trip departing at or after FleetPy's `end_time` (its constant config) was a warning (decision
+   3; I-35); since then the run sets FleetPy's `start_time` and `end_time` itself (section 8). Trips departing
+   outside the model's day (section 1) are a note, not an error (since 2026-11-26); rule 10 skips them.
 5. FleetPy's edges, the walk links (type 0) and the microtransit links (type 4, minus M) are the same road edges
    (node pairs and distances); the car network has all of them and may have more (I-33: freeways for cars only).
 6. Files 3, 4, 6 and 9 have the same FRT links; file 9 is file 4 at `base_frt_headway`. File 10 has the routes of

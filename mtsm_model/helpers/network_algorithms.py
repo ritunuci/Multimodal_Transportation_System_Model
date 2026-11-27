@@ -79,8 +79,9 @@ class Agent(object):
 
 
 # Optional columns of the demand file (2026-11-19). If a column is missing, every traveler gets the default and one
-# notice is printed; if it is there, every value must be a number. (The demand generator in pre_process/ writes no
-# parking_dur_min column.)
+# notice is printed; if it is there, every value must be a number. (The demand generator in
+# pre_process/ (removed on the branch 2026-11-26) writes no parking_dur_min column; neither does
+# TRA_input_data_prep's.)
 OPTIONAL_DEMAND_COLUMNS = {
     # column: (default, what the default means)
     "parking_dur_min": (0.0, "parking duration 0 for every traveler (no parking cost)"),

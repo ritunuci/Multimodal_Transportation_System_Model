@@ -12,8 +12,14 @@ included in `fleetpy/`.
 **Study areas.** The model runs any study area whose inputs follow
 [`docs/study_area_inputs.md`](docs/study_area_inputs.md) (see [Add your own study area](#add-your-own-study-area)).
 The repository ships one, Lemon Grove (San Diego County), as the worked example. An earlier downtown San Diego
-configuration was removed on 2026-11-08; the last version that has it is tagged `last-with-downtown-sd`. The one-time preprocessing in
-`pre_process/` still mentions it ([`docs/open_issues.md`](docs/open_issues.md), I-14).
+configuration was removed on 2026-11-08; the last version that has it is tagged `last-with-downtown-sd`.
+
+**Data.** On this branch (`TRA_resubmission`) Lemon Grove's inputs in `mtsm_data/lemon_grove/` were prepared with
+[`TRA_input_data_prep`](https://github.com/ritunuci/TRA_input_data_prep) from SANDAG ABM3 (moved in on 2026-11-26;
+record: [`docs/new_lemon_grove_data_move.md`](docs/new_lemon_grove_data_move.md)); see
+[Building the inputs with TRA_input_data_prep](#building-the-inputs-with-tra_input_data_prep). The one-time
+preprocessing that built the old Lemon Grove inputs, `pre_process/`, was removed on the branch on 2026-11-26 (it is
+on `main` and in the git history; [`docs/open_issues.md`](docs/open_issues.md), I-14).
 
 ![MTSM framework](docs/mtsm_framework.png)
 
@@ -144,7 +150,9 @@ been tested with Lemon Grove only; no second study area has been run yet.
      `<area>_vehtype`);
    - `fleetpy/studies/example_study/scenarios/<area>_constant_config_ir_repo.csv` and
      `<area>_constant_config_ir.csv`: set `network_name` to `<area>_example_network` and `demand_name` to
-     `<area>_example_demand`. FleetPy simulates from `start_time` to `end_time` (s).
+     `<area>_example_demand`. Their `start_time` and `end_time` are not used since 2026-11-26: for each FleetPy run
+     the run sets FleetPy's start to the start of the first microtransit operating period and its end to one time
+     step after the latest request, at least the end of the last operating period (it prints them).
 4. **Check the inputs:** `python tools/check_study_area.py <area>` checks the files against the specification and
    must report no error. Every run does the same at startup and stops on an error.
 5. **Manifest (optional):** `python tools/check_inputs.py --write <area>` records the checksums of the area's inputs
@@ -192,7 +200,9 @@ outputs and the files of this model:
   2026-11-24 (I-33; [Node numbering](docs/study_area_inputs.md#node-numbering)).
 - The model derives the node counts from the files; `super_network_info.csv` is not needed. Lemon Grove's demand
   from `TRA_input_data_prep` has no `parking_dur_min`; without it the car has no parking cost.
-- Not tested yet: a run on `TRA_input_data_prep`'s outputs (Lemon Grove's inputs were built before it).
+- Lemon Grove's inputs on this branch are `TRA_input_data_prep`'s outputs (since 2026-11-26,
+  [`docs/new_lemon_grove_data_move.md`](docs/new_lemon_grove_data_move.md)); not run yet. Until 2026-11-26: not
+  tested, because Lemon Grove's inputs were built before it.
 
 ## Repository layout
 
@@ -202,7 +212,6 @@ outputs and the files of this model:
 | `mtsm_model/` | The model (see [Code map](#code-map)) |
 | `Bayesian_optimization_script.py` | Bayesian optimization of the design parameters: `--config <file>` (optional) is the candidates' base file and sets the study area; results in `mtsm_data/Bayesian_optimization_output/BO_results_<area>/` |
 | `mtsm_model/helpers/` | The helper modules the model calls (see [Code map](#code-map)) |
-| `pre_process/` | Preprocessing of networks and demand; `build_super_network.py` builds the super-networks (`micro`, `non_micro`, `micro_only`) and the car network from a road and an FRT network (not used by a run; identical to `TRA_input_data_prep`'s copy, with `--local-edges` for car-only roads since 2026-11-24) |
 | `mtsm_paths.py` | All folder locations (imported as `mtsm`); a study area's folders from `area_paths(area)` |
 | `mtsm_data/` | The model's data: frozen, checksummed inputs (`MANIFEST.csv`, one per study area) and the outputs of a run |
 | `fleetpy/` | FleetPy, upstream version `7019960` with a few local changes listed in [`fleetpy/LOCAL_CHANGES.md`](fleetpy/LOCAL_CHANGES.md) |

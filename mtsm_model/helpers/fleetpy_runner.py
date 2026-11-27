@@ -76,11 +76,44 @@ def stage_inputs(constant_config_file, scenario_file, study_area):
     return os.path.join(mtsm.FLEETPY_DIR, rel_cc), scenario_file
 
 
-def scenario_config_file(study_area, repositioning, fleet_size):
+def constant_config_value(constant_config_file, key):
+    """the value of `key` in a FleetPy constant config (Input_Parameter_Name, Parameter_Value), as text, or None"""
+    with open(constant_config_file, newline="") as f:
+        for row in csv.reader(f):
+            if row and row[0] == key:
+                return row[1] if len(row) > 1 else None
+    return None
+
+
+def simulation_window(demand_file, operating_period_bounds, time_step):
+    """FleetPy's (start_time, end_time) for one FleetPy run, and the number of requests before start_time (since
+    2026-11-26, branch TRA_resubmission; user's decisions). operating_period_bounds: [(start, end) in s] of the
+    microtransit operating periods (config.PERIOD_BOUNDS).
+    - start_time: the start of the first operating period (Lemon Grove AM: 6:00 = 21600 s).
+    - end_time: one time step after the time step of the latest request in FleetPy's demand file, and not before the
+      end of the last operating period (Lemon Grove PM: 19:00 = 68400 s). FleetPy reads only the requests with
+      start_time <= rq_time < end_time and rounds rq_time down to its time step (src/demand/demand.py), so every
+      request is simulated, also one made after the last operating period (a microtransit leg's request time is
+      after the traveler's departure: walk, wait, an FRT leg before it). After end_time FleetPy takes no requests
+      and finishes the assigned rides (FleetSimulationBase.record_remaining_assignments).
+    Until 2026-11-26 the constant config's start_time 0 and end_time 86400 were used."""
+    start_time = int(min(start for start, end in operating_period_bounds))
+    end_time = int(max(end for start, end in operating_period_bounds))
+    with open(demand_file, newline="") as f:
+        times = [float(row["rq_time"]) for row in csv.DictReader(f)]
+    if times:
+        end_time = max(end_time, int(max(times) // time_step + 1) * time_step)
+    before_start = sum(1 for t in times if t < start_time)
+    return start_time, end_time, before_start
+
+
+def scenario_config_file(study_area, repositioning, fleet_size, window=None):
     """Write FleetPy's scenario file for the run (create_config_files) into FleetPy's scenarios folder, where FleetPy
     reads it, and return its path: <area>_example_ir_heuristics_repositioning_<fleet>_veh.csv (with repositioning) or
     <area>_example_ir_only_<fleet>_veh.csv. Written for every scenario, since 2026-11-24 (docs/study_area_plan.md,
-    Phase 3 decision 2); until then one tracked file per fleet size was kept in the area's folder."""
+    Phase 3 decision 2); until then one tracked file per fleet size was kept in the area's folder. window: FleetPy's
+    (start_time, end_time) for the run (simulation_window; since 2026-11-26), written as two more columns, which
+    override the constant config's values; None: no such columns."""
     scenarios_dir = os.path.join(mtsm.FLEETPY_DIR, "studies", "example_study", "scenarios")
     os.makedirs(scenarios_dir, exist_ok=True)
     if repositioning == True:
@@ -88,7 +121,7 @@ def scenario_config_file(study_area, repositioning, fleet_size):
     else:
         name = "%s_example_ir_only_%s_veh.csv" % (str(study_area), str(fleet_size))
     sc = os.path.join(scenarios_dir, name)
-    create_config_files(sc, study_area, repositioning, fleet_size)
+    create_config_files(sc, study_area, repositioning, fleet_size, window)
     return sc
 
 
@@ -219,10 +252,14 @@ def warn_non_optimal_repositioning(constant_csv, scenario_csv):
 
 # FleetPy's operator settings are fixed here (op_module, op_max_VR_con, repositioning method, horizons, timestep, the
 # scenario names): docs/open_issues.md I-41
-def create_config_files(sc,study_area,repositioning,fleet_size):
+def create_config_files(sc,study_area,repositioning,fleet_size,window=None):
     # FleetPy's travel times per period (since 2026-11-24): the column nw_dynamic_f only when the area has
     # network_dynamics.csv, so that the scenario file (and FleetPy's 00_config.json) stays as before without it
     dynamics = {"nw_dynamic_f": "network_dynamics.csv"} if has_network_dynamics(study_area) else {}
+    # FleetPy's simulation window for this run (since 2026-11-26, simulation_window): the scenario file's start_time
+    # and end_time override the constant config's (FleetPy merges constant + scenario, the scenario winning)
+    if window is not None:
+        dynamics = {**dynamics, "start_time": int(window[0]), "end_time": int(window[1])}
 
     with open(sc, 'w+', newline='') as csvfile_config:
         if repositioning == True:

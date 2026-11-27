@@ -16,8 +16,9 @@ id), so they change only when that request changes. Their only purpose is to mak
 travelers: they are not travelers of MTSM (no trips, fares or logsums), but FleetPy's waiting times, rejection rate
 and fleet results include them, as they should.
 
-History: written by the user as synthesize_requests_with_trend_time (pre_process/generate_demand_files.py; moved here
-on 2026-11-23, I-14), called by a commented-out block in mtsm_model/microtransit.py: 3 synthetic requests per request
+History: written by the user as synthesize_requests_with_trend_time (pre_process/generate_demand_files.py,
+removed on the branch 2026-11-26; moved here on 2026-11-23, I-14), called by a commented-out block in
+mtsm_model/microtransit.py: 3 synthetic requests per request
 (for a 25 % sample), each with a time drawn from the 5-minute time-of-day profile of the iteration's requests
 (smoothing 0.5 per bin) and one of their stop pairs (reversed with probability 0.5); ids from 60005; appended after
 the sample's rows. 2026-11-25 (I-32): the switch demand_upscaling, ids from synthetic_id_start, times in the operating

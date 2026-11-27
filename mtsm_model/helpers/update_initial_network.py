@@ -1,5 +1,6 @@
 # Used by every run: sets the FRT headway in the study area's super-networks. Moved unchanged from
-# pre_process/process_network.py (2026-11-08), which holds the one-time network preprocessing.
+# pre_process/process_network.py (2026-11-08), which holds the one-time network preprocessing (removed on the
+# branch 2026-11-26).
 # Until 2026-11-24 it also copied the files into initial_network_0719/ for the accessibility calculation (removed).
 # Since 2026-11-24 (docs/study_area_plan.md, Phase 1 step 2) it reads the templates from networks/ and writes into
 # initial_network/, which holds only what the run writes; one network with microtransit per virtual-stop share
