@@ -57,7 +57,7 @@ Paths are relative to the codebase root.
 | I-33 | Walking, microtransit, virtual stops and FRT stops are not kept off the freeways | Medium | Closed (2026-11-26) | 2026-11-20 |
 | I-34 | Downtown San Diego and the new FRT network: the FRT code works only for Lemon Grove | High | Closed (2026-11-25) | 2026-11-23 |
 | I-35 | One super-network for the whole day; MTSM is to use one per time period | High | In progress (period networks in use, first runs on them done on the branch `TRA_resubmission`; open: the 1.4 against FleetPy's car-speed vehicles, decision needed; closes with the branch's reference) | 2026-11-23 |
-| I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Open (to close on the branch `TRA_resubmission`: TRA's start file) | 2026-11-23 |
+| I-36 | The initial vehicle positions (`imbalanced.csv`) need a review | Medium | Closed (2026-11-27) | 2026-11-23 |
 | I-37 | The Lemon Grove accessibility used downtown San Diego's node list | High | Closed (2026-11-24) | 2026-11-23 |
 | I-38 | Outside the microtransit operating periods, scenario travelers ride the FRT at the base headway | High | Closed (2026-11-24) | 2026-11-24 |
 | I-39 | Lemon Grove's FleetPy `crs.info` names the wrong coordinate system | Low | Closed (2026-11-26) | 2026-11-24 |
@@ -307,55 +307,6 @@ Paths are relative to the codebase root.
     depends on why microtransit is slower: real driving (speed, curb stops, vehicle) points to (b), an allowance
     on the travelers' side only to (a). Recommended: (b) if the slowness is real driving.
 
-### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
-- **Status:** Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,
-  status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
-- **What:** FleetPy places the microtransit vehicles at the start of each simulation from
-  `mtsm_data/lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv`,
-  named by `op_init_veh_distribution,imbalanced.csv` in `lemon_grove_constant_config_ir_repo.csv` (the reference's
-  `00_config.json` shows it). The file lists five road nodes, each with probability 0.2:
-
-  | node_index | probability |
-  |---|---|
-  | 256 | 0.2 |
-  | 400 | 0.2 |
-  | 600 | 0.2 |
-  | 650 | 0.2 |
-  | 700 | 0.2 |
-
-  `FleetSimulationBase` (about line 480) draws each vehicle's start node from this list with `np.random` (seed 0 in
-  the reference). Without the parameter, FleetPy would spread the vehicles uniformly over the boarding nodes, or over
-  all nodes if there are none.
-- **What is known** (checked 2026-11-23):
-  - The name comes from FleetPy's example (`fleetpy/data/fleetctrl/initial_vehicle_distribution/example_network/imbalanced.csv`:
-    one node, probability 1.0, i.e. all vehicles at one place). The Lemon Grove file is not imbalanced in that sense.
-  - Who chose the five nodes, and why, is not recorded. They are ordinary street nodes (car speeds 10-35 mph; none on
-    a 50+ mph edge, I-33); 13 trips of the demand file start at one of them.
-  - The node numbers belong to the frozen Lemon Grove road network.
-- **Why it matters:**
-  - With the reference's fleet of 2, each vehicle starts at one of these five nodes in every FleetPy run; the start
-    positions affect the first waiting times and so the results read back by MTSM.
-  - The new road networks (I-33, I-34) number the nodes anew, so the file does not carry over: a node number may not
-    exist, or be another place, or be a freeway node. Downtown San Diego has no such file; FleetPy reads it from the
-    network's own folder and stops if it is missing.
-- **To do:**
-  - decide the rule for the start positions (e.g. a few chosen nodes, all virtual stops, demand-weighted, or
-    FleetPy's uniform default), and write the file per area and network (street nodes only);
-  - name it after what it is, and record where the nodes come from;
-  - a change belongs to a new reference.
-- **2026-11-26:**
-  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/fleetctrl/initial_vehicle_distribution/`
-    `lemon_grove_example_network/imbalanced.csv` (the folder `fleetpy_inputs/` was renamed `fleetpy/` on
-    2026-11-24).
-  - TRA's new Lemon Grove data has its own file (read-only check;
-    `new_LG_data/lemon_grove/fleetpy_initial_vehicle_distribution/imbalanced.csv`): the same format, five nodes
-    (694, 225, 863, 498, 189), 0.2 each, sum 1; all five are street nodes (`Lemon_grove_node_kind.csv`), none a
-    freeway node. How they were chosen is not recorded in this repository (`TRA_input_data_prep` was not at hand).
-  - User's decision: `TRA_input_data_prep` will be checked for how its `imbalanced.csv` is made, and that is
-    documented. On the branch, when the data moves in: keep the five-node rule or choose another (e.g. all virtual
-    stops, FleetPy's default without the parameter, or demand-weighted); a change of the rule goes with the
-    branch's new reference.
-
 ### I-41: FleetPy's operator settings are fixed in the code (`create_config_files`)
 - **Status:** Open. **Severity:** Low. **Found:** 2026-11-24 (Phase 3 of `docs/study_area_plan.md`). Kept in the code
   for now on the user's decision (Phase 3 decision 3), recorded here on the user's request.
@@ -532,6 +483,89 @@ Paths are relative to the codebase root.
   demand file. Goes with the branch's new reference.
 
 ## Closed
+
+### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
+- **Status:** Closed (2026-11-27); until then: Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,
+  status written so on 2026-11-26). **Severity:** Medium. **Found:** 2026-11-23 (user: we have to look at this input file).
+- **What:** FleetPy places the microtransit vehicles at the start of each simulation from
+  `mtsm_data/lemon_grove/fleetpy_inputs/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/imbalanced.csv`,
+  named by `op_init_veh_distribution,imbalanced.csv` in `lemon_grove_constant_config_ir_repo.csv` (the reference's
+  `00_config.json` shows it). The file lists five road nodes, each with probability 0.2:
+
+  | node_index | probability |
+  |---|---|
+  | 256 | 0.2 |
+  | 400 | 0.2 |
+  | 600 | 0.2 |
+  | 650 | 0.2 |
+  | 700 | 0.2 |
+
+  `FleetSimulationBase` (about line 480) draws each vehicle's start node from this list with `np.random` (seed 0 in
+  the reference). Without the parameter, FleetPy would spread the vehicles uniformly over the boarding nodes, or over
+  all nodes if there are none.
+- **What is known** (checked 2026-11-23):
+  - The name comes from FleetPy's example (`fleetpy/data/fleetctrl/initial_vehicle_distribution/example_network/imbalanced.csv`:
+    one node, probability 1.0, i.e. all vehicles at one place). The Lemon Grove file is not imbalanced in that sense.
+  - Who chose the five nodes, and why, is not recorded. They are ordinary street nodes (car speeds 10-35 mph; none on
+    a 50+ mph edge, I-33); 13 trips of the demand file start at one of them.
+  - The node numbers belong to the frozen Lemon Grove road network.
+- **Why it matters:**
+  - With the reference's fleet of 2, each vehicle starts at one of these five nodes in every FleetPy run; the start
+    positions affect the first waiting times and so the results read back by MTSM.
+  - The new road networks (I-33, I-34) number the nodes anew, so the file does not carry over: a node number may not
+    exist, or be another place, or be a freeway node. Downtown San Diego has no such file; FleetPy reads it from the
+    network's own folder and stops if it is missing.
+- **To do:**
+  - decide the rule for the start positions (e.g. a few chosen nodes, all virtual stops, demand-weighted, or
+    FleetPy's uniform default), and write the file per area and network (street nodes only);
+  - name it after what it is, and record where the nodes come from;
+  - a change belongs to a new reference.
+- **2026-11-26:**
+  - The file is now at `mtsm_data/lemon_grove/fleetpy/data/fleetctrl/initial_vehicle_distribution/`
+    `lemon_grove_example_network/imbalanced.csv` (the folder `fleetpy_inputs/` was renamed `fleetpy/` on
+    2026-11-24).
+  - TRA's new Lemon Grove data has its own file (read-only check;
+    `new_LG_data/lemon_grove/fleetpy_initial_vehicle_distribution/imbalanced.csv`): the same format, five nodes
+    (694, 225, 863, 498, 189), 0.2 each, sum 1; all five are street nodes (`Lemon_grove_node_kind.csv`), none a
+    freeway node. How they were chosen is not recorded in this repository (`TRA_input_data_prep` was not at hand).
+  - User's decision: `TRA_input_data_prep` will be checked for how its `imbalanced.csv` is made, and that is
+    documented. On the branch, when the data moves in: keep the five-node rule or choose another (e.g. all virtual
+    stops, FleetPy's default without the parameter, or demand-weighted); a change of the rule goes with the
+    branch's new reference.
+- **2026-11-27, branch `TRA_resubmission` (user's request: check `TRA_input_data_prep` and document it):** checked
+  in a read-only clone of https://github.com/ritunuci/TRA_input_data_prep (latest commit `b68886b`, 2026-11-23
+  16:26, "Super-networks per ABM3 period; freeways car only; FleetPy initial vehicles"; no code run).
+  - **How the file is made:** `build_period_travel_times.py`, `initial_vehicle_nodes` (step 4, `build_area`):
+    the candidates are the pickup nodes inside the zones (street nodes with `IS_DEMAND` 1 and an MGRA); they are
+    grouped into `INIT_VEH_N` = 5 clusters by k-means on their coordinates (unweighted; start centres drawn
+    uniformly with seed `INIT_VEH_SEED` = 42; up to 200 iterations); each start node is the candidate nearest a
+    cluster centre; the run stops if two are the same or one is not a street node. Written as
+    `fleetpy_initial_vehicle_distribution/imbalanced.csv` (`node_index,probability`, 1/5 each). Lemon Grove: 694,
+    225, 863, 498, 189 (cluster shares of the candidates 0.23, 0.24, 0.18, 0.19, 0.16), the file in
+    `mtsm_data/lemon_grove/fleetpy/...` since 2026-11-26. Its `CLAUDE.md` records the user's choice of 2026-11-23:
+    option B (this rule); rejected: A (the old positions mapped to new nodes 288, 427, 638, 687, 737) and C
+    (demand-weighted: 841, 207, 694, 463, 145). Why a file at all: without one FleetPy spreads the vehicles over all
+    nodes, freeway nodes included, which have no edge in FleetPy's network, so a vehicle there never moves. The
+    old Lemon Grove file (256, 400, 600, 650, 700) was FleetPy's example file, not chosen for Lemon Grove.
+  - The file in `new_LG_data/` was written 2026-11-23 16:25, a minute before `b68886b`: so this commit's code
+    made it (for the other data files the commit is still to confirm).
+  - **How FleetPy uses it** (`FleetSimulationBase.load_initial_state`): each vehicle draws its start node from the
+    probabilities with `np.random.random()`, seeded with the scenario's `random_seed` (0), so the same in every run;
+    several vehicles can draw the same node. The scenario repositions idle vehicles (`AlonsoMoraRepositioning`,
+    every 300 s). In I-46's after run (10 % sample, 7 vehicles) the vehicles' first trips start at 863 (4
+    vehicles), 498 (2) and 189 (1); 694 and 225 got none.
+  - **Options:** (a) keep TRA's rule as it is and close the item (documented now); (b) as many start nodes as
+    vehicles (k-means with k = fleet size, one file per fleet size), still drawn at random; (c) a fixed start node
+    per vehicle (FleetPy's initial state file, `initial_state_scenario`, which FleetPy reads before the
+    distribution); (d) demand-weighted (rejected 2026-11-23). Recommended: (a); the effect is likely small
+    (repositioning, service from 6:00), and a 10 % check run would show little since that fleet is barely used.
+- **Resolution (2026-11-27, branch `TRA_resubmission`; user's decision: keep TRA's rule and close):** the
+  branch uses `TRA_input_data_prep`'s file (nodes 694, 225, 863, 498, 189, 0.2 each; in
+  `mtsm_data/lemon_grove/fleetpy/data/fleetctrl/initial_vehicle_distribution/lemon_grove_example_network/` since
+  2026-11-26), made by `build_period_travel_times.initial_vehicle_nodes` (k-means, 5 clusters of the pickup nodes
+  inside the zones, the node nearest each centre; note of 2026-11-27 above). Kept as it is: no freeway node, the
+  draw seeded with the run's `random_seed`, idle vehicles repositioned. No code or data change, no run. `main`
+  keeps FleetPy's example file (256, 400, 600, 650, 700) and its reference.
 
 ### I-39: Lemon Grove's FleetPy `crs.info` names the wrong coordinate system
 - **Status:** Closed (2026-11-26); until then: Open (to close on the branch `TRA_resubmission`, where `crs.info` is updated; user's decision

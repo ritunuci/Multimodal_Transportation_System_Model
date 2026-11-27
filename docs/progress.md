@@ -2017,6 +2017,15 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   direct rides under 30 s went from 28 of 500 (full run, before I-46) to 0 (10 % sample, after). I-44 closes when
   the branch's reference run confirms the short rides.
 
+## I-36 closed: TRA's initial vehicle positions kept (branch, 2026-11-27)
+
+- Checked in a read-only clone of `TRA_input_data_prep` (latest commit `b68886b`, 2026-11-23): `imbalanced.csv` is
+  written by `build_period_travel_times.initial_vehicle_nodes`, 5 start nodes, the pickup node nearest each of 5
+  k-means centres (unweighted, seed 42) of the pickup nodes inside the zones; the user's choice of 2026-11-23 (its
+  `CLAUDE.md`). The file in `new_LG_data/` was written a minute before `b68886b`. FleetPy draws each vehicle's
+  start node from it (seeded with `random_seed`); 7 vehicles on the 10 % sample started at 3 of the 5 nodes.
+- User's decision: keep TRA's rule; I-36 closed (`open_issues.md`). No code or data change, no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
