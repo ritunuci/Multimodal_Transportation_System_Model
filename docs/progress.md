@@ -2026,6 +2026,15 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   start node from it (seeded with `random_seed`); 7 vehicles on the 10 % sample started at 3 of the 5 nodes.
 - User's decision: keep TRA's rule; I-36 closed (`open_issues.md`). No code or data change, no run.
 
+## Items from the upscaling test opened: I-49, I-50, I-51 (2026-11-27)
+
+- User's request: the findings of `docs/LG_demand_upscaling_test.md` as open items. I-49 (Medium, decision
+  needed): the synthetic requests cluster, fleet miles too low and occupancy too high in sample runs; with it the
+  open choice of the optimizer's demand (25 % sample or full). I-50 (Low, to look into): mode switches 15 % low in
+  sample runs. I-51 (Medium, decision needed): one random stream, so a traveler's draw depends on the other
+  travelers; option: a draw fixed by traveler id (result-changing, with the branch's reference). The report
+  points to them. No code change, no run.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

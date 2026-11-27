@@ -281,6 +281,9 @@ The same travelers' choices in the scenario, sample run against full run:
 Recommended: (a) for now; (b) before the paper reports fleet values from sample runs; look into finding 3. The 10 %
 sample is too noisy.
 
+Opened as items in `docs/open_issues.md` (2026-11-27, user's request): finding 2 and the choice above as I-49,
+finding 3 as I-50, finding 1 and option (c) as I-51.
+
 ## 9. Where the outputs are
 
 Local only (ignored by `mtsm_data/*/output/*`, so not in git); each folder holds the run's outputs in the layout of

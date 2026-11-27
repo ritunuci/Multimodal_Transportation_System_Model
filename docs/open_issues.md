@@ -70,6 +70,9 @@ Paths are relative to the codebase root.
 | I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
 | I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
 | I-48 | All ABM3 trip modes are in the demand file; which belong to MTSM's market is to be decided | Medium | Decision needed | 2026-11-26 |
+| I-49 | With `demand_upscaling`, the synthetic FleetPy requests cluster around their sample request: fleet miles too low, occupancy too high | Medium | Decision needed | 2026-11-27 |
+| I-50 | Mode switches are about 15 % lower in sample runs than in the full run, more than sampling explains | Low | Open (to look into) | 2026-11-27 |
+| I-51 | A traveler's random draw depends on the number and order of the travelers, so sample and full runs differ traveler by traveler | Medium | Decision needed | 2026-11-27 |
 
 ---
 
@@ -481,6 +484,53 @@ Paths are relative to the codebase root.
 - **Options:** (a) keep all; (b) leave out walking and biking trips (`WALK`, `BIKE`, `EBIKE`); (c) also school bus,
   taxi and ride-hailing; (d) other. A filter would be in the code (as the model's day, 2026-11-26), not in the
   demand file. Goes with the branch's new reference.
+
+### I-49: With `demand_upscaling`, the synthetic FleetPy requests cluster around their sample request: fleet miles too low, occupancy too high
+- **Status:** Decision needed. **Severity:** Medium (sample runs only; the branch's runs have `demand_upscaling`
+  off). **Found:** 2026-11-27 (the upscaling test, `docs/LG_demand_upscaling_test.md`, finding 2; opened at the user's request).
+- **What:** a synthetic request is a copy of a sample request, shifted by up to +-15 min within the period, with
+  origin and destination each a virtual stop within 400 m walking distance (I-45, `synthetic_time_shift_min`,
+  `synthetic_stop_radius_m`). Each sample request so becomes a cluster of 1 / share near-identical requests (4 at
+  25 %, 10 at 10 %), which FleetPy pools more easily than independent requests.
+- **Measured** (TRA's Lemon Grove data, fleet 7, before the I-46 fix; full run against the sample runs, 10 % |
+  25 %): FleetPy got about the right number of requests (500 | 460 against 502), but microtransit VMT -29.7 |
+  -20.4 %, occupancy 0.83 | 0.73 against 0.57, utilisation 38.6 | 43.8 % against 51.8 %, microtransit wait +15.8
+  | -5.4 %; passenger miles close (-0.9 | -1.9 %), operating cost -1.0 | -0.7 %. The smaller the sample, the
+  larger the clusters and the bias.
+- **Impact:** fleet values from a sample run (VMT, utilisation, occupancy, partly the wait and so the travelers'
+  choices) are biased; the subsidy and mode shares much less (25 %: `tot_sub` -0.3 %).
+- **Options:** (a) accept, and report fleet values only from full-demand runs; (b) synthetic requests drawn so
+  they do not cluster, e.g. origin, destination and time each taken from a different sample request of the same
+  period (I-45 reopened), then the 25 % test repeated; (c) other. With it, the open choice of the test (its section
+  8): the optimizer on the 25 % sample (recommended, with (b) before the paper reports fleet values from sample
+  runs) or on the full demand.
+
+### I-50: Mode switches are about 15 % lower in sample runs than in the full run, more than sampling explains
+- **Status:** Open (to look into). **Severity:** Low (a reported value; mode shares agree within 1 %).
+  **Found:** 2026-11-27 (the upscaling test, `docs/LG_demand_upscaling_test.md`, finding 3; opened at the user's request).
+- **What:** `tt_mode_switch` (scenario, scaled to all travelers) was 530 (10 %) and 528 (25 %) against 625 in the
+  full run (-15.2 and -15.5 %). The full run's own rows of the sample's travelers, scaled, give 570 and 604 (-8.8
+  and -3.4 %), so sampling alone does not explain it; the random draws (I-51) and FleetPy's feedback (I-49) may.
+  The cause was not traced.
+- **To do:** find how a mode switch is counted and why it falls in sample runs, e.g. by repeating the 25 % run
+  with I-51's fixed draws, if that is done.
+
+### I-51: A traveler's random draw depends on the number and order of the travelers, so sample and full runs differ traveler by traveler
+- **Status:** Decision needed. **Severity:** Medium (noise in the totals of sample runs; no individual comparison
+  between runs). **Found:** 2026-11-27 (the upscaling test, `docs/LG_demand_upscaling_test.md`, finding 1; opened at the user's
+  request).
+- **What:** the choice model draws one random number per traveler from a single stream, in the order of the
+  travelers (`iteration.run_iteration`, `ran_num = random.random()`; seeded once with the run's `random_seed`).
+  Leaving travelers out, or reordering them, shifts every later draw.
+- **Measured:** 0 of 4,240 (10 %) and 0 of 10,603 (25 %) travelers had the same draw (`agent_ran_num`) as in the
+  full run, although their base-case choice probabilities were identical; 81 % made the same car or transit
+  choice. Small groups carry most of the noise: about 400 base-case FRT riders came out 8-11 % high in both samples;
+  the logsum increase is off by about +-8 %.
+- **Options:** (a) keep one stream (as now); (b) a draw fixed by the traveler, e.g. from a generator seeded with
+  `random_seed` and the traveler's `request_id` (and the iteration, if the draws are to change between
+  iterations), so a traveler draws the same number whichever travelers are in the run. (b) changes every
+  traveler's draw, so all results: it goes with the branch's new reference. Whether the draw should change between
+  iterations as it does now is part of the decision.
 
 ## Closed
 
