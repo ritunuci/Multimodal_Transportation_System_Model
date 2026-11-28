@@ -2049,6 +2049,12 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
 - `mtsm_data/MANIFEST.csv` rewritten (`check_inputs.py --write lemon_grove`; the area manifest unchanged), then
   `check_inputs.py` passed.
 
+## I-51 closed: one random stream kept (branch, 2026-11-27)
+
+- User's decision (a): the mode choice keeps one random stream (`random.random()` per traveler and iteration,
+  seeded once with `random_seed`). Consequences in `open_issues.md`, I-51. No code change, no run. Next: a full
+  run with the current code, to compare with I-49's 25 % run of the same code.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

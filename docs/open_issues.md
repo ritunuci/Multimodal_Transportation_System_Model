@@ -73,7 +73,7 @@ Paths are relative to the codebase root.
 | I-49 | With `demand_upscaling`, the synthetic FleetPy requests cluster around their sample request: fleet miles too low, occupancy too high | Medium | In progress (copy rule changed on the branch `TRA_resubmission` 2026-11-27, 25 % re-run done; closes after a comparison with a full run of the same code; the optimizer's demand decided later) | 2026-11-27 |
 | I-52 | FleetPy's repositioning (`AlonsoMoraRepositioning`) stopped with a `TypeError`: Gurobi's old `addConstr(lhs, sense, rhs, name)` form | High | Closed (2026-11-27) | 2026-11-27 |
 | I-50 | Mode switches are about 15 % lower in sample runs than in the full run, more than sampling explains | Low | Open (to look into) | 2026-11-27 |
-| I-51 | A traveler's random draw depends on the number and order of the travelers, so sample and full runs differ traveler by traveler | Medium | Decision needed | 2026-11-27 |
+| I-51 | A traveler's random draw depends on the number and order of the travelers, so sample and full runs differ traveler by traveler | Medium | Closed (2026-11-27; kept as it is) | 2026-11-27 |
 
 ---
 
@@ -562,10 +562,12 @@ Paths are relative to the codebase root.
 - **To do:** find how a mode switch is counted and why it falls in sample runs, e.g. by repeating the 25 % run
   with I-51's fixed draws, if that is done.
 
+## Closed
+
 ### I-51: A traveler's random draw depends on the number and order of the travelers, so sample and full runs differ traveler by traveler
-- **Status:** Decision needed. **Severity:** Medium (noise in the totals of sample runs; no individual comparison
-  between runs). **Found:** 2026-11-27 (the upscaling test, `docs/LG_demand_upscaling_test.md`, finding 1; opened at the user's
-  request).
+- **Status:** Closed (2026-11-27); until then Decision needed. **Severity:** Medium (noise in the totals of sample
+  runs; no individual comparison between runs). **Found:** 2026-11-27 (the upscaling test,
+  `docs/LG_demand_upscaling_test.md`, finding 1; opened at the user's request).
 - **What:** the choice model draws one random number per traveler from a single stream, in the order of the
   travelers (`iteration.run_iteration`, `ran_num = random.random()`; seeded once with the run's `random_seed`).
   Leaving travelers out, or reordering them, shifts every later draw.
@@ -578,8 +580,16 @@ Paths are relative to the codebase root.
   iterations), so a traveler draws the same number whichever travelers are in the run. (b) changes every
   traveler's draw, so all results: it goes with the branch's new reference. Whether the draw should change between
   iterations as it does now is part of the decision.
-
-## Closed
+- **Resolution (2026-11-27, branch `TRA_resubmission`; user's decision: (a), keep it as it is):** one stream, no
+  code change, no run. Consequences given to the user and accepted: each run stays valid and reproduces with the
+  same code, inputs and seed; runs with the same travelers in the same order share the iteration-0 draws (base
+  case and scenario, the optimizer's candidates). But a sample run's noise cannot be told apart from sampling
+  (finding 1 of the upscaling test), sample and full runs cannot be compared traveler by traveler (I-49's check
+  on totals only; I-50 harder to trace), a change that adds, removes or reorders travelers (e.g. I-48's market)
+  also moves choices through shifted draws, and a traveler who chooses again gets a new draw. Not checked:
+  whether FleetPy's use of the stream (it re-seeds during a simulation) depends on the fleet, which would make
+  the draws of iterations >= 1 differ between optimizer candidates. Option (b1) (one draw per traveler from
+  `random_seed` and `request_id`) stays available if this is revisited.
 
 ### I-52: FleetPy's repositioning (`AlonsoMoraRepositioning`) stopped with a `TypeError`: Gurobi's old `addConstr(lhs, sense, rhs, name)` form
 - **Status:** Closed (2026-11-27). **Severity:** High (the run stops). **Found:** 2026-11-27, branch
