@@ -590,7 +590,8 @@ Paths are relative to the codebase root.
   repositioning step (every 300 s) while rejected customers wait to be counted; the earlier runs had rejections (up to
   13 % in a period) but never reached that line, the copies of I-49's new rule did.
 - **Resolution (2026-11-27):** the four calls written as expressions (`m.addConstr(expr == 1, name=...)`, `<=`
-  likewise), the same constraints; tested on a small Gurobi model, then the 25 % re-run went through (no "No
+  likewise; the old lines kept as comments, listed in `fleetpy/LOCAL_CHANGES.md`), the same constraints; tested on
+  a small Gurobi model, then the 25 % re-run went through (no "No
   Optimal Solution" in FleetPy's log). No earlier result can change: a run that reached the line stopped. Not
   changed: three calls of the same form in `fleetctrl/pooling/batch/AlonsoMora/AlonsoMoraAssignment.py`, which
   the scenario's `PoolingInsertionHeuristicOnly` does not use; they fail the same way if that control is used.

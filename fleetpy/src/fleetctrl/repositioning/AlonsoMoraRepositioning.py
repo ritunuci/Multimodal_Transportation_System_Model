@@ -156,10 +156,12 @@ class AlonsoMoraRepositioning(RepositioningBase):
                 for var in varlist:
                     expr.add(var, 1)
                 if assign_all_vehicles:
-                    # MTSM, 2026-11-27: the constraints as expressions; gurobipy 12 no longer takes
+                    # MTSM, 2026-11-27 (I-52): the constraints as expressions; gurobipy 12 no longer takes
                     # addConstr(lhs, sense, rhs, name) (TypeError when an idle vehicle meets a rejection)
+                    # m.addConstr(expr, gurobi.GRB.EQUAL, 1, "c_{}".format(vid))
                     m.addConstr(expr == 1, name="c_{}".format(vid))
                 else:
+                    # m.addConstr(expr, gurobi.GRB.LESS_EQUAL, 1, "c_{}".format(vid))
                     m.addConstr(expr <= 1, name="c_{}".format(vid))
                     
             for rej_o, varlist in pos_constr_dict.items():
@@ -167,8 +169,10 @@ class AlonsoMoraRepositioning(RepositioningBase):
                 for var in varlist:
                     expr.add(var, 1)
                 if assign_all_vehicles:
+                    # m.addConstr(expr, gurobi.GRB.LESS_EQUAL, origin_to_counts[rej_o], "c_{}".format(rej_o))
                     m.addConstr(expr <= origin_to_counts[rej_o], name="c_{}".format(rej_o))
                 else:
+                    # m.addConstr(expr, gurobi.GRB.EQUAL, origin_to_counts[rej_o], "c_{}".format(rej_o))
                     m.addConstr(expr == origin_to_counts[rej_o], name="c_{}".format(rej_o))
                     
             m.optimize() #optimization

@@ -52,6 +52,7 @@ holds no model parameter or input of MTSM.
 | `src/evaluation/standard.py:132` | same as above | same |
 | `src/simulation/Vehicles.py:44` | same as above | same |
 | `src/routing/NetworkBasic.py:250` | `.iteritems()` → `.items()` in `load_tt_file` (old line kept as a comment); 2026-11-24 | pandas 2 removed `Series.iteritems`; needed once a network has travel-time folders (`network_dynamics.csv`, MTSM's travel times per period) |
+| `src/fleetctrl/repositioning/AlonsoMoraRepositioning.py:157-176` | the four `m.addConstr(expr, GRB.EQUAL / LESS_EQUAL, rhs, name)` → `m.addConstr(expr == rhs, name=...)` / `<=` (old lines kept as comments); 2026-11-27, I-52 | gurobipy 12 (12.0.3 in the model's environment) no longer takes the `(lhs, sense, rhs, name)` form: `TypeError` when repositioning has an idle vehicle and rejected customers. Not changed: three such calls in `src/fleetctrl/pooling/batch/AlonsoMora/AlonsoMoraAssignment.py` (not used by MTSM's scenarios) |
 | `run_examples.py` | `import csv` added (unused); `.astype(object)` added in `read_outputs_for_comparison` (line 157); examples b) to j) commented out, so only example a) runs | avoids a pandas dtype warning in `check_assertions`; only the first example was needed |
 
 The model's environment has pandas 2.2.3 (`env/`), so the four pandas changes are required (five since 2026-11-24).
