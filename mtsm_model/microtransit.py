@@ -32,8 +32,9 @@ def run_fleetpy_and_update_networks(cfg, area, scen, *, cc, log_level, log_f, it
     print(f"{Fore.RED}Running Fleetpy from position 2 {Style.RESET_ALL}")
     if config.DEMAND_UPSCALING:
         # The demand file is a sample of the travelers: FleetPy also serves 1 / share - 1 copies of each request of the
-        # sample, so the fleet is as busy as with all travelers (docs/open_issues.md I-32, I-45). A copy is shifted in
-        # time by up to +- synthetic_time_shift_min within the request's time period, and has a virtual stop within
+        # sample, so the fleet is as busy as with all travelers (docs/open_issues.md I-32, I-45, I-49). A copy has the
+        # time of a request of the same time period (since 2026-11-27, I-49) shifted by up to
+        # +- synthetic_time_shift_min within the period, and has a virtual stop within
         # synthetic_stop_radius_m walking distance of the request's as origin and as destination. The copies are not
         # MTSM travelers: the trips, fares and logsums come from the sample alone, while FleetPy's waiting times,
         # rejection rate and fleet results include them. (Until 2026-11-25 a commented-out "Ritun added" block: 3 per

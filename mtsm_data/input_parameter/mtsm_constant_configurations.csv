@@ -26,5 +26,5 @@ repositioning_list,True,FleetPy vehicle repositioning
 demand_upscaling,False,True = the demand file of the run is a sample of the travelers (sample_demand_file): FleetPy also gets synthetic requests for the others and the evaluation file reports all travelers (I-32); False = demand/demand.csv holds all travelers
 demand_sample_share,1,share of all travelers in sample_demand_file (between 0 and 1; e.g. 0.25); used only when demand_upscaling is True
 sample_demand_file,none,the sample demand file: a path relative to mtsm_data/<area>/ (e.g. demand/demand_sample.csv); used only when demand_upscaling is True
-synthetic_time_shift_min,15,a synthetic request is a copy of a request of the sample shifted in time by up to +- this (min) within its time period (I-45); used only when demand_upscaling is True
-synthetic_stop_radius_m,400,the origin and the destination of a synthetic request: a random virtual stop within this walking distance (m) of the request's (I-45); used only when demand_upscaling is True
+synthetic_time_shift_min,15,a synthetic request is a copy of a request of the sample at the time of a request of the same time period (drawn at random; since 2026-11-27 I-49; until then the request's own time) shifted by up to +- this (min) within the period (I-45); used only when demand_upscaling is True
+synthetic_stop_radius_m,800,the origin and the destination of a synthetic request: a random virtual stop within this walking distance (m) of the request's (I-45; 800 since 2026-11-27 I-49 until then 400); used only when demand_upscaling is True

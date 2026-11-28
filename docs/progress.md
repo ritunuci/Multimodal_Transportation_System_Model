@@ -2035,6 +2035,20 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   travelers; option: a draw fixed by traveler id (result-changing, with the branch's reference). The report
   points to them. No code change, no run.
 
+## I-49: synthetic requests no longer cluster; FleetPy repositioning fix I-52 (branch, 2026-11-27)
+
+- User's decision (b): a copy takes the time of a sample request of the same period (+-15 min) and stops within
+  800 m (`synthetic_stop_radius_m` 400 -> 800). Only runs with `demand_upscaling` on change. Measured before:
+  88.7 % of the 25 % run's FleetPy requests had a near twin against 6.8 % with all travelers; offline 5.9 % with
+  the new rule.
+- 25 % re-run (0:17:55): near twins 7.5 %; against the full run fleet VMT +2.8 % (was -20.4 %), utilisation
+  +4.0 % (was -15.4 %), occupancy +7.6 % (was +29.5 %), wait +12.6 % (was -5.4 %), `tot_sub` +1.5 %. The I-46
+  fix is in this run but not in the full run, so a full run of the same code is needed to close I-49.
+- The first try stopped in FleetPy's repositioning: Gurobi's old `addConstr` form (I-52, closed): four calls
+  rewritten in `AlonsoMoraRepositioning.py`. Report: `docs/LG_demand_upscaling_test.md`, section 8a.
+- `mtsm_data/MANIFEST.csv` rewritten (`check_inputs.py --write lemon_grove`; the area manifest unchanged), then
+  `check_inputs.py` passed.
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take

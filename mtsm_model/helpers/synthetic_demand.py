@@ -5,16 +5,18 @@ When the demand file is a sample, a share s of all travelers, FleetPy would serv
 requests, and the fleet would be less busy than with all travelers. add_synthetic_requests() therefore adds
 1 / s - 1 copies of each request of the sample to FleetPy's demand file before FleetPy runs (3 for s = 0.25, 9 for
 s = 0.1): each request of the sample stands for 1 / s requests of all travelers. A copy is like a neighbor making a
-similar trip at a similar time:
-- its time is the request's time shifted at random by up to +-time_shift_s, kept inside the request's time period;
+similar trip in the same time period:
+- its time is the time of a request of the sample drawn at random from the same time period (the request itself
+  among them), shifted at random by up to +-time_shift_s, kept inside the period (I-49, 2026-11-27): so the copies
+  follow the period's time profile, and are not bunched around the request's own time;
 - its origin and its destination are each a random virtual stop within stop_radius_m walking distance of the
   request's (NearbyStops; the request's own stop is one of them), so the copies do not repeat the request's exact
   stops: exact repeats close in time would let FleetPy pool them for free (I-45);
 - the direction is the request's.
 The copies of a request are drawn with their own random generator, seeded with (the run's random_seed, the request
-id), so they change only when that request changes. Their only purpose is to make the fleet as busy as with all
-travelers: they are not travelers of MTSM (no trips, fares or logsums), but FleetPy's waiting times, rejection rate
-and fleet results include them, as they should.
+id), so they change only when that request or the times of its period's requests change. Their only purpose is to
+make the fleet as busy as with all travelers: they are not travelers of MTSM (no trips, fares or logsums), but
+FleetPy's waiting times, rejection rate and fleet results include them, as they should.
 
 History: written by the user as synthesize_requests_with_trend_time (pre_process/generate_demand_files.py,
 removed on the branch 2026-11-26; moved here on 2026-11-23, I-14), called by a commented-out block in
@@ -24,7 +26,11 @@ mtsm_model/microtransit.py: 3 synthetic requests per request
 the sample's rows. 2026-11-25 (I-32): the switch demand_upscaling, ids from synthetic_id_start, times in the operating
 periods, the file sorted. 2026-11-25 (I-45, user's decision): the copies described above replace the drawing from the
 profile (which flattened the peaks, lost the direction of the trips over the day, and gave other numbers per period
-than the factor); the old functions are in the git history.
+than the factor); the old functions are in the git history. 2026-11-27 (I-49, user's decision (b), branch
+TRA_resubmission): until then a copy's time was the request's own time +-time_shift_s and the stops were within
+400 m, so the 1 / s copies of a request made a tight cluster (within 15 min and 400 m at both ends: 89 % of
+FleetPy's requests in the 25 % test against 7 % with all travelers) that FleetPy pooled too easily (fleet miles
+20-30 % low); now the time of a request of the same period and synthetic_stop_radius_m 800 (6 % offline).
 """
 import heapq
 import math
@@ -122,18 +128,28 @@ def synthesize_requests(df, factor, first_id, periods, nearby_by_period, period_
     (1 / share - 1) per request: a DataFrame with the columns of the file, ids first_id, first_id + 1, ... in the
     order of df. With a factor that is not whole, a request gets floor(factor) copies and one more with probability
     factor - floor(factor). periods: [(start, end)] in s of the time periods, in order; nearby_by_period: {period
-    name: NearbyStops}, period_names in the order of periods."""
+    name: NearbyStops}, period_names in the order of periods. A copy's time: the time of a request of df in the same
+    period (drawn at random, the request itself among them) shifted by up to +-time_shift_s (I-49)."""
     whole, fraction = int(math.floor(factor)), factor - math.floor(factor)
+
+    def period_index(t):
+        return next(i for i, (s, e) in enumerate(periods) if t <= e or i == len(periods) - 1)
+
+    times_of_period = {}  # {period index: the request times of df in it, in the order of df}
+    for t in df["rq_time"]:
+        times_of_period.setdefault(period_index(t), []).append(t)
     rows = []
     for t, start, end, rq_id in zip(df["rq_time"], df["start"], df["end"], df["request_id"]):
         rng = np.random.default_rng([int(seed), int(rq_id)])
         copies = whole + (1 if fraction > 0 and rng.random() < fraction else 0)
         low, high = _period_bounds(t, periods)
-        period = period_names[next(i for i, (s, e) in enumerate(periods) if t <= e or i == len(periods) - 1)]
-        nearby = nearby_by_period[period]
+        i_period = period_index(t)
+        period_times = times_of_period[i_period]
+        nearby = nearby_by_period[period_names[i_period]]
         near_start, near_end = nearby.within(start), nearby.within(end)
         for _ in range(copies):
-            x = _shifted(t, int(rng.integers(-time_shift_s, time_shift_s + 1)), low, high)
+            t_other = period_times[int(rng.integers(len(period_times)))]
+            x = _shifted(t_other, int(rng.integers(-time_shift_s, time_shift_s + 1)), low, high)
             s, e = int(start), int(end)
             for _draw in range(MAX_DRAWS):
                 s2 = near_start[int(rng.integers(len(near_start)))] if near_start else int(start)

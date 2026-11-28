@@ -83,8 +83,9 @@ G_ENABLE_NUM_TRANSFER_PENALTY = "enable_num_transfer_penalty"  # new 2026-11-11;
 G_DEMAND_UPSCALING = "demand_upscaling"
 G_DEMAND_SAMPLE_SHARE = "demand_sample_share"
 G_SAMPLE_DEMAND_FILE = "sample_demand_file"
-# how the synthetic requests are made (2026-11-25, I-45): each is a copy of a request of the sample, shifted in time by
-# up to +- synthetic_time_shift_min within its time period, with a virtual stop within synthetic_stop_radius_m walking
+# how the synthetic requests are made (2026-11-25, I-45; 2026-11-27, I-49): each is a copy of a request of the sample,
+# at the time of a request of the same time period shifted by up to +- synthetic_time_shift_min within the period,
+# with a virtual stop within synthetic_stop_radius_m walking
 # distance as origin and as destination; used only when demand_upscaling is True
 G_SYNTHETIC_TIME_SHIFT_MIN = "synthetic_time_shift_min"
 G_SYNTHETIC_STOP_RADIUS_M = "synthetic_stop_radius_m"

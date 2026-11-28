@@ -70,7 +70,8 @@ Paths are relative to the codebase root.
 | I-46 | A microtransit leg's FleetPy request starts one link past the boarding stop, at the time of reaching that node | High | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
 | I-47 | MTSM's own FleetPy demand file is in the order of the traveler list; FleetPy's results depend on the order within a time step | Medium | In progress (fixed on the branch `TRA_resubmission` 2026-11-27; closes with its new reference) | 2026-11-25 |
 | I-48 | All ABM3 trip modes are in the demand file; which belong to MTSM's market is to be decided | Medium | Decision needed | 2026-11-26 |
-| I-49 | With `demand_upscaling`, the synthetic FleetPy requests cluster around their sample request: fleet miles too low, occupancy too high | Medium | Decision needed | 2026-11-27 |
+| I-49 | With `demand_upscaling`, the synthetic FleetPy requests cluster around their sample request: fleet miles too low, occupancy too high | Medium | In progress (copy rule changed on the branch `TRA_resubmission` 2026-11-27, 25 % re-run done; closes after a comparison with a full run of the same code; the optimizer's demand decided later) | 2026-11-27 |
+| I-52 | FleetPy's repositioning (`AlonsoMoraRepositioning`) stopped with a `TypeError`: Gurobi's old `addConstr(lhs, sense, rhs, name)` form | High | Closed (2026-11-27) | 2026-11-27 |
 | I-50 | Mode switches are about 15 % lower in sample runs than in the full run, more than sampling explains | Low | Open (to look into) | 2026-11-27 |
 | I-51 | A traveler's random draw depends on the number and order of the travelers, so sample and full runs differ traveler by traveler | Medium | Decision needed | 2026-11-27 |
 
@@ -486,8 +487,9 @@ Paths are relative to the codebase root.
   demand file. Goes with the branch's new reference.
 
 ### I-49: With `demand_upscaling`, the synthetic FleetPy requests cluster around their sample request: fleet miles too low, occupancy too high
-- **Status:** Decision needed. **Severity:** Medium (sample runs only; the branch's runs have `demand_upscaling`
-  off). **Found:** 2026-11-27 (the upscaling test, `docs/LG_demand_upscaling_test.md`, finding 2; opened at the user's request).
+- **Status:** In progress (2026-11-27; until then Decision needed). **Severity:** Medium (sample runs only; the
+  branch's runs have `demand_upscaling` off). **Found:** 2026-11-27 (the upscaling test,
+  `docs/LG_demand_upscaling_test.md`, finding 2; opened at the user's request).
 - **What:** a synthetic request is a copy of a sample request, shifted by up to +-15 min within the period, with
   origin and destination each a virtual stop within 400 m walking distance (I-45, `synthetic_time_shift_min`,
   `synthetic_stop_radius_m`). Each sample request so becomes a cluster of 1 / share near-identical requests (4 at
@@ -504,6 +506,51 @@ Paths are relative to the codebase root.
   period (I-45 reopened), then the 25 % test repeated; (c) other. With it, the open choice of the test (its section
   8): the optimizer on the 25 % sample (recommended, with (b) before the paper reports fleet values from sample
   runs) or on the full demand.
+- **2026-11-27, branch `TRA_resubmission` (user's decision (b)):**
+  - **Measured first** (FleetPy's served requests of the saved runs; a neighbour is another request within 15 min
+    with both ends within 400 m walking): full run 0.08 neighbours per request, 6.8 % of the requests with one;
+    25 % run 1.78 and 88.7 %; 10 % run 4.32 and 98.2 %. Rules tried offline on the sample runs' own requests (3
+    seeds): the current rule 89.0 % (25 %) / 98.3 % (10 %); the time of another request of the period with stops
+    within 400 m 29.9 / 54.0 %; the same with 800 m 5.9 / 11.9 %, trips (straight line) 1.13 against 1.10 km;
+    origin, destination and time each from a different request 6.4 / 14.9 %, but trips 1.55 km (the origin and
+    destination no longer belong together), so not taken.
+  - **Change:** `synthetic_demand.synthesize_requests`: a copy's time is the time of a sample request drawn at
+    random from the same period (the request itself among them), shifted by up to +-`synthetic_time_shift_min`
+    (15) within the period; its stops as before, within `synthetic_stop_radius_m`, now 800 (was 400). The copies
+    follow the period's time profile. Runs with `demand_upscaling` off (the branch's runs, `main`'s reference) do
+    not make copies, so they do not change. Descriptions updated in `microtransit.py`,
+    `mtsm_global_parameters.py`, the model file and the README.
+  - **25 % re-run** (`demand_upscaling` True, share 0.25, `demand/demand_25pct.csv`; 0:17:55; copy in
+    `output/i49_25pct_2026-11-27/`). The first try stopped in FleetPy's repositioning (I-52, fixed). Against the
+    full run:
+
+  | Scenario, against the full run of 2026-11-26 | 25 % before (2026-11-27 morning) | 25 % with the new rule |
+  |---|---|---|
+  | FleetPy requests with a near twin (15 min, 400 m at both ends; full run 6.8 %) | 88.7 % | 7.5 % |
+  | Microtransit VMT | -20.4 % | +2.8 % |
+  | Utilisation | -15.4 % | +4.0 % |
+  | Occupancy | +29.5 % | +7.6 % |
+  | Microtransit wait (MTSM) | -5.4 % | +12.6 % |
+  | FleetPy wait | -3.6 % | +11.2 % |
+  | Rejection rate (full run 0) | 0 | 1.3 % |
+  | Microtransit trips | -8.4 % | -6.8 % |
+  | Car / transit users | +0.2 / -0.6 % | +0.2 / -0.5 % |
+  | `tot_sub` | -0.3 % | +1.5 % |
+  | Logsum increase | +8.0 % | -5.2 % |
+  | Mode switches | -15.5 % | -15.5 % |
+
+  - **Not a clean comparison:** the I-46/I-47 fix is in the new run but not in the full run nor in the earlier
+    25 % run. It makes FleetPy's trips longer (requests start at the boarding stop): mean direct distance of the
+    sample's own requests 1.46 -> 1.57 km here, 1.35 -> 1.48 km on the 10 % sample (fleet VMT +6.3 % there).
+    The copies are 4-5 % longer than their request both before and after the change (1.53 against 1.46 km;
+    1.64 against 1.57 km), so the new rule adds no length; the sample's own requests were already 7 % longer
+    than the full run's (1.46 against 1.36 km). So part of the higher VMT and wait comes from I-46, and a full
+    run with the current code would likely have more VMT than the full run of 2026-11-26.
+  - **Reading:** the clustering is gone (7.5 % against 6.8 %), and fleet VMT, utilisation and occupancy moved
+    from -20 / -15 / +30 % to +3 / +4 / +8 %. Mode shares unchanged; the logsum and the mode switches stay as
+    noisy as before (I-51, I-50). To close: compare with a full run made with the same code (about 1 h), e.g. the
+    branch's reference run when it is made.
+- **The optimizer's demand** (25 % sample or full): to be decided later (user, 2026-11-27).
 
 ### I-50: Mode switches are about 15 % lower in sample runs than in the full run, more than sampling explains
 - **Status:** Open (to look into). **Severity:** Low (a reported value; mode shares agree within 1 %).
@@ -533,6 +580,20 @@ Paths are relative to the codebase root.
   iterations as it does now is part of the decision.
 
 ## Closed
+
+### I-52: FleetPy's repositioning (`AlonsoMoraRepositioning`) stopped with a `TypeError`: Gurobi's old `addConstr(lhs, sense, rhs, name)` form
+- **Status:** Closed (2026-11-27). **Severity:** High (the run stops). **Found:** 2026-11-27, branch
+  `TRA_resubmission`, in the first 25 % re-run of I-49 (iteration 0, after 3.5 min).
+- **What:** `fleetpy/src/fleetctrl/repositioning/AlonsoMoraRepositioning.py`, `_solve_gurobi`, called
+  `m.addConstr(expr, GRB.EQUAL, 1, name)`; the installed gurobipy (12.0.3) takes no such form: `TypeError:
+  addConstr() takes at most 3 positional arguments (5 given)`. The solve runs only when an idle vehicle is there at a
+  repositioning step (every 300 s) while rejected customers wait to be counted; the earlier runs had rejections (up to
+  13 % in a period) but never reached that line, the copies of I-49's new rule did.
+- **Resolution (2026-11-27):** the four calls written as expressions (`m.addConstr(expr == 1, name=...)`, `<=`
+  likewise), the same constraints; tested on a small Gurobi model, then the 25 % re-run went through (no "No
+  Optimal Solution" in FleetPy's log). No earlier result can change: a run that reached the line stopped. Not
+  changed: three calls of the same form in `fleetctrl/pooling/batch/AlonsoMora/AlonsoMoraAssignment.py`, which
+  the scenario's `PoolingInsertionHeuristicOnly` does not use; they fail the same way if that control is used.
 
 ### I-36: The initial vehicle positions (`imbalanced.csv`) need a review
 - **Status:** Closed (2026-11-27); until then: Open (to close on the branch `TRA_resubmission`, with TRA's start file; user's decision 2026-11-25,

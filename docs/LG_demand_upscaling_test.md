@@ -284,6 +284,33 @@ sample is too noisy.
 Opened as items in `docs/open_issues.md` (2026-11-27, user's request): finding 2 and the choice above as I-49,
 finding 3 as I-50, finding 1 and option (c) as I-51.
 
+## 8a. Re-run with a new copy rule (I-49, 2026-11-27 afternoon)
+
+User's decision (b) of I-49 (`docs/open_issues.md`): a copy's time is the time of a sample request of the same
+period (+-15 min), its stops within 800 m (was: the request's own time +-15 min, stops within 400 m). The 25 % sample
+was run again (`demand_upscaling` True, share 0.25; total run time 0:17:55; 8 iterations). The code also has the
+I-46/I-47 fix, which the runs above do not have (see the note below the table).
+
+| Scenario, against the full run | 25 % above | 25 % with the new rule |
+|---|---|---|
+| FleetPy requests with a near twin (15 min, 400 m at both ends; full run 6.8 %) | 88.7 % | 7.5 % |
+| Microtransit VMT | -20.4 % | +2.8 % |
+| Utilisation | -15.4 % | +4.0 % |
+| Occupancy | +29.5 % | +7.6 % |
+| Microtransit wait (MTSM) | -5.4 % | +12.6 % |
+| FleetPy wait | -3.6 % | +11.2 % |
+| Rejection rate (full run 0) | 0 | 1.3 % |
+| Microtransit trips | -8.4 % | -6.8 % |
+| Car / transit users | +0.2 / -0.6 % | +0.2 / -0.5 % |
+| `tot_sub` | -0.3 % | +1.5 % |
+| Logsum increase | +8.0 % | -5.2 % |
+| Mode switches | -15.5 % | -15.5 % |
+
+Clustering is gone and the fleet values are close to the full run. Part of the higher VMT and wait comes from the
+I-46 fix (requests start at the boarding stop: the sample's own requests 1.46 -> 1.57 km direct; the copies are
+4-5 % longer than their request before and after the change), so a full run with the same code is needed for a
+clean comparison. Mode switches and the logsum are as noisy as before (I-50, I-51).
+
 ## 9. Where the outputs are
 
 Local only (ignored by `mtsm_data/*/output/*`, so not in git); each folder holds the run's outputs in the layout of
@@ -295,6 +322,7 @@ decision 2026-11-27) and also holds the model file it ran with (`mtsm_config_sam
 |---|---|---|
 | Full demand | `full_demand_fsize7_2026-11-26/` | 36 |
 | 25 % sample (kept) | `sample_25pct_2026-11-27/` | 37 (with its model file) |
+| 25 % sample, I-49's new rule (section 8a) | `i49_25pct_2026-11-27/` | 37 (with its model file) |
 | 10 % sample | `sample_10pct_2026-11-27/` | 35 (7 iterations, so one `iter_*_user-stats.csv` fewer) |
 
 The comparison scripts (evaluation tables, sampling alone, random draws) were run from the session scratchpad and
