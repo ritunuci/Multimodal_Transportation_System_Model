@@ -311,6 +311,36 @@ I-46 fix (requests start at the boarding stop: the sample's own requests 1.46 ->
 4-5 % longer than their request before and after the change), so a full run with the same code is needed for a
 clean comparison. Mode switches and the logsum are as noisy as before (I-50, I-51).
 
+## 8b. Against a full run of the same code (2026-11-27 evening)
+
+The full demand was run again with the current code (I-46/I-47 fix in; `demand_upscaling` off; total run time
+1:00:04), so the 25 % run of section 8a can be compared without the I-46 effect.
+
+| Scenario | Full run, current code | 25 % run, I-49 rule | 25 % vs full |
+|---|---|---|---|
+| FleetPy requests with a near twin | 7.8 % | 7.5 % | |
+| FleetPy requests (served) | 512 (505) | 468 (462) | -8.6 % |
+| Mean direct distance of FleetPy's requests | 1.48 km | 1.63 km | +10 % |
+| Microtransit VMT | 810.1 mi | 784.7 mi | -3.1 % |
+| Utilisation | 55.3 % | 53.8 % | -2.6 % |
+| Occupancy | 0.584 | 0.608 | +4.1 % |
+| Microtransit wait (MTSM) | 400.3 s | 434.6 s | +8.6 % |
+| Rejection rate | 1.4 % | 1.3 % | |
+| Microtransit passenger miles | 462.6 | 449.8 | -2.8 % |
+| Car / transit users | 35,216 / 7,164 | 35,288 / 7,124 | +0.2 / -0.6 % |
+| `tot_sub` | 9,993.4 $ | 10,078.1 $ | +0.8 % |
+| Logsum increase | 7,031.4 | 6,773.7 | -3.7 % |
+| Mode switches | 625 | 528 | -15.5 % |
+
+Fleet values are now within -3 to +4 % of the full run, the subsidy within 1 %, and the rejection rate the same.
+The microtransit wait is 8.6 % high: the 25 % sample's own requests are longer than the full demand's (1.57 against
+1.48 km), and the copies are 4 % longer than their request. Mode switches stay 15.5 % low (I-50).
+
+The current full run against the full run of 2026-11-26 (the I-46/I-47 fix alone; I-49 does not act with
+`demand_upscaling` off): microtransit VMT +6.2 % (763.1 -> 810.1 mi), utilisation +6.8 %, microtransit trips +2.0 %
+(502 -> 512), wait +3.7 % (386.1 -> 400.3 s), rejection rate 0 -> 1.4 %, `tot_sub` +0.7 %; car and transit users
+and the FRT values within 0.1 %; mode switches 625 both.
+
 ## 9. Where the outputs are
 
 Local only (ignored by `mtsm_data/*/output/*`, so not in git); each folder holds the run's outputs in the layout of
@@ -323,6 +353,7 @@ decision 2026-11-27) and also holds the model file it ran with (`mtsm_config_sam
 | Full demand | `full_demand_fsize7_2026-11-26/` | 36 |
 | 25 % sample (kept) | `sample_25pct_2026-11-27/` | 37 (with its model file) |
 | 25 % sample, I-49's new rule (section 8a) | `i49_25pct_2026-11-27/` | 37 (with its model file) |
+| Full demand, current code (section 8b) | `full_demand_current_2026-11-27/` | 36 |
 | 10 % sample | `sample_10pct_2026-11-27/` | 35 (7 iterations, so one `iter_*_user-stats.csv` fewer) |
 
 The comparison scripts (evaluation tables, sampling alone, random draws) were run from the session scratchpad and

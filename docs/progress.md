@@ -2055,6 +2055,19 @@ Plan, decisions and the details of each step: `docs/constant_config_plan.md`.
   seeded once with `random_seed`). Consequences in `open_issues.md`, I-51. No code change, no run. Next: a full
   run with the current code, to compare with I-49's 25 % run of the same code.
 
+## Full run with the current code: I-49's 25 % run checked (branch, 2026-11-27)
+
+- Full demand, `demand_upscaling` off, current code (1:00:04; copy `output/full_demand_current_2026-11-27/`).
+  The 25 % run of I-49 against it: microtransit VMT -3.1 %, utilisation -2.6 %, occupancy +4.1 %, wait +8.6 %,
+  rejection rate 1.3 against 1.4 %, `tot_sub` +0.8 %, mode switches -15.5 % (I-50). Against the full run of
+  2026-11-26 (the I-46/I-47 fix alone): VMT +6.2 %, wait +3.7 %, rejection 0 -> 1.4 %, `tot_sub` +0.7 %.
+  Details in `docs/LG_demand_upscaling_test.md`, section 8b, and `open_issues.md`, I-49.
+
+## I-49 closed (branch, 2026-11-27)
+
+- User's decision: close I-49 (the new copy rule kept; checked against the full run of the same code). Still open:
+  I-50 (mode switches low in sample runs) and the optimizer's demand (25 % sample or full; the user decides later).
+
 ## Later option: compile the path search with Numba (held, 2026-11-10)
 
 The user may consider this later; nothing has been done. After rows 2i and 2j the microtransit path searches take
